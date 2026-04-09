@@ -10,6 +10,10 @@ class SessionNotifier extends Notifier<WorkerSession?> {
   @override
   WorkerSession? build() => null;
 
+  void disconnect() {
+    state = null;
+  }
+
   bool connectFromQrPayload(String payload) {
     try {
       final normalizedPayload = _extractJsonPayload(payload);

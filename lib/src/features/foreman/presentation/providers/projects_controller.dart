@@ -86,6 +86,16 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     }
     return null;
   }
+
+  void markProjectDone(String id) {
+    state = [
+      for (final project in state)
+        if (project.id == id)
+          project.copyWith(status: ProjectStatus.done)
+        else
+          project,
+    ];
+  }
 }
 
 enum ProjectStatus {

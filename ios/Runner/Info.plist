@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record a short voice memo for your work report.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Add photos to your work report.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos for your work report.</string>
 </dict>
 </plist>
