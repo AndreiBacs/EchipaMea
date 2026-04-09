@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
+import '../../../../core/ui/app_international_phone_field.dart';
 import 'foreman_shell_page.dart';
 import '../providers/clients_controller.dart';
 
@@ -23,9 +24,9 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
   late final TextEditingController _nameController;
   late final TextEditingController _activeProjectsController;
   late final TextEditingController _emailController;
-  late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   late final TextEditingController _contactPersonController;
+  String _internationalPhone = '';
 
   @override
   void initState() {
@@ -38,7 +39,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
       text: existing?.activeProjects.toString() ?? '1',
     );
     _emailController = TextEditingController(text: existing?.email ?? '');
-    _phoneController = TextEditingController(text: existing?.phone ?? '');
+    _internationalPhone = existing?.phone ?? '';
     _addressController = TextEditingController(text: existing?.address ?? '');
     _contactPersonController = TextEditingController(
       text: existing?.contactPerson ?? '',
@@ -50,7 +51,6 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
     _nameController.dispose();
     _activeProjectsController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _addressController.dispose();
     _contactPersonController.dispose();
     super.dispose();
@@ -60,6 +60,9 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
   Widget build(BuildContext context) {
     final isEdit = widget.clientId != null;
     final l10n = context.l10n;
+    final phoneInitial = widget.clientId == null
+        ? null
+        : ref.read(clientsProvider.notifier).findById(widget.clientId!)?.phone;
 
     return Scaffold(
       appBar: AppBar(
@@ -111,12 +114,16 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
+                    AppInternationalPhoneField(
+                      key: ValueKey(
+                        '${widget.clientId ?? 'new'}_${phoneInitial ?? ''}',
+                      ),
+                      initialPhone: phoneInitial,
                       decoration: InputDecoration(
                         labelText: l10n.profilePhoneLabel,
                       ),
+                      onChanged: (value) =>
+                          setState(() => _internationalPhone = value),
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -160,7 +167,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
     final activeProjects = int.tryParse(_activeProjectsController.text.trim());
     final contactPerson = _contactPersonController.text.trim();
     final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
+    final phone = _internationalPhone.trim();
     final address = _addressController.text.trim();
     if (name.isEmpty ||
         activeProjects == null ||

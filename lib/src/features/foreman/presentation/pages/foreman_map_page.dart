@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../providers/projects_controller.dart';
 import '../providers/team_controller.dart';
@@ -65,7 +66,7 @@ class ForemanMapPage extends ConsumerWidget {
                   MarkerLayer(
                     markers: [
                       ..._buildProjectMarkers(context, projects),
-                      ..._buildWorkerMarkers(context, employees),
+                      ..._buildWorkerMarkers(context, l10n, employees),
                     ],
                   ),
                 ],
@@ -110,7 +111,11 @@ class ForemanMapPage extends ConsumerWidget {
     ];
   }
 
-  List<Marker> _buildWorkerMarkers(BuildContext context, List<Employee> employees) {
+  List<Marker> _buildWorkerMarkers(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<Employee> employees,
+  ) {
     return [
       for (final employee in employees)
         Marker(
@@ -121,7 +126,7 @@ class ForemanMapPage extends ConsumerWidget {
             color: Colors.blue.shade700,
             icon: Icons.person_pin_circle,
             title: employee.name,
-            subtitle: employee.role,
+            subtitle: employee.role.localizedLabel(l10n),
           ),
         ),
     ];

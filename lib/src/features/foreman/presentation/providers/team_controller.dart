@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/entities/worker_role.dart';
+
 final teamProvider = NotifierProvider<TeamNotifier, List<Employee>>(
   TeamNotifier.new,
 );
@@ -11,7 +13,7 @@ class TeamNotifier extends Notifier<List<Employee>> {
       Employee(
         id: 'e1',
         name: 'Andrei D.',
-        role: 'Electrician',
+        role: WorkerRole.electrician,
         email: 'andrei@example.com',
         phone: '+40 721 000 111',
         latitude: 46.7729,
@@ -23,7 +25,7 @@ class TeamNotifier extends Notifier<List<Employee>> {
       Employee(
         id: 'e2',
         name: 'Mihai S.',
-        role: 'Plumber',
+        role: WorkerRole.plumber,
         email: 'mihai@example.com',
         phone: '+40 722 000 222',
         latitude: 46.7686,
@@ -35,7 +37,7 @@ class TeamNotifier extends Notifier<List<Employee>> {
       Employee(
         id: 'e3',
         name: 'Ioana R.',
-        role: 'General Worker',
+        role: WorkerRole.generalWorker,
         email: 'ioana@example.com',
         phone: '+40 723 000 333',
         latitude: 46.7614,
@@ -49,7 +51,7 @@ class TeamNotifier extends Notifier<List<Employee>> {
 
   void addEmployee({
     required String name,
-    required String role,
+    required WorkerRole role,
     required String email,
     required String phone,
     required int workStartHour,
@@ -80,7 +82,7 @@ class TeamNotifier extends Notifier<List<Employee>> {
   void updateEmployee({
     required String id,
     required String name,
-    required String role,
+    required WorkerRole role,
     required String email,
     required String phone,
     required int workStartHour,
@@ -132,7 +134,7 @@ class Employee {
 
   final String id;
   final String name;
-  final String role;
+  final WorkerRole role;
   final String email;
   final String phone;
   final int workStartHour;
@@ -151,7 +153,7 @@ class Employee {
 
   Employee copyWith({
     String? name,
-    String? role,
+    WorkerRole? role,
     String? email,
     String? phone,
     int? workStartHour,

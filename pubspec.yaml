@@ -52,6 +52,7 @@ dependencies:
   record: ^6.2.0
   path_provider: ^2.1.5
   map_launcher: ^4.5.0
+  intl_phone_number_input: 0.7.5
 
 dev_dependencies:
   flutter_test:

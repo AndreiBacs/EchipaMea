@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:echipa_mea/src/core/domain/entities/worker_role.dart';
 import 'package:echipa_mea/src/features/foreman/presentation/providers/team_controller.dart';
 
 void main() {
@@ -24,7 +25,7 @@ void main() {
       for (final emp in container.read(teamProvider)) {
         expect(emp.id, isNotEmpty);
         expect(emp.name, isNotEmpty);
-        expect(emp.role, isNotEmpty);
+        expect(emp.role, isA<WorkerRole>());
         expect(emp.email, isNotEmpty);
         expect(emp.phone, isNotEmpty);
         expect(emp.workingDays, isNotEmpty);
@@ -36,7 +37,7 @@ void main() {
     test('increases employee count by one', () {
       container.read(teamProvider.notifier).addEmployee(
             name: 'New Worker',
-            role: 'Carpenter',
+            role: WorkerRole.carpenter,
             email: 'new@example.com',
             phone: '+40 700 000 001',
             workStartHour: 8,
@@ -49,7 +50,7 @@ void main() {
     test('added employee is appended to the end', () {
       container.read(teamProvider.notifier).addEmployee(
             name: 'Last Employee',
-            role: 'Helper',
+            role: WorkerRole.helper,
             email: 'last@example.com',
             phone: '0700',
             workStartHour: 9,
@@ -62,7 +63,7 @@ void main() {
     test('added employee has all fields set correctly', () {
       container.read(teamProvider.notifier).addEmployee(
             name: 'Full Fields',
-            role: 'Welder',
+            role: WorkerRole.welder,
             email: 'ff@example.com',
             phone: '+40 700 111 222',
             workStartHour: 6,
@@ -73,7 +74,7 @@ void main() {
           );
       final added = container.read(teamProvider).last;
       expect(added.name, 'Full Fields');
-      expect(added.role, 'Welder');
+      expect(added.role, WorkerRole.welder);
       expect(added.email, 'ff@example.com');
       expect(added.phone, '+40 700 111 222');
       expect(added.workStartHour, 6);
@@ -86,7 +87,7 @@ void main() {
     test('added employee without coordinates has null lat/long', () {
       container.read(teamProvider.notifier).addEmployee(
             name: 'No Coords',
-            role: 'Role',
+            role: WorkerRole.painter,
             email: 'nc@example.com',
             phone: '0',
             workStartHour: 9,
@@ -101,7 +102,7 @@ void main() {
     test('generated ids are unique for successive adds', () {
       container.read(teamProvider.notifier).addEmployee(
             name: 'A',
-            role: 'R',
+            role: WorkerRole.mason,
             email: 'a@a.com',
             phone: '0',
             workStartHour: 8,
@@ -110,7 +111,7 @@ void main() {
           );
       container.read(teamProvider.notifier).addEmployee(
             name: 'B',
-            role: 'R',
+            role: WorkerRole.mason,
             email: 'b@b.com',
             phone: '0',
             workStartHour: 8,
@@ -128,7 +129,7 @@ void main() {
       container.read(teamProvider.notifier).updateEmployee(
             id: 'e1',
             name: 'Updated Name',
-            role: 'Electrician',
+            role: WorkerRole.electrician,
             email: 'andrei@example.com',
             phone: '+40 721 000 111',
             workStartHour: 7,
@@ -145,7 +146,7 @@ void main() {
       container.read(teamProvider.notifier).updateEmployee(
             id: 'e2',
             name: 'Mihai S.',
-            role: 'Electrician',
+            role: WorkerRole.electrician,
             email: 'mihai@example.com',
             phone: '+40 722 000 222',
             workStartHour: 8,
@@ -155,14 +156,14 @@ void main() {
       final updated = container
           .read(teamProvider)
           .firstWhere((e) => e.id == 'e2');
-      expect(updated.role, 'Electrician');
+      expect(updated.role, WorkerRole.electrician);
     });
 
     test('updates working hours for existing employee', () {
       container.read(teamProvider.notifier).updateEmployee(
             id: 'e1',
             name: 'Andrei D.',
-            role: 'Electrician',
+            role: WorkerRole.electrician,
             email: 'andrei@example.com',
             phone: '+40 721 000 111',
             workStartHour: 9,
@@ -180,7 +181,7 @@ void main() {
       container.read(teamProvider.notifier).updateEmployee(
             id: 'e1',
             name: 'Andrei D.',
-            role: 'Electrician',
+            role: WorkerRole.electrician,
             email: 'andrei@example.com',
             phone: '+40 721 000 111',
             workStartHour: 7,
@@ -198,7 +199,7 @@ void main() {
       container.read(teamProvider.notifier).updateEmployee(
             id: 'e1',
             name: 'X',
-            role: 'X',
+            role: WorkerRole.helper,
             email: 'x@x.com',
             phone: '0',
             workStartHour: 8,
@@ -212,7 +213,7 @@ void main() {
       container.read(teamProvider.notifier).updateEmployee(
             id: 'e1',
             name: 'Changed',
-            role: 'Changed',
+            role: WorkerRole.helper,
             email: 'c@c.com',
             phone: '0',
             workStartHour: 8,
@@ -229,7 +230,7 @@ void main() {
       container.read(teamProvider.notifier).updateEmployee(
             id: 'nonexistent',
             name: 'Ghost',
-            role: 'G',
+            role: WorkerRole.helper,
             email: 'g@g.com',
             phone: '0',
             workStartHour: 8,
@@ -264,7 +265,7 @@ void main() {
       const emp = Employee(
         id: 'x',
         name: 'Alice',
-        role: 'R',
+        role: WorkerRole.helper,
         email: 'a@a.com',
         phone: '0',
         workStartHour: 8,
@@ -278,7 +279,7 @@ void main() {
       const emp = Employee(
         id: 'x',
         name: 'Alice Bob',
-        role: 'R',
+        role: WorkerRole.helper,
         email: 'a@a.com',
         phone: '0',
         workStartHour: 8,
@@ -292,7 +293,7 @@ void main() {
       const emp = Employee(
         id: 'x',
         name: 'John Michael Smith',
-        role: 'R',
+        role: WorkerRole.helper,
         email: 'j@j.com',
         phone: '0',
         workStartHour: 8,
@@ -306,7 +307,7 @@ void main() {
       const emp = Employee(
         id: 'x',
         name: 'john doe',
-        role: 'R',
+        role: WorkerRole.helper,
         email: 'j@j.com',
         phone: '0',
         workStartHour: 8,
@@ -320,7 +321,7 @@ void main() {
       const emp = Employee(
         id: 'e1',
         name: 'Andrei D.',
-        role: 'R',
+        role: WorkerRole.helper,
         email: 'a@a.com',
         phone: '0',
         workStartHour: 8,
@@ -335,7 +336,7 @@ void main() {
     const original = Employee(
       id: 'orig',
       name: 'Original Name',
-      role: 'Role',
+      role: WorkerRole.helper,
       email: 'orig@orig.com',
       phone: '111',
       workStartHour: 8,

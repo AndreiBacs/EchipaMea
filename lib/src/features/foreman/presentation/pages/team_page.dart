@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:convert';
 
 import '../../../../core/config/app_env.dart';
+import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import 'employee_form_page.dart';
 import '../providers/team_controller.dart';
@@ -110,7 +111,7 @@ class TeamPage extends ConsumerWidget {
                                     size: 16,
                                     color: Theme.of(context).colorScheme.primary,
                                   ),
-                                  Text(employee.role),
+                                  Text(employee.role.localizedLabel(l10n)),
                                 ],
                               ),
                               const SizedBox(height: 6),

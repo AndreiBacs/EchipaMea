@@ -9,9 +9,10 @@ Mobile app for small contractor teams, built with Flutter.
   - Dashboard (employees, active projects, assignment visibility)
   - Map (active projects in progress and worker positions in one live overview)
   - Projects (list, add, edit, status, assigned workers)
-  - Team (list, add, edit, contact data: phone/email, employee QR login generation)
+  - Team (list, add, edit, contact data: phone/email, trade role chosen from a predefined list in a dropdown, employee QR login generation)
   - Clients (list, add, edit, contact data: phone/email/address/person of contact)
   - Profile (edit personal data, change app language, and logout)
+  - Phone fields on team, clients, and profile use `intl_phone_number_input`: country code is chosen from a short list (Romania +40 first), and the national number is formatted as you type.
   - Realtime notifications badge in the app bar for new worker report submissions (via websocket events from backend)
 - Worker area (fewer screens than foreman: work + profile):
   - **Work** (`/worker/work`): queue of jobs assigned to you. Projects store optional roster employee IDs (resolved from worker names when the foreman saves the project); assignment matches signed-in **employee ID** when those IDs are set, and otherwise falls back to your display name on the worker list. The next job is highlighted; tap for details.
@@ -44,6 +45,7 @@ Mobile app for small contractor teams, built with Flutter.
 - `record` (optional voice memo on worker report)
 - `path_provider` (temp file path for recordings)
 - `flutter_localizations` (i18n)
+- `intl_phone_number_input` (international phone entry with country selector and masking)
 
 ## Worker telemetry configuration
 

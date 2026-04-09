@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -11,25 +12,25 @@ class DashboardPage extends StatelessWidget {
     const employees = [
       _EmployeeAssignment(
         employeeName: 'Andrei D.',
-        role: 'Electrician',
+        role: WorkerRole.electrician,
         projectName: 'Renovation - Main Street 15',
         currentTask: 'Wiring floor 2',
       ),
       _EmployeeAssignment(
         employeeName: 'Mihai S.',
-        role: 'Plumber',
+        role: WorkerRole.plumber,
         projectName: 'Kitchen fit-out - Cafe Luna',
         currentTask: 'Install sink lines',
       ),
       _EmployeeAssignment(
         employeeName: 'Ioana R.',
-        role: 'General Worker',
+        role: WorkerRole.generalWorker,
         projectName: 'Roof repair - Industrial Hall',
         currentTask: 'Material prep and transport',
       ),
       _EmployeeAssignment(
         employeeName: 'Vlad P.',
-        role: 'Carpenter',
+        role: WorkerRole.carpenter,
         projectName: 'Renovation - Main Street 15',
         currentTask: 'Build partition walls',
       ),
@@ -123,7 +124,9 @@ class DashboardPage extends StatelessWidget {
                         leading: CircleAvatar(
                           child: Text(item.employeeName.substring(0, 1)),
                         ),
-                        title: Text('${item.employeeName} - ${item.role}'),
+                        title: Text(
+                          '${item.employeeName} - ${item.role.localizedLabel(l10n)}',
+                        ),
                         subtitle: Text(
                           '${item.currentTask}\n${l10n.projectLabel}: ${item.projectName}',
                         ),
@@ -229,7 +232,7 @@ class _EmployeeAssignment {
   });
 
   final String employeeName;
-  final String role;
+  final WorkerRole role;
   final String projectName;
   final String currentTask;
 }
