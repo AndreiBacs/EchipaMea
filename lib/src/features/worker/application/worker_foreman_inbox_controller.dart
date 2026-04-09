@@ -5,6 +5,7 @@ final workerForemanInboxProvider =
       WorkerForemanInboxNotifier.new,
     );
 
+// TODO: Persist arrival/report events when app storage or backend sync exists.
 class WorkerForemanInboxNotifier extends Notifier<List<WorkerForemanEvent>> {
   @override
   List<WorkerForemanEvent> build() => const [];

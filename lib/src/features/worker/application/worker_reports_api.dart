@@ -63,7 +63,8 @@ class WorkerReportsApi {
     // Read body to fully complete and release stream resources.
     await streamed.stream.drain<List<int>>();
 
-    // Best-effort realtime notification so BE can fan out to foreman clients.
+    // Best-effort one-shot websocket ping so the backend can fan out to foremen.
+    // Delivery is not guaranteed; the HTTP upload above is the source of truth.
     await _notifyForemanReportSubmitted(
       projectId: projectId,
       projectName: projectName,
@@ -95,6 +96,7 @@ class WorkerReportsApi {
     WebSocketChannel? channel;
     try {
       channel = WebSocketChannel.connect(uri);
+      await channel.ready;
       final payload = {
         'type': 'worker_report_submitted',
         'projectId': projectId,
@@ -107,10 +109,10 @@ class WorkerReportsApi {
         'submittedAt': submittedAt.toUtc().toIso8601String(),
       };
       channel.sink.add(jsonEncode(payload));
-      await Future<void>.delayed(const Duration(milliseconds: 150));
     } catch (_) {
       // Non-blocking: report upload already succeeded.
     } finally {
+      // Await close so the sink drains before we drop the channel.
       await channel?.sink.close();
     }
   }

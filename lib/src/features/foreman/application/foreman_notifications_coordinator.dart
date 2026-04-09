@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../core/auth/auth_session_controller.dart';
 import '../../../core/config/app_env.dart';
+import '../../../core/i18n/app_localizations.dart';
+import '../../../core/i18n/locale_controller.dart';
+import '../presentation/providers/projects_controller.dart';
 
 final foremanNotificationsProvider =
     NotifierProvider<ForemanNotificationsNotifier, ForemanNotificationsState>(
@@ -77,12 +81,19 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
 
     if (data['type'] != 'worker_report_submitted') return;
 
+    final projectId = (data['projectId'] as String?)?.trim();
+    if (projectId != null && projectId.isNotEmpty) {
+      ref.read(projectsProvider.notifier).markProjectDone(projectId);
+    }
+
     final employeeName = (data['employeeName'] as String?)?.trim();
     final projectName = (data['projectName'] as String?)?.trim();
     final submittedAtRaw = data['submittedAt'] as String?;
     final submittedAt = DateTime.tryParse(submittedAtRaw ?? '') ?? DateTime.now();
 
-    final title = 'Worker report submitted';
+    final locale = ref.read(localeProvider) ?? const Locale('ro');
+    final l10n = AppLocalizations(locale);
+    final title = l10n.foremanNotificationWorkerReportTitle;
     final subtitle = [
       if (employeeName != null && employeeName.isNotEmpty) employeeName,
       if (projectName != null && projectName.isNotEmpty) projectName,
@@ -90,7 +101,9 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
 
     final item = ForemanNotificationItem(
       title: title,
-      subtitle: subtitle.isEmpty ? 'A new report was uploaded.' : subtitle,
+      subtitle: subtitle.isEmpty
+          ? l10n.foremanNotificationWorkerReportBodyFallback
+          : subtitle,
       receivedAt: submittedAt.toLocal(),
     );
 

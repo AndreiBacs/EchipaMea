@@ -12,8 +12,9 @@ import 'package:record/record.dart';
 import '../../../../core/auth/session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
-import '../../application/worker_reports_api.dart';
+import '../../application/worker_reports_api_provider.dart';
 import '../providers/worker_assigned_projects_provider.dart';
+import '../providers/worker_completed_projects_provider.dart';
 import '../../application/worker_foreman_inbox_controller.dart';
 import 'worker_shell_page.dart';
 
@@ -107,6 +108,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
           Expanded(
             child: PageView(
               controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
               onPageChanged: (i) => setState(() => _pageIndex = i),
               children: [
                 _PhotosStep(
@@ -253,7 +255,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     setState(() => _submitting = true);
 
     try {
-      await WorkerReportsApi().submitReport(
+      await ref.read(workerReportsApiProvider).submitReport(
         projectId: project.id,
         projectName: project.name,
         employeeId: session.employeeId,
@@ -276,7 +278,9 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
               hasVoiceMemo: _memoPath != null,
             ),
           );
-      ref.read(projectsProvider.notifier).markProjectDone(project.id);
+      ref
+          .read(workerCompletedProjectIdsProvider.notifier)
+          .markCompleted(project.id);
       await _deleteMemoFile(_memoPath);
       if (mounted) {
         setState(() => _memoPath = null);
@@ -312,6 +316,57 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     } catch (_) {
       // Best effort cleanup for temporary recordings.
     }
+  }
+}
+
+class _PhotoThumbnail extends StatelessWidget {
+  const _PhotoThumbnail({required this.file});
+
+  final XFile file;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 56.0;
+    if (kIsWeb) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: FutureBuilder<Uint8List>(
+          future: file.readAsBytes(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            }
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.memory(
+                snapshot.data!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+              ),
+            );
+          },
+        ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.file(
+        File(file.path),
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            const Icon(Icons.broken_image_outlined, size: 32),
+      ),
+    );
   }
 }
 
@@ -353,7 +408,7 @@ class _PhotosStep extends StatelessWidget {
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
-              leading: const Icon(Icons.image_outlined),
+              leading: _PhotoThumbnail(file: photos[i]),
               title: Text(
                 photos[i].name,
                 maxLines: 1,

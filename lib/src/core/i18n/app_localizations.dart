@@ -218,6 +218,9 @@ class AppLocalizations {
       'workerReportSubmitFailed': 'Raportul nu a putut fi trimis',
       'foremanNotifications': 'Notificari',
       'foremanNotificationsEmpty': 'Nu exista notificari noi.',
+      'foremanNotificationWorkerReportTitle': 'Raport de la muncitor trimis',
+      'foremanNotificationWorkerReportBodyFallback':
+          'A fost incarcat un raport nou.',
     },
     'hu': {
       'appTitle': 'EchipaMea',
@@ -422,6 +425,9 @@ class AppLocalizations {
       'workerReportSubmitFailed': 'A jelentes nem kuldheto el',
       'foremanNotifications': 'Ertesitesek',
       'foremanNotificationsEmpty': 'Nincsenek erkezo ertesitesek.',
+      'foremanNotificationWorkerReportTitle': 'Munkas jelentes erkezett',
+      'foremanNotificationWorkerReportBodyFallback':
+          'Uj jelentes lett feltoltve.',
     },
     'en': {
       'appTitle': 'EchipaMea',
@@ -623,6 +629,9 @@ class AppLocalizations {
       'workerReportSubmitFailed': 'Could not submit report',
       'foremanNotifications': 'Notifications',
       'foremanNotificationsEmpty': 'No notifications yet.',
+      'foremanNotificationWorkerReportTitle': 'Worker report submitted',
+      'foremanNotificationWorkerReportBodyFallback':
+          'A new report was uploaded.',
     },
   };
 
@@ -808,6 +817,10 @@ class AppLocalizations {
   String get workerReportSubmitFailed => _t('workerReportSubmitFailed');
   String get foremanNotifications => _t('foremanNotifications');
   String get foremanNotificationsEmpty => _t('foremanNotificationsEmpty');
+  String get foremanNotificationWorkerReportTitle =>
+      _t('foremanNotificationWorkerReportTitle');
+  String get foremanNotificationWorkerReportBodyFallback =>
+      _t('foremanNotificationWorkerReportBodyFallback');
 }
 
 class _AppLocalizationsDelegate

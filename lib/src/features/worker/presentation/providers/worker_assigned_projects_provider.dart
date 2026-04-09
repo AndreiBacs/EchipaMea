@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/auth/session_controller.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../../../foreman/presentation/providers/team_controller.dart';
-import '../../../../core/auth/session_controller.dart';
+import 'worker_completed_projects_provider.dart';
 
-/// Projects assigned to the signed-in worker (by name match on the team roster).
+/// Projects assigned to the signed-in worker (by roster employee ID when set on
+/// the project, otherwise by display name on the worker list).
 final workerAssignedProjectsProvider = Provider<List<Project>>((ref) {
   final session = ref.watch(sessionProvider);
   if (session == null) return const [];
@@ -17,12 +19,16 @@ final workerAssignedProjectsProvider = Provider<List<Project>>((ref) {
       break;
     }
   }
-  final displayName = employee?.name ?? session.employeeName;
-  final normalized = displayName.trim().toLowerCase();
+
+  final completedLocally = ref.watch(workerCompletedProjectIdsProvider);
 
   final projects = ref.watch(projectsProvider);
   final mine = projects.where((p) {
     if (p.status == ProjectStatus.done) return false;
+    if (completedLocally.contains(p.id)) return false;
+    if (p.assignedEmployeeIds.contains(session.employeeId)) return true;
+    final displayName = employee?.name ?? session.employeeName;
+    final normalized = displayName.trim().toLowerCase();
     return p.workers.any((w) => w.trim().toLowerCase() == normalized);
   }).toList();
 

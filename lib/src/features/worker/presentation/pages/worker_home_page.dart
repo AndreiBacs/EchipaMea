@@ -41,6 +41,7 @@ class WorkerHomePage extends ConsumerWidget {
         const SizedBox(height: 8),
         _NextWorkCard(
           project: next,
+          statusLabel: workerProjectStatusLabel(l10n, next.status),
           onTap: () => context.push(
             WorkerProjectDetailPage.pathFor(next.id),
           ),
@@ -57,7 +58,7 @@ class WorkerHomePage extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 title: Text(p.name),
-                subtitle: Text(_statusLabel(l10n, p.status)),
+                subtitle: Text(workerProjectStatusLabel(l10n, p.status)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push(
                   WorkerProjectDetailPage.pathFor(p.id),
@@ -70,22 +71,25 @@ class WorkerHomePage extends ConsumerWidget {
     );
   }
 
-  static String _statusLabel(AppLocalizations l10n, ProjectStatus status) {
-    return switch (status) {
-      ProjectStatus.planned => l10n.statusPlanned,
-      ProjectStatus.inProgress => l10n.statusInProgress,
-      ProjectStatus.done => l10n.statusDone,
-    };
-  }
+}
+
+String workerProjectStatusLabel(AppLocalizations l10n, ProjectStatus status) {
+  return switch (status) {
+    ProjectStatus.planned => l10n.statusPlanned,
+    ProjectStatus.inProgress => l10n.statusInProgress,
+    ProjectStatus.done => l10n.statusDone,
+  };
 }
 
 class _NextWorkCard extends StatelessWidget {
   const _NextWorkCard({
     required this.project,
+    required this.statusLabel,
     required this.onTap,
   });
 
   final Project project;
+  final String statusLabel;
   final VoidCallback onTap;
 
   @override
@@ -118,7 +122,7 @@ class _NextWorkCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                WorkerHomePage._statusLabel(l10n, project.status),
+                statusLabel,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),

@@ -180,6 +180,6 @@ class WorkerTelemetryCoordinator {
   void _disconnectSocket() {
     final channel = _channel;
     _channel = null;
-    channel?.sink.close();
+    unawaited(channel?.sink.close() ?? Future<void>.value());
   }
 }
