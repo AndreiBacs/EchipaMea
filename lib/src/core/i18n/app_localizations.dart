@@ -211,6 +211,10 @@ class AppLocalizations {
       'workerReportPhotoPickFailed': 'Nu am putut incarca pozele. Incearca din nou.',
       'workerReportMicPermission':
           'Permisiunea pentru microfon este necesara pentru memo.',
+      'workerReportSubmitting': 'Se trimite...',
+      'workerReportSubmitFailed': 'Raportul nu a putut fi trimis',
+      'foremanNotifications': 'Notificari',
+      'foremanNotificationsEmpty': 'Nu exista notificari noi.',
     },
     'hu': {
       'appTitle': 'EchipaMea',
@@ -408,6 +412,10 @@ class AppLocalizations {
       'workerReportPhotoPickFailed': 'A kepek nem tolthetok be. Probald ujra.',
       'workerReportMicPermission':
           'A hangjegyzethez mikrofon engedely szukseges.',
+      'workerReportSubmitting': 'Kuldes...',
+      'workerReportSubmitFailed': 'A jelentes nem kuldheto el',
+      'foremanNotifications': 'Ertesitesek',
+      'foremanNotificationsEmpty': 'Nincsenek erkezo ertesitesek.',
     },
     'en': {
       'appTitle': 'EchipaMea',
@@ -602,6 +610,10 @@ class AppLocalizations {
       'workerReportPhotoPickFailed': 'Could not pick photos. Try again.',
       'workerReportMicPermission':
           'Microphone permission is required for a voice memo.',
+      'workerReportSubmitting': 'Submitting...',
+      'workerReportSubmitFailed': 'Could not submit report',
+      'foremanNotifications': 'Notifications',
+      'foremanNotificationsEmpty': 'No notifications yet.',
     },
   };
 
@@ -781,6 +793,10 @@ class AppLocalizations {
   String get workerReportNeedDescription => _t('workerReportNeedDescription');
   String get workerReportPhotoPickFailed => _t('workerReportPhotoPickFailed');
   String get workerReportMicPermission => _t('workerReportMicPermission');
+  String get workerReportSubmitting => _t('workerReportSubmitting');
+  String get workerReportSubmitFailed => _t('workerReportSubmitFailed');
+  String get foremanNotifications => _t('foremanNotifications');
+  String get foremanNotificationsEmpty => _t('foremanNotificationsEmpty');
 }
 
 class _AppLocalizationsDelegate

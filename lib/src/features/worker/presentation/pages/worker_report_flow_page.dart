@@ -11,6 +11,7 @@ import 'package:record/record.dart';
 import '../../../../core/auth/session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
+import '../../application/worker_reports_api.dart';
 import '../providers/worker_assigned_projects_provider.dart';
 import '../../application/worker_foreman_inbox_controller.dart';
 import 'worker_shell_page.dart';
@@ -37,6 +38,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
   String? _memoPath;
   bool _recording = false;
   bool _memoUnsupported = false;
+  bool _submitting = false;
   int _pageIndex = 0;
 
   @override
@@ -123,6 +125,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                 _DescriptionStep(
                   l10n: l10n,
                   controller: _descriptionController,
+                  isSubmitting: _submitting,
                   onSubmit: () => _submit(context, project, session),
                 ),
               ],
@@ -134,7 +137,9 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
               children: [
                 if (_pageIndex > 0)
                   TextButton(
-                    onPressed: () {
+                    onPressed: _submitting
+                        ? null
+                        : () {
                       _pageController.previousPage(
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOut,
@@ -145,7 +150,9 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                 const Spacer(),
                 if (_pageIndex < 2)
                   FilledButton(
-                    onPressed: () {
+                    onPressed: _submitting
+                        ? null
+                        : () {
                       _pageController.nextPage(
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOut,
@@ -233,26 +240,53 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
       );
       return;
     }
+    if (_submitting) return;
 
-    ref.read(workerForemanInboxProvider.notifier).submitReport(
-          WorkerReportSubmittedEvent(
-            at: DateTime.now().toUtc(),
-            projectId: project.id,
-            projectName: project.name,
-            employeeId: session.employeeId,
-            employeeName: session.employeeName,
-            description: description,
-            photoCount: _photos.length,
-            hasVoiceMemo: _memoPath != null,
-          ),
-        );
-    ref.read(projectsProvider.notifier).markProjectDone(project.id);
+    setState(() => _submitting = true);
 
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.workerReportSubmitted)),
-    );
-    context.go(WorkerShellPage.workPath);
+    try {
+      await WorkerReportsApi().submitReport(
+        projectId: project.id,
+        projectName: project.name,
+        employeeId: session.employeeId,
+        employeeName: session.employeeName,
+        description: description,
+        submittedAt: DateTime.now(),
+        photos: _photos,
+        memoPath: _memoPath,
+      );
+
+      ref.read(workerForemanInboxProvider.notifier).submitReport(
+            WorkerReportSubmittedEvent(
+              at: DateTime.now().toUtc(),
+              projectId: project.id,
+              projectName: project.name,
+              employeeId: session.employeeId,
+              employeeName: session.employeeName,
+              description: description,
+              photoCount: _photos.length,
+              hasVoiceMemo: _memoPath != null,
+            ),
+          );
+      ref.read(projectsProvider.notifier).markProjectDone(project.id);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.workerReportSubmitted)),
+      );
+      context.go(WorkerShellPage.workPath);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${l10n.workerReportSubmitFailed}: $error'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
   }
 }
 
@@ -385,11 +419,13 @@ class _DescriptionStep extends StatelessWidget {
   const _DescriptionStep({
     required this.l10n,
     required this.controller,
+    required this.isSubmitting,
     required this.onSubmit,
   });
 
   final AppLocalizations l10n;
   final TextEditingController controller;
+  final bool isSubmitting;
   final VoidCallback onSubmit;
 
   @override
@@ -413,9 +449,17 @@ class _DescriptionStep extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         FilledButton.icon(
-          onPressed: onSubmit,
-          icon: const Icon(Icons.send),
-          label: Text(l10n.workerReportSubmit),
+          onPressed: isSubmitting ? null : onSubmit,
+          icon: isSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.send),
+          label: Text(
+            isSubmitting ? l10n.workerReportSubmitting : l10n.workerReportSubmit,
+          ),
         ),
       ],
     );
