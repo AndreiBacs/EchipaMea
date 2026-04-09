@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'dart:convert';
 
+import '../../../../core/config/app_env.dart';
 import 'employee_form_page.dart';
 import '../providers/team_controller.dart';
 
@@ -14,14 +16,19 @@ class TeamPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final employees = ref.watch(teamProvider);
+    final isTablet = MediaQuery.sizeOf(context).width >= 900;
 
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
+          child: Wrap(
+            runSpacing: 8,
+            spacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              SizedBox(
+                width: isTablet ? 400 : MediaQuery.sizeOf(context).width - 64,
                 child: Text(
                   'Employees (${employees.length})',
                   style: Theme.of(context).textTheme.titleLarge,
@@ -32,13 +39,21 @@ class TeamPage extends ConsumerWidget {
                 icon: const Icon(Icons.add),
                 label: const Text('Add employee'),
               ),
+              OutlinedButton.icon(
+                onPressed: () => _showAppDownloadQrDialog(context),
+                icon: const Icon(Icons.qr_code),
+                label: const Text('App download QR'),
+              ),
             ],
           ),
         ),
         const Divider(height: 1),
         Expanded(
           child: ListView.separated(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 24 : 8,
+              vertical: 8,
+            ),
             itemCount: employees.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
@@ -104,6 +119,63 @@ class TeamPage extends ConsumerWidget {
             ],
           ),
           actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showAppDownloadQrDialog(BuildContext context) async {
+    final downloadUrl = AppEnv.appDownloadUrl.trim();
+    if (downloadUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'APP_DOWNLOAD_URL is empty. Add it in your .env file first.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('App download QR'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              QrImageView(data: downloadUrl, size: 220),
+              const SizedBox(height: 12),
+              const Text(
+                'Employees can scan with their phone camera to start the app download.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              SelectableText(
+                downloadUrl,
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: downloadUrl));
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Download link copied.')),
+                );
+              },
+              child: const Text('Copy link'),
+            ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Close'),

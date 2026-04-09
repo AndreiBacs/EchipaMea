@@ -47,102 +47,141 @@ class DashboardPage extends StatelessWidget {
       ),
     ];
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.25,
-            ),
-            delegate: SliverChildListDelegate([
-              _KpiCard(
-                title: 'Employees',
-                value: '${employees.length}',
-                subtitle: 'Total workers available',
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final maxContentWidth = width > 1100 ? 1100.0 : width;
+        final horizontalMargin = (width - maxContentWidth) / 2;
+        final crossAxisCount = maxContentWidth >= 900 ? 4 : 2;
+
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                16,
+                horizontalMargin + 16,
+                0,
               ),
-              _KpiCard(
-                title: 'In Progress',
-                value: '${projectAllocations.length}',
-                subtitle: 'Active projects now',
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.3,
+                ),
+                delegate: SliverChildListDelegate([
+                  _KpiCard(
+                    title: 'Employees',
+                    value: '${employees.length}',
+                    subtitle: 'Total workers available',
+                  ),
+                  _KpiCard(
+                    title: 'In Progress',
+                    value: '${projectAllocations.length}',
+                    subtitle: 'Active projects now',
+                  ),
+                  _KpiCard(
+                    title: 'Assignments',
+                    value: '${employees.length}',
+                    subtitle: 'Workers with active tasks',
+                  ),
+                  _KpiCard(
+                    title: 'Clients',
+                    value: '${projectAllocations.length}',
+                    subtitle: 'Clients with active jobs',
+                  ),
+                ]),
               ),
-            ]),
-          ),
-        ),
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              'Who does what',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final item = employees[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      child: Text(item.employeeName.substring(0, 1)),
-                    ),
-                    title: Text('${item.employeeName} - ${item.role}'),
-                    subtitle: Text(
-                      '${item.currentTask}\nProject: ${item.projectName}',
-                    ),
-                    isThreeLine: true,
-                  ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                16,
+                horizontalMargin + 16,
+                8,
+              ),
+              sliver: const SliverToBoxAdapter(
+                child: Text(
+                  'Who does what',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
-              );
-            }, childCount: employees.length),
-          ),
-        ),
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              'Who works on what project',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
             ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final project = projectAllocations[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          project.projectName,
-                          style: Theme.of(context).textTheme.titleSmall,
+            SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalMargin + 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final item = employees[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Card(
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          child: Text(item.employeeName.substring(0, 1)),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${project.workers.length} worker(s): ${project.workers.join(', ')}',
+                        title: Text('${item.employeeName} - ${item.role}'),
+                        subtitle: Text(
+                          '${item.currentTask}\nProject: ${item.projectName}',
                         ),
-                      ],
+                        isThreeLine: true,
+                      ),
                     ),
-                  ),
+                  );
+                }, childCount: employees.length),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                16,
+                horizontalMargin + 16,
+                8,
+              ),
+              sliver: const SliverToBoxAdapter(
+                child: Text(
+                  'Who works on what project',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
-              );
-            }, childCount: projectAllocations.length),
-          ),
-        ),
-      ],
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                0,
+                horizontalMargin + 16,
+                24,
+              ),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final project = projectAllocations[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              project.projectName,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${project.workers.length} worker(s): ${project.workers.join(', ')}',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }, childCount: projectAllocations.length),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

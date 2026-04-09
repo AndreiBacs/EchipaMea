@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/ui/adaptive_breakpoints.dart';
 import 'foreman_shell_page.dart';
 import '../providers/clients_controller.dart';
 
@@ -46,40 +47,65 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(isEdit ? 'Edit client' : 'Add client')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Client name'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _activeProjectsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Active projects'),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.go(ForemanShellPage.clientsPath),
-                    child: const Text('Cancel'),
-                  ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final sizeClass = AdaptiveBreakpoints.sizeClassForWidth(
+            constraints.maxWidth,
+          );
+          final formWidth = switch (sizeClass) {
+            AdaptiveSizeClass.compact => constraints.maxWidth,
+            AdaptiveSizeClass.medium => 640.0,
+            AdaptiveSizeClass.expanded => 720.0,
+          };
+          return Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: formWidth,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Client name',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _activeProjectsController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Active projects',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                context.go(ForemanShellPage.clientsPath),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => _save(context, isEdit: isEdit),
+                            child: Text(
+                              isEdit ? 'Save changes' : 'Create client',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () => _save(context, isEdit: isEdit),
-                    child: Text(isEdit ? 'Save changes' : 'Create client'),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

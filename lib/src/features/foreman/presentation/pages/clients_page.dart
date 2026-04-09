@@ -11,14 +11,19 @@ class ClientsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clients = ref.watch(clientsProvider);
+    final isTablet = MediaQuery.sizeOf(context).width >= 900;
 
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
+          child: Wrap(
+            runSpacing: 8,
+            spacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              SizedBox(
+                width: isTablet ? 400 : MediaQuery.sizeOf(context).width - 64,
                 child: Text(
                   'Clients (${clients.length})',
                   style: Theme.of(context).textTheme.titleLarge,
@@ -35,7 +40,10 @@ class ClientsPage extends ConsumerWidget {
         const Divider(height: 1),
         Expanded(
           child: ListView.separated(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 24 : 8,
+              vertical: 8,
+            ),
             itemCount: clients.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
