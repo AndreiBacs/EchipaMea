@@ -7,10 +7,10 @@ import 'package:echipa_mea/src/core/auth/auth_session_controller.dart';
 import 'package:echipa_mea/src/core/config/app_env.dart';
 
 void main() {
-  setUpAll(() async {
+  setUpAll(() {
     // Load an empty dotenv so AppEnv.initialize() resolves all fields to
     // their defaults (authApiBaseUrl == '' → mock token path).
-    dotenv.testLoad(fileInput: '');
+    dotenv.loadFromString(envString: '', isOptional: true);
     AppEnv.initialize();
   });
 
