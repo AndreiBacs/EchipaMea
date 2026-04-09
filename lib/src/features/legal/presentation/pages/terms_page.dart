@@ -48,6 +48,13 @@ class TermsPage extends StatelessWidget {
               '5. Changes\n'
               'These terms may be updated over time. Continued use of the app means you accept future updates.',
             ),
+            SizedBox(height: 10),
+            Text(
+              '6. GDPR\n'
+              'EchipaMea processes personal data in line with the General Data Protection Regulation (EU) 2016/679. '
+              'Users have the right to access, rectify, or erase their personal data and to request restrictions on processing, '
+              'subject to applicable legal obligations.',
+            ),
           ],
         ),
       ),
