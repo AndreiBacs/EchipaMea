@@ -7,6 +7,7 @@ class AppEnv {
   static const _appDownloadUrlField = 'APP_DOWNLOAD_URL';
   static const _appLandingUrlField = 'APP_LANDING_URL';
   static const _appIosTestflightUrlField = 'APP_IOS_TESTFLIGHT_URL';
+  static const _workerTelemetryWsUrlField = 'WORKER_TELEMETRY_WS_URL';
 
   static late final String stitchApiKey;
   static late final String stitchMcpUrl;
@@ -14,6 +15,7 @@ class AppEnv {
   static late final String appDownloadUrl;
   static late final String appLandingUrl;
   static late final String appIosTestflightUrl;
+  static late final String workerTelemetryWsUrl;
 
   static void initialize() {
     stitchApiKey = dotenv.env[_stitchApiKeyField] ?? '';
@@ -23,5 +25,6 @@ class AppEnv {
     appDownloadUrl = dotenv.env[_appDownloadUrlField] ?? '';
     appLandingUrl = dotenv.env[_appLandingUrlField] ?? '';
     appIosTestflightUrl = dotenv.env[_appIosTestflightUrlField] ?? '';
+    workerTelemetryWsUrl = dotenv.env[_workerTelemetryWsUrlField] ?? '';
   }
 }

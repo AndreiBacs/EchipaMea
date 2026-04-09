@@ -1,0 +1,32 @@
+---
+description: Run a build after significant code changes
+alwaysApply: true
+---
+
+# Build Verification After Significant Changes
+
+When a task includes significant code changes, run a project build before reporting completion.
+
+## When this is required
+
+- New features or major behavior changes
+- Changes across multiple files/modules
+- Routing, state-management, dependency, or platform integration changes
+- Refactors that may impact compile/runtime behavior
+
+## Required checks
+
+1. Run a build command appropriate for the project.
+2. If build fails, fix issues and rebuild.
+3. Only finalize once build succeeds, or clearly report what blocks success.
+
+## Flutter examples
+
+```bash
+flutter pub get
+flutter build apk
+```
+
+```bash
+flutter run -d windows
+```

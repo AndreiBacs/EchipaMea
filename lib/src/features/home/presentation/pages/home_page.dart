@@ -101,7 +101,7 @@ class HomePage extends ConsumerWidget {
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => context.push(TermsPage.routePath),
-              child: const Text('Terms and Conditions'),
+              child: Text(l10n.termsAndConditions),
             ),
           ],
         ),

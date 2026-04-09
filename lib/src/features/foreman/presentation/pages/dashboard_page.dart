@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/i18n/app_localizations.dart';
+
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     const employees = [
       _EmployeeAssignment(
         employeeName: 'Andrei D.',
@@ -72,24 +75,24 @@ class DashboardPage extends StatelessWidget {
                 ),
                 delegate: SliverChildListDelegate([
                   _KpiCard(
-                    title: 'Employees',
+                    title: l10n.employeesTitle,
                     value: '${employees.length}',
-                    subtitle: 'Total workers available',
+                    subtitle: l10n.totalWorkersAvailable,
                   ),
                   _KpiCard(
-                    title: 'In Progress',
+                    title: l10n.inProgress,
                     value: '${projectAllocations.length}',
-                    subtitle: 'Active projects now',
+                    subtitle: l10n.activeProjectsNow,
                   ),
                   _KpiCard(
-                    title: 'Assignments',
+                    title: l10n.assignments,
                     value: '${employees.length}',
-                    subtitle: 'Workers with active tasks',
+                    subtitle: l10n.workersWithActiveTasks,
                   ),
                   _KpiCard(
-                    title: 'Clients',
+                    title: l10n.clientsTitle,
                     value: '${projectAllocations.length}',
-                    subtitle: 'Clients with active jobs',
+                    subtitle: l10n.clientsWithActiveJobs,
                   ),
                 ]),
               ),
@@ -101,10 +104,10 @@ class DashboardPage extends StatelessWidget {
                 horizontalMargin + 16,
                 8,
               ),
-              sliver: const SliverToBoxAdapter(
+              sliver: SliverToBoxAdapter(
                 child: Text(
-                  'Who does what',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  l10n.whoDoesWhat,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -122,7 +125,7 @@ class DashboardPage extends StatelessWidget {
                         ),
                         title: Text('${item.employeeName} - ${item.role}'),
                         subtitle: Text(
-                          '${item.currentTask}\nProject: ${item.projectName}',
+                          '${item.currentTask}\n${l10n.projectLabel}: ${item.projectName}',
                         ),
                         isThreeLine: true,
                       ),
@@ -138,10 +141,10 @@ class DashboardPage extends StatelessWidget {
                 horizontalMargin + 16,
                 8,
               ),
-              sliver: const SliverToBoxAdapter(
+              sliver: SliverToBoxAdapter(
                 child: Text(
-                  'Who works on what project',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  l10n.whoWorksOnWhatProject,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -169,7 +172,7 @@ class DashboardPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${project.workers.length} worker(s): ${project.workers.join(', ')}',
+                              '${project.workers.length} ${l10n.workerCountSuffix}: ${project.workers.join(', ')}',
                             ),
                           ],
                         ),

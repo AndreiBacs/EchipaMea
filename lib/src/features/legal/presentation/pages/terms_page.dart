@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/i18n/app_localizations.dart';
+
 class TermsPage extends StatelessWidget {
   const TermsPage({super.key});
 
@@ -8,53 +10,32 @@ class TermsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: const Text('Terms and Conditions')),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+      appBar: AppBar(title: Text(l10n.termsAndConditions)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Terms and Conditions',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              l10n.termsAndConditions,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
-            SizedBox(height: 12),
-            Text(
-              'By using EchipaMea, you agree to use the app only for lawful work coordination and team management.',
-            ),
-            SizedBox(height: 10),
-            Text(
-              '1. Accounts and Roles\n'
-              'Foreman accounts can manage projects, teams, and clients. Worker accounts can access assigned tasks only.',
-            ),
-            SizedBox(height: 10),
-            Text(
-              '2. Data Usage\n'
-              'Project and employee data should be accurate and updated by authorized users only.',
-            ),
-            SizedBox(height: 10),
-            Text(
-              '3. Privacy\n'
-              'Do not upload sensitive personal data unless required by your legal obligations and company policy.',
-            ),
-            SizedBox(height: 10),
-            Text(
-              '4. QR Login\n'
-              'QR login credentials must be used only by the intended employee and should not be shared.',
-            ),
-            SizedBox(height: 10),
-            Text(
-              '5. Changes\n'
-              'These terms may be updated over time. Continued use of the app means you accept future updates.',
-            ),
-            SizedBox(height: 10),
-            Text(
-              '6. GDPR\n'
-              'EchipaMea processes personal data in line with the General Data Protection Regulation (EU) 2016/679. '
-              'Users have the right to access, rectify, or erase their personal data and to request restrictions on processing, '
-              'subject to applicable legal obligations.',
-            ),
+            const SizedBox(height: 12),
+            Text(l10n.termsIntro),
+            const SizedBox(height: 10),
+            Text(l10n.termsSection1),
+            const SizedBox(height: 10),
+            Text(l10n.termsSection2),
+            const SizedBox(height: 10),
+            Text(l10n.termsSection3),
+            const SizedBox(height: 10),
+            Text(l10n.termsSection4),
+            const SizedBox(height: 10),
+            Text(l10n.termsSection5),
+            const SizedBox(height: 10),
+            Text(l10n.termsSection6),
           ],
         ),
       ),

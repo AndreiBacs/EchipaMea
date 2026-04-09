@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
 import 'foreman_shell_page.dart';
 import '../providers/projects_controller.dart';
@@ -46,9 +47,14 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.projectId != null;
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: Text(isEdit ? 'Edit project' : 'Add project')),
+      appBar: AppBar(
+        title: Text(
+          isEdit ? l10n.projectFormEditTitle : l10n.projectFormAddTitle,
+        ),
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final sizeClass = AdaptiveBreakpoints.sizeClassForWidth(
@@ -69,9 +75,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
                   children: [
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Project name',
-                      ),
+                      decoration: InputDecoration(labelText: l10n.projectNameLabel),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<ProjectStatus>(
@@ -80,7 +84,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
                           .map(
                             (status) => DropdownMenuItem<ProjectStatus>(
                               value: status,
-                              child: Text(status.label),
+                              child: Text(_statusLabel(context, status)),
                             ),
                           )
                           .toList(),
@@ -88,13 +92,13 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
                         if (value == null) return;
                         setState(() => _selectedStatus = value);
                       },
-                      decoration: const InputDecoration(labelText: 'Status'),
+                      decoration: InputDecoration(labelText: l10n.statusLabel),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _workersController,
-                      decoration: const InputDecoration(
-                        labelText: 'Workers (comma separated)',
+                      decoration: InputDecoration(
+                        labelText: l10n.workersCommaSeparatedLabel,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -104,7 +108,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
                           child: OutlinedButton(
                             onPressed: () =>
                                 context.go(ForemanShellPage.projectsPath),
-                            child: const Text('Cancel'),
+                            child: Text(l10n.cancel),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -112,7 +116,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
                           child: FilledButton(
                             onPressed: () => _save(context, isEdit: isEdit),
                             child: Text(
-                              isEdit ? 'Save changes' : 'Create project',
+                              isEdit ? l10n.saveChanges : l10n.createProject,
                             ),
                           ),
                         ),
@@ -153,5 +157,14 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
     }
 
     Navigator.of(context).pop();
+  }
+
+  String _statusLabel(BuildContext context, ProjectStatus status) {
+    final l10n = context.l10n;
+    return switch (status) {
+      ProjectStatus.planned => l10n.statusPlanned,
+      ProjectStatus.inProgress => l10n.statusInProgress,
+      ProjectStatus.done => l10n.statusDone,
+    };
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/i18n/app_localizations.dart';
 import 'core/i18n/locale_controller.dart';
 import 'core/routing/app_router.dart';
+import 'features/worker/application/worker_telemetry_coordinator.dart';
 
 const _primaryColor = Color(0xFFF4511E);
 const _secondaryColor = Color(0xFF263238);
@@ -16,6 +17,7 @@ class EchipaMeaApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(workerTelemetryCoordinatorProvider);
     final router = ref.watch(appRouterProvider);
     final selectedLocale = ref.watch(localeProvider);
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../core/auth/session_controller.dart';
+import '../../../../core/i18n/app_localizations.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 
 class WorkerConnectPage extends ConsumerStatefulWidget {
@@ -18,10 +19,12 @@ class WorkerConnectPage extends ConsumerStatefulWidget {
 
 class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
   bool _handled = false;
+  bool _invalidScanShown = false;
 
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
@@ -35,16 +38,14 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
             context.go(LoginPage.routePath);
           },
         ),
-        title: const Text('Worker Login'),
+        title: Text(l10n.workerLoginTitle),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Scan the QR code from foreman dashboard to connect automatically.',
-            ),
+            Text(l10n.workerScanHint),
             const SizedBox(height: 12),
             AspectRatio(
               aspectRatio: 1,
@@ -53,16 +54,49 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
                 child: MobileScanner(
                   onDetect: (capture) {
                     if (_handled) return;
-                    final rawValue = capture.barcodes.first.rawValue;
-                    if (rawValue == null || rawValue.isEmpty) return;
-                    final ok = ref
-                        .read(sessionProvider.notifier)
-                        .connectFromQrPayload(rawValue);
-                    if (!ok) return;
+                    var ok = false;
+                    var hadCandidate = false;
+                    for (final barcode in capture.barcodes) {
+                      final rawValue = barcode.rawValue;
+                      if (rawValue == null || rawValue.isEmpty) continue;
+                      hadCandidate = true;
+                      ok = ref
+                          .read(sessionProvider.notifier)
+                          .connectFromQrPayload(rawValue);
+                      if (ok) break;
+                    }
+                    if (!ok) {
+                      if (hadCandidate && !_invalidScanShown) {
+                        _invalidScanShown = true;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(l10n.workerInvalidQr),
+                          ),
+                        );
+                        Future<void>.delayed(const Duration(seconds: 2), () {
+                          if (!mounted) return;
+                          _invalidScanShown = false;
+                        });
+                      }
+                      return;
+                    }
                     setState(() => _handled = true);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Connected successfully.')),
+                      SnackBar(content: Text(l10n.workerConnected)),
                     );
+                  },
+                  onDetectError: (error, stackTrace) {
+                    if (_invalidScanShown || _handled) return;
+                    _invalidScanShown = true;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.workerQrReadError),
+                      ),
+                    );
+                    Future<void>.delayed(const Duration(seconds: 2), () {
+                      if (!mounted) return;
+                      _invalidScanShown = false;
+                    });
                   },
                 ),
               ),
@@ -72,8 +106,8 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.verified_user),
-                  title: Text('Connected as ${session.employeeName}'),
-                  subtitle: Text('Employee ID: ${session.employeeId}'),
+                  title: Text('${l10n.workerConnectedAs} ${session.employeeName}'),
+                  subtitle: Text('${l10n.employeeIdLabel}: ${session.employeeId}'),
                 ),
               ),
           ],
