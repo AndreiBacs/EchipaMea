@@ -46,11 +46,15 @@ class AppInternationalPhoneField extends StatefulWidget {
 class _AppInternationalPhoneFieldState extends State<AppInternationalPhoneField> {
   final _controller = TextEditingController();
   String _resolvedIso = AppInternationalPhoneField.defaultIso;
+  /// Dial code for the selected country (e.g. `+40`). Drives E.164 digit cap.
+  String _dialCode = '+40';
   bool _ready = false;
+  bool _clippingNationalDigits = false;
 
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_enforceE164NationalDigitCap);
     _resolveInitial();
   }
 
@@ -69,6 +73,7 @@ class _AppInternationalPhoneFieldState extends State<AppInternationalPhoneField>
     _resolvedIso = AppInternationalPhoneField.defaultIso;
 
     if (raw.isEmpty) {
+      _dialCode = '+40';
       if (mounted) setState(() => _ready = true);
       return;
     }
@@ -92,6 +97,10 @@ class _AppInternationalPhoneFieldState extends State<AppInternationalPhoneField>
     }
 
     if (parsed != null) {
+      final dc = parsed.dialCode;
+      if (dc != null && dc.isNotEmpty) {
+        _dialCode = dc;
+      }
       final iso = (parsed.isoCode ?? '').toUpperCase();
       if (AppInternationalPhoneField.allowedCountryIsoCodes.contains(iso)) {
         _resolvedIso = iso;
@@ -110,8 +119,35 @@ class _AppInternationalPhoneFieldState extends State<AppInternationalPhoneField>
 
   @override
   void dispose() {
+    _controller.removeListener(_enforceE164NationalDigitCap);
     _controller.dispose();
     super.dispose();
+  }
+
+  /// E.164 allows at most 15 digits in full international form (CC + national).
+  int _maxNationalDigits() {
+    final ccLen = _dialCode.replaceAll(RegExp(r'\D'), '').length;
+    return (15 - ccLen).clamp(1, 14);
+  }
+
+  /// Upper bound on field characters for formatted national number (spaces, etc.).
+  int _maxFormattedFieldLength() {
+    final n = _maxNationalDigits();
+    return n * 2 + 12;
+  }
+
+  void _enforceE164NationalDigitCap() {
+    if (_clippingNationalDigits || !mounted) return;
+    final maxNat = _maxNationalDigits();
+    final national = _controller.text.replaceAll(RegExp(r'\D'), '');
+    if (national.length <= maxNat) return;
+    _clippingNationalDigits = true;
+    final trimmed = national.substring(0, maxNat);
+    _controller.value = TextEditingValue(
+      text: trimmed,
+      selection: TextSelection.collapsed(offset: trimmed.length),
+    );
+    _clippingNationalDigits = false;
   }
 
   @override
@@ -126,7 +162,7 @@ class _AppInternationalPhoneFieldState extends State<AppInternationalPhoneField>
     return InternationalPhoneNumberInput(
       countries: AppInternationalPhoneField.allowedCountryIsoCodes,
       formatInput: true,
-      maxLength: 32,
+      maxLength: _maxFormattedFieldLength(),
       autoValidateMode: widget.autoValidateMode,
       ignoreBlank: true,
       textFieldController: _controller,
@@ -140,6 +176,13 @@ class _AppInternationalPhoneFieldState extends State<AppInternationalPhoneField>
       inputDecoration: widget.decoration,
       validator: widget.validator,
       onInputChanged: (PhoneNumber number) {
+        final dc = number.dialCode;
+        if (dc != null && dc.isNotEmpty && dc != _dialCode) {
+          setState(() => _dialCode = dc);
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _enforceE164NationalDigitCap();
+        });
         final nationalDigits =
             _controller.text.replaceAll(RegExp(r'\D'), '');
         if (nationalDigits.isEmpty) {
