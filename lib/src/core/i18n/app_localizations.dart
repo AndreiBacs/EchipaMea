@@ -103,6 +103,15 @@ class AppLocalizations {
       'employeeFormEditTitle': 'Editeaza angajat',
       'employeeNameLabel': 'Nume angajat',
       'roleLabel': 'Rol',
+      'workerRoleElectrician': 'Electrician',
+      'workerRolePlumber': 'Instalator',
+      'workerRoleGeneralWorker': 'Muncitor general',
+      'workerRoleCarpenter': 'Tamplar',
+      'workerRoleWelder': 'Sudor',
+      'workerRoleHelper': 'Ajutor',
+      'workerRolePainter': 'Zugrav',
+      'workerRoleMason': 'Zidar',
+      'workerRoleHvacTechnician': 'Tehnician HVAC',
       'workingDaysLabel': 'Zile lucratoare',
       'workStartHourLabel': 'Ora inceput',
       'workEndHourLabel': 'Ora sfarsit',
@@ -311,6 +320,15 @@ class AppLocalizations {
       'employeeFormEditTitle': 'Dolgozo szerkesztese',
       'employeeNameLabel': 'Dolgozo neve',
       'roleLabel': 'Szerep',
+      'workerRoleElectrician': 'Villanyszerelo',
+      'workerRolePlumber': 'Vizvezetek-szerelo',
+      'workerRoleGeneralWorker': 'Altalanos munkas',
+      'workerRoleCarpenter': 'Acs',
+      'workerRoleWelder': 'Hegeszto',
+      'workerRoleHelper': 'Segedmunkas',
+      'workerRolePainter': 'Festo',
+      'workerRoleMason': 'Komuves',
+      'workerRoleHvacTechnician': 'HVAC technikus',
       'workingDaysLabel': 'Munkanapok',
       'workStartHourLabel': 'Kezdes',
       'workEndHourLabel': 'Befejezes',
@@ -517,6 +535,15 @@ class AppLocalizations {
       'employeeFormEditTitle': 'Edit employee',
       'employeeNameLabel': 'Employee name',
       'roleLabel': 'Role',
+      'workerRoleElectrician': 'Electrician',
+      'workerRolePlumber': 'Plumber',
+      'workerRoleGeneralWorker': 'General worker',
+      'workerRoleCarpenter': 'Carpenter',
+      'workerRoleWelder': 'Welder',
+      'workerRoleHelper': 'Helper',
+      'workerRolePainter': 'Painter',
+      'workerRoleMason': 'Mason',
+      'workerRoleHvacTechnician': 'HVAC technician',
       'workingDaysLabel': 'Working days',
       'workStartHourLabel': 'Start hour',
       'workEndHourLabel': 'End hour',
@@ -722,6 +749,15 @@ class AppLocalizations {
   String get employeeFormEditTitle => _t('employeeFormEditTitle');
   String get employeeNameLabel => _t('employeeNameLabel');
   String get roleLabel => _t('roleLabel');
+  String get workerRoleElectrician => _t('workerRoleElectrician');
+  String get workerRolePlumber => _t('workerRolePlumber');
+  String get workerRoleGeneralWorker => _t('workerRoleGeneralWorker');
+  String get workerRoleCarpenter => _t('workerRoleCarpenter');
+  String get workerRoleWelder => _t('workerRoleWelder');
+  String get workerRoleHelper => _t('workerRoleHelper');
+  String get workerRolePainter => _t('workerRolePainter');
+  String get workerRoleMason => _t('workerRoleMason');
+  String get workerRoleHvacTechnician => _t('workerRoleHvacTechnician');
   String get workingDaysLabel => _t('workingDaysLabel');
   String get workStartHourLabel => _t('workStartHourLabel');
   String get workEndHourLabel => _t('workEndHourLabel');

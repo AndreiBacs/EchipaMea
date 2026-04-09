@@ -6,6 +6,7 @@ import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/i18n/locale_controller.dart';
 import '../../../../core/profile/profile_controller.dart';
+import '../../../../core/ui/app_international_phone_field.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -19,23 +20,21 @@ class ProfilePage extends ConsumerStatefulWidget {
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
   late final TextEditingController _fullNameController;
-  late final TextEditingController _phoneController;
   late final TextEditingController _jobTitleController;
   final _formKey = GlobalKey<FormState>();
   bool _didPrefill = false;
+  String _profilePhone = '';
 
   @override
   void initState() {
     super.initState();
     _fullNameController = TextEditingController();
-    _phoneController = TextEditingController();
     _jobTitleController = TextEditingController();
   }
 
   @override
   void dispose() {
     _fullNameController.dispose();
-    _phoneController.dispose();
     _jobTitleController.dispose();
     super.dispose();
   }
@@ -56,7 +55,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         data: (profile) {
           if (!_didPrefill) {
             _fullNameController.text = profile.fullName;
-            _phoneController.text = profile.phone;
+            _profilePhone = profile.phone;
             _jobTitleController.text = profile.jobTitle;
             _didPrefill = true;
           }
@@ -120,11 +119,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _phoneController,
+                  AppInternationalPhoneField(
+                    key: ValueKey(profile.phone),
+                    initialPhone: profile.phone,
                     decoration: InputDecoration(
                       labelText: l10n.profilePhoneLabel,
                     ),
+                    onChanged: (value) =>
+                        setState(() => _profilePhone = value),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -170,7 +172,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         .read(profileProvider.notifier)
         .save(
           fullName: _fullNameController.text,
-          phone: _phoneController.text,
+          phone: _profilePhone,
           jobTitle: _jobTitleController.text,
         );
     if (!mounted) return;

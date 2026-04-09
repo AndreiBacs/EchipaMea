@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
+import '../../../../core/ui/app_international_phone_field.dart';
 import 'foreman_shell_page.dart';
 import '../providers/team_controller.dart';
 
@@ -21,12 +23,13 @@ class EmployeeFormPage extends ConsumerStatefulWidget {
 
 class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
   late final TextEditingController _nameController;
-  late final TextEditingController _roleController;
   late final TextEditingController _emailController;
-  late final TextEditingController _phoneController;
   late int _workStartHour;
   late int _workEndHour;
   late Set<int> _workingDays;
+  /// Default avoids [LateInitializationError] after hot reload (initState does not re-run).
+  WorkerRole _workerRole = WorkerRole.generalWorker;
+  String _internationalPhone = '';
 
   @override
   void initState() {
@@ -35,9 +38,9 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
         ? null
         : ref.read(teamProvider.notifier).findById(widget.employeeId!);
     _nameController = TextEditingController(text: existing?.name ?? '');
-    _roleController = TextEditingController(text: existing?.role ?? '');
     _emailController = TextEditingController(text: existing?.email ?? '');
-    _phoneController = TextEditingController(text: existing?.phone ?? '');
+    _workerRole = existing?.role ?? WorkerRole.generalWorker;
+    _internationalPhone = existing?.phone ?? '';
     _workStartHour = existing?.workStartHour ?? 8;
     _workEndHour = existing?.workEndHour ?? 18;
     _workingDays = {...(existing?.workingDays ?? {1, 2, 3, 4, 5})};
@@ -46,9 +49,7 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _roleController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -56,6 +57,9 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
   Widget build(BuildContext context) {
     final isEdit = widget.employeeId != null;
     final l10n = context.l10n;
+    final phoneInitial = widget.employeeId == null
+        ? null
+        : ref.read(teamProvider.notifier).findById(widget.employeeId!)?.phone;
 
     return Scaffold(
       appBar: AppBar(
@@ -86,9 +90,20 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
                       decoration: InputDecoration(labelText: l10n.employeeNameLabel),
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: _roleController,
+                    DropdownButtonFormField<WorkerRole>(
+                      initialValue: _workerRole,
                       decoration: InputDecoration(labelText: l10n.roleLabel),
+                      items: [
+                        for (final role in WorkerRole.values)
+                          DropdownMenuItem(
+                            value: role,
+                            child: Text(role.localizedLabel(l10n)),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() => _workerRole = value);
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -99,12 +114,16 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
+                    AppInternationalPhoneField(
+                      key: ValueKey(
+                        '${widget.employeeId ?? 'new'}_${phoneInitial ?? ''}',
+                      ),
+                      initialPhone: phoneInitial,
                       decoration: InputDecoration(
                         labelText: l10n.profilePhoneLabel,
                       ),
+                      onChanged: (value) =>
+                          setState(() => _internationalPhone = value),
                     ),
                     const SizedBox(height: 16),
                     Align(
@@ -212,11 +231,9 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
 
   void _save(BuildContext context, {required bool isEdit}) {
     final name = _nameController.text.trim();
-    final role = _roleController.text.trim();
     final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
+    final phone = _internationalPhone.trim();
     if (name.isEmpty ||
-        role.isEmpty ||
         email.isEmpty ||
         phone.isEmpty ||
         _workingDays.isEmpty ||
@@ -230,7 +247,7 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
           .updateEmployee(
             id: widget.employeeId!,
             name: name,
-            role: role,
+            role: _workerRole,
             email: email,
             phone: phone,
             workStartHour: _workStartHour,
@@ -242,7 +259,7 @@ class _EmployeeFormPageState extends ConsumerState<EmployeeFormPage> {
           .read(teamProvider.notifier)
           .addEmployee(
             name: name,
-            role: role,
+            role: _workerRole,
             email: email,
             phone: phone,
             workStartHour: _workStartHour,

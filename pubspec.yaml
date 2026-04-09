@@ -52,6 +52,7 @@ dependencies:
   record: ^6.2.0
   path_provider: ^2.1.5
   map_launcher: ^4.5.0
+  intl_phone_number_input: ^0.7.5
 
 dev_dependencies:
   flutter_test:
@@ -62,7 +63,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
