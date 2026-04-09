@@ -1,8 +1,7 @@
 ---
 description: Require README updates when adding new functionality
-alwaysApply: true
+alwaysApply: false
 ---
-
 # README Update Requirement
 
 When you add or change user-visible functionality, update `README.md` in the same task.
