@@ -13,8 +13,8 @@ void main() {
   });
 
   group('LocaleNotifier initial state', () {
-    test('starts with null locale', () {
-      expect(container.read(localeProvider), isNull);
+    test('starts with Romanian as default app locale', () {
+      expect(container.read(localeProvider), const Locale('ro'));
     });
   });
 

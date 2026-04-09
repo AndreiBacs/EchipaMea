@@ -10,7 +10,7 @@ void main() {
   setUpAll(() async {
     // Load an empty dotenv so AppEnv.initialize() resolves all fields to
     // their defaults (authApiBaseUrl == '' → mock token path).
-    dotenv.testLoad(fileInput: '');
+    dotenv.loadFromString(envString: '', isOptional: true);
     AppEnv.initialize();
   });
 
