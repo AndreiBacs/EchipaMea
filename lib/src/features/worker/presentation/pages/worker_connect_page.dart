@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../core/auth/session_controller.dart';
+import '../../../auth/presentation/pages/login_page.dart';
 
 class WorkerConnectPage extends ConsumerStatefulWidget {
   const WorkerConnectPage({super.key});
@@ -22,7 +24,19 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
     final session = ref.watch(sessionProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Worker Login')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+              return;
+            }
+            context.go(LoginPage.routePath);
+          },
+        ),
+        title: const Text('Worker Login'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
