@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../core/auth/session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import 'worker_shell_page.dart';
 
 class WorkerConnectPage extends ConsumerStatefulWidget {
   const WorkerConnectPage({super.key});
@@ -84,6 +85,13 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(l10n.workerConnected)),
                     );
+                    if (!context.mounted) return;
+                    // Defer navigation so session + GoRouter (ref.watch) settle
+                    // before redirect runs.
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!context.mounted) return;
+                      context.go(WorkerShellPage.workPath);
+                    });
                   },
                   onDetectError: (error, stackTrace) {
                     if (_invalidScanShown || _handled) return;

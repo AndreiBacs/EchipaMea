@@ -8,6 +8,8 @@ class AppEnv {
   static const _appLandingUrlField = 'APP_LANDING_URL';
   static const _appIosTestflightUrlField = 'APP_IOS_TESTFLIGHT_URL';
   static const _workerTelemetryWsUrlField = 'WORKER_TELEMETRY_WS_URL';
+  static const _workerReportsApiUrlField = 'WORKER_REPORTS_API_URL';
+  static const _foremanNotificationsWsUrlField = 'FOREMAN_NOTIFICATIONS_WS_URL';
 
   static late final String stitchApiKey;
   static late final String stitchMcpUrl;
@@ -16,6 +18,8 @@ class AppEnv {
   static late final String appLandingUrl;
   static late final String appIosTestflightUrl;
   static late final String workerTelemetryWsUrl;
+  static late final String workerReportsApiUrl;
+  static late final String foremanNotificationsWsUrl;
 
   static void initialize() {
     stitchApiKey = dotenv.env[_stitchApiKeyField] ?? '';
@@ -26,5 +30,8 @@ class AppEnv {
     appLandingUrl = dotenv.env[_appLandingUrlField] ?? '';
     appIosTestflightUrl = dotenv.env[_appIosTestflightUrlField] ?? '';
     workerTelemetryWsUrl = dotenv.env[_workerTelemetryWsUrlField] ?? '';
+    workerReportsApiUrl = dotenv.env[_workerReportsApiUrlField] ?? '';
+    foremanNotificationsWsUrl =
+        dotenv.env[_foremanNotificationsWsUrlField] ?? '';
   }
 }

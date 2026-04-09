@@ -13,6 +13,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
         name: 'Renovation - Main Street 15',
         status: ProjectStatus.inProgress,
         workers: ['Andrei D.', 'Vlad P.'],
+        assignedEmployeeIds: ['e1'],
         latitude: 46.7723,
         longitude: 23.6236,
       ),
@@ -21,6 +22,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
         name: 'Roof repair - Industrial Hall',
         status: ProjectStatus.planned,
         workers: ['Ioana R.'],
+        assignedEmployeeIds: ['e3'],
         latitude: 46.7609,
         longitude: 23.5902,
       ),
@@ -29,6 +31,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
         name: 'Kitchen fit-out - Cafe Luna',
         status: ProjectStatus.done,
         workers: ['Mihai S.'],
+        assignedEmployeeIds: ['e2'],
         latitude: 46.7692,
         longitude: 23.6034,
       ),
@@ -39,6 +42,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     required String name,
     required ProjectStatus status,
     required List<String> workers,
+    List<String> assignedEmployeeIds = const [],
     double? latitude,
     double? longitude,
   }) {
@@ -51,6 +55,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
         name: name,
         status: status,
         workers: workers,
+        assignedEmployeeIds: assignedEmployeeIds,
         latitude: latitude,
         longitude: longitude,
       ),
@@ -62,6 +67,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     required String name,
     required ProjectStatus status,
     required List<String> workers,
+    List<String> assignedEmployeeIds = const [],
     double? latitude,
     double? longitude,
   }) {
@@ -72,6 +78,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
             name: name,
             status: status,
             workers: workers,
+            assignedEmployeeIds: assignedEmployeeIds,
             latitude: latitude,
             longitude: longitude,
           )
@@ -85,6 +92,16 @@ class ProjectsNotifier extends Notifier<List<Project>> {
       if (project.id == id) return project;
     }
     return null;
+  }
+
+  void markProjectDone(String id) {
+    state = [
+      for (final project in state)
+        if (project.id == id)
+          project.copyWith(status: ProjectStatus.done)
+        else
+          project,
+    ];
   }
 }
 
@@ -103,6 +120,7 @@ class Project {
     required this.name,
     required this.status,
     required this.workers,
+    this.assignedEmployeeIds = const [],
     this.latitude,
     this.longitude,
   });
@@ -111,6 +129,8 @@ class Project {
   final String name;
   final ProjectStatus status;
   final List<String> workers;
+  /// When non-empty, prefer matching the signed-in worker by [Employee.id].
+  final List<String> assignedEmployeeIds;
   final double? latitude;
   final double? longitude;
 
@@ -123,6 +143,7 @@ class Project {
     String? name,
     ProjectStatus? status,
     List<String>? workers,
+    List<String>? assignedEmployeeIds,
     double? latitude,
     double? longitude,
   }) {
@@ -131,6 +152,7 @@ class Project {
       name: name ?? this.name,
       status: status ?? this.status,
       workers: workers ?? this.workers,
+      assignedEmployeeIds: assignedEmployeeIds ?? this.assignedEmployeeIds,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
     );

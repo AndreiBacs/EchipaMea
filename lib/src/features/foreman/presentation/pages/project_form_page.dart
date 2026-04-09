@@ -6,6 +6,7 @@ import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
 import 'foreman_shell_page.dart';
 import '../providers/projects_controller.dart';
+import '../providers/team_controller.dart';
 
 class ProjectFormPage extends ConsumerStatefulWidget {
   const ProjectFormPage({super.key, this.projectId});
@@ -141,6 +142,9 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
         .toList();
     if (name.isEmpty) return;
 
+    final team = ref.read(teamProvider);
+    final assignedEmployeeIds = _resolveWorkerEmployeeIds(workers, team);
+
     if (isEdit) {
       ref
           .read(projectsProvider.notifier)
@@ -149,14 +153,36 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
             name: name,
             status: _selectedStatus,
             workers: workers,
+            assignedEmployeeIds: assignedEmployeeIds,
           );
     } else {
-      ref
-          .read(projectsProvider.notifier)
-          .addProject(name: name, status: _selectedStatus, workers: workers);
+      ref.read(projectsProvider.notifier).addProject(
+            name: name,
+            status: _selectedStatus,
+            workers: workers,
+            assignedEmployeeIds: assignedEmployeeIds,
+          );
     }
 
     Navigator.of(context).pop();
+  }
+
+  /// Maps comma-separated worker names to roster employee IDs when names match.
+  static List<String> _resolveWorkerEmployeeIds(
+    List<String> workerNames,
+    List<Employee> team,
+  ) {
+    final ids = <String>[];
+    for (final w in workerNames) {
+      final n = w.trim().toLowerCase();
+      for (final e in team) {
+        if (e.name.trim().toLowerCase() == n) {
+          ids.add(e.id);
+          break;
+        }
+      }
+    }
+    return ids;
   }
 
   String _statusLabel(BuildContext context, ProjectStatus status) {

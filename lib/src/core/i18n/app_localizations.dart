@@ -172,6 +172,55 @@ class AppLocalizations {
       'setupBack': 'Inapoi',
       'setupNext': 'Inainte',
       'setupGetStarted': 'Incepe',
+      'workerShellTitle': 'Lucrarile mele',
+      'workerWorkTab': 'Lucrari',
+      'workerProfileTab': 'Profil',
+      'workerNoAssignments':
+          'Nu ai lucrari alocate acum. Seful de echipa te va adauga pe un proiect.',
+      'workerNextUp': 'Urmatoarea lucrare',
+      'workerUpcomingWork': 'In continuare',
+      'workerViewDetails': 'Vezi detalii',
+      'workerProjectDetails': 'Detalii lucrare',
+      'workerProjectNotFound': 'Lucrarea nu a fost gasita sau nu este alocata tie.',
+      'workerCoordinatesHint': 'Coordonate site',
+      'workerAssignedWorkersLabel': 'Echipa pe proiect',
+      'workerOpenNavigation': 'Deschide navigatia',
+      'workerNavigationOpenFailed':
+          'Nu am putut deschide navigatia pe acest dispozitiv.',
+      'workerChooseNavigationApp': 'Alege aplicatia de navigatie',
+      'workerAnnounceArrival': 'Am ajuns la locatie',
+      'workerArrivalSent': 'Seful de echipa a fost anuntat ca ai ajuns.',
+      'workerLocationMissing':
+          'Nu exista coordonate pentru acest proiect; navigatia nu poate fi deschisa.',
+      'workerCompleteWork': 'Finalizeaza lucrarea',
+      'workerReportTitle': 'Raport de lucru',
+      'workerReportPhotosStep': 'Poze de pe santier',
+      'workerReportPhotosHint':
+          'Adauga pana la 8 poze (optional). Treci mai departe daca nu ai.',
+      'workerReportAddPhotos': 'Adauga poze',
+      'workerReportMemoStep': 'Nota vocala',
+      'workerReportMemoHint':
+          'Inregistreaza un scurt mesaj vocal (optional).',
+      'workerReportStartRecording': 'Incepe inregistrarea',
+      'workerReportStopRecording': 'Opreste inregistrarea',
+      'workerReportRecordingSaved': 'Memo salvat',
+      'workerReportRecordingUnavailable':
+          'Inregistrarea nu este disponibila pe acest dispozitiv.',
+      'workerReportDescriptionStep': 'Descriere si trimitere',
+      'workerReportDescriptionHint': 'Scurta descriere a lucrarilor',
+      'workerReportSubmit': 'Trimite raportul',
+      'workerReportSubmitted': 'Raport trimis. Multumim!',
+      'workerReportNeedDescription': 'Adauga o scurta descriere inainte de trimitere.',
+      'workerReportPhotoPickFailed': 'Nu am putut incarca pozele. Incearca din nou.',
+      'workerReportMicPermission':
+          'Permisiunea pentru microfon este necesara pentru memo.',
+      'workerReportSubmitting': 'Se trimite...',
+      'workerReportSubmitFailed': 'Raportul nu a putut fi trimis',
+      'foremanNotifications': 'Notificari',
+      'foremanNotificationsEmpty': 'Nu exista notificari noi.',
+      'foremanNotificationWorkerReportTitle': 'Raport de la muncitor trimis',
+      'foremanNotificationWorkerReportBodyFallback':
+          'A fost incarcat un raport nou.',
     },
     'hu': {
       'appTitle': 'EchipaMea',
@@ -330,6 +379,55 @@ class AppLocalizations {
       'setupBack': 'Vissza',
       'setupNext': 'Tovabb',
       'setupGetStarted': 'Inditas',
+      'workerShellTitle': 'Munkaim',
+      'workerWorkTab': 'Munkak',
+      'workerProfileTab': 'Profil',
+      'workerNoAssignments':
+          'Jelenleg nincs kiosztott munkad. A munkavezeto hozzaad egy projekthez.',
+      'workerNextUp': 'Kovetkezo munka',
+      'workerUpcomingWork': 'Kesobb',
+      'workerViewDetails': 'Reszletek',
+      'workerProjectDetails': 'Munka reszletei',
+      'workerProjectNotFound': 'A projekt nem talalhato vagy nincs hozzad rendelve.',
+      'workerCoordinatesHint': 'Helyszin koordinatak',
+      'workerAssignedWorkersLabel': 'Csapat a projekten',
+      'workerOpenNavigation': 'Navigacio megnyitasa',
+      'workerNavigationOpenFailed':
+          'A navigacio nem nyithato meg ezen az eszkozon.',
+      'workerChooseNavigationApp': 'Valassz navigacios alkalmazast',
+      'workerAnnounceArrival': 'Megérkeztem a helyszinre',
+      'workerArrivalSent': 'A munkavezeto ertesult az erkezesrol.',
+      'workerLocationMissing':
+          'Ehhez a projekthez nincsenek koordinatak; a navigacio nem nyithato meg.',
+      'workerCompleteWork': 'Munka befejezese',
+      'workerReportTitle': 'Munkajelentes',
+      'workerReportPhotosStep': 'Helyszini fenykepek',
+      'workerReportPhotosHint':
+          'Legfeljebb 8 kepet adhatsz hozza (opcionalis). Folytathatod ugy is, ha nincs.',
+      'workerReportAddPhotos': 'Kepek hozzadasa',
+      'workerReportMemoStep': 'Hangjegyzet',
+      'workerReportMemoHint':
+          'Rovid hangos uzenet (opcionalis).',
+      'workerReportStartRecording': 'Felvetel inditasa',
+      'workerReportStopRecording': 'Felvetel leallitasa',
+      'workerReportRecordingSaved': 'Hangjegyzet elmentve',
+      'workerReportRecordingUnavailable':
+          'A felvetel nem elerheto ezen az eszkozon.',
+      'workerReportDescriptionStep': 'Leiras es kuldes',
+      'workerReportDescriptionHint': 'Rovid leiras a vegzett munkarol',
+      'workerReportSubmit': 'Jelentes kuldese',
+      'workerReportSubmitted': 'Jelentes elkuldve. Koszonjuk!',
+      'workerReportNeedDescription': 'Adj meg rovid leirast a kuldes elott.',
+      'workerReportPhotoPickFailed': 'A kepek nem tolthetok be. Probald ujra.',
+      'workerReportMicPermission':
+          'A hangjegyzethez mikrofon engedely szukseges.',
+      'workerReportSubmitting': 'Kuldes...',
+      'workerReportSubmitFailed': 'A jelentes nem kuldheto el',
+      'foremanNotifications': 'Ertesitesek',
+      'foremanNotificationsEmpty': 'Nincsenek erkezo ertesitesek.',
+      'foremanNotificationWorkerReportTitle': 'Munkas jelentes erkezett',
+      'foremanNotificationWorkerReportBodyFallback':
+          'Uj jelentes lett feltoltve.',
     },
     'en': {
       'appTitle': 'EchipaMea',
@@ -486,6 +584,54 @@ class AppLocalizations {
       'setupBack': 'Back',
       'setupNext': 'Next',
       'setupGetStarted': 'Get started',
+      'workerShellTitle': 'My work',
+      'workerWorkTab': 'Work',
+      'workerProfileTab': 'Profile',
+      'workerNoAssignments':
+          'You have no jobs assigned yet. Your foreman will add you to a project.',
+      'workerNextUp': 'Next up',
+      'workerUpcomingWork': 'Coming up',
+      'workerViewDetails': 'View details',
+      'workerProjectDetails': 'Job details',
+      'workerProjectNotFound': 'This job was not found or is not assigned to you.',
+      'workerCoordinatesHint': 'Site coordinates',
+      'workerAssignedWorkersLabel': 'Crew on this job',
+      'workerOpenNavigation': 'Open navigation',
+      'workerNavigationOpenFailed':
+          'Could not open navigation on this device.',
+      'workerChooseNavigationApp': 'Choose a navigation app',
+      'workerAnnounceArrival': 'I have arrived on site',
+      'workerArrivalSent': 'Your foreman is notified that you arrived.',
+      'workerLocationMissing':
+          'This project has no coordinates; navigation cannot be opened.',
+      'workerCompleteWork': 'Finish this job',
+      'workerReportTitle': 'Work report',
+      'workerReportPhotosStep': 'Site photos',
+      'workerReportPhotosHint':
+          'Add up to 8 photos (optional). You can skip if you have none.',
+      'workerReportAddPhotos': 'Add photos',
+      'workerReportMemoStep': 'Voice memo',
+      'workerReportMemoHint': 'Record a short voice note (optional).',
+      'workerReportStartRecording': 'Start recording',
+      'workerReportStopRecording': 'Stop recording',
+      'workerReportRecordingSaved': 'Memo saved',
+      'workerReportRecordingUnavailable':
+          'Recording is not available on this device.',
+      'workerReportDescriptionStep': 'Description and submit',
+      'workerReportDescriptionHint': 'Short summary of work done',
+      'workerReportSubmit': 'Submit report',
+      'workerReportSubmitted': 'Report sent. Thank you!',
+      'workerReportNeedDescription': 'Add a short description before submitting.',
+      'workerReportPhotoPickFailed': 'Could not pick photos. Try again.',
+      'workerReportMicPermission':
+          'Microphone permission is required for a voice memo.',
+      'workerReportSubmitting': 'Submitting...',
+      'workerReportSubmitFailed': 'Could not submit report',
+      'foremanNotifications': 'Notifications',
+      'foremanNotificationsEmpty': 'No notifications yet.',
+      'foremanNotificationWorkerReportTitle': 'Worker report submitted',
+      'foremanNotificationWorkerReportBodyFallback':
+          'A new report was uploaded.',
     },
   };
 
@@ -631,6 +777,50 @@ class AppLocalizations {
   String get setupBack => _t('setupBack');
   String get setupNext => _t('setupNext');
   String get setupGetStarted => _t('setupGetStarted');
+  String get workerShellTitle => _t('workerShellTitle');
+  String get workerWorkTab => _t('workerWorkTab');
+  String get workerProfileTab => _t('workerProfileTab');
+  String get workerNoAssignments => _t('workerNoAssignments');
+  String get workerNextUp => _t('workerNextUp');
+  String get workerUpcomingWork => _t('workerUpcomingWork');
+  String get workerViewDetails => _t('workerViewDetails');
+  String get workerProjectDetails => _t('workerProjectDetails');
+  String get workerProjectNotFound => _t('workerProjectNotFound');
+  String get workerCoordinatesHint => _t('workerCoordinatesHint');
+  String get workerAssignedWorkersLabel => _t('workerAssignedWorkersLabel');
+  String get workerOpenNavigation => _t('workerOpenNavigation');
+  String get workerNavigationOpenFailed => _t('workerNavigationOpenFailed');
+  String get workerChooseNavigationApp => _t('workerChooseNavigationApp');
+  String get workerAnnounceArrival => _t('workerAnnounceArrival');
+  String get workerArrivalSent => _t('workerArrivalSent');
+  String get workerLocationMissing => _t('workerLocationMissing');
+  String get workerCompleteWork => _t('workerCompleteWork');
+  String get workerReportTitle => _t('workerReportTitle');
+  String get workerReportPhotosStep => _t('workerReportPhotosStep');
+  String get workerReportPhotosHint => _t('workerReportPhotosHint');
+  String get workerReportAddPhotos => _t('workerReportAddPhotos');
+  String get workerReportMemoStep => _t('workerReportMemoStep');
+  String get workerReportMemoHint => _t('workerReportMemoHint');
+  String get workerReportStartRecording => _t('workerReportStartRecording');
+  String get workerReportStopRecording => _t('workerReportStopRecording');
+  String get workerReportRecordingSaved => _t('workerReportRecordingSaved');
+  String get workerReportRecordingUnavailable =>
+      _t('workerReportRecordingUnavailable');
+  String get workerReportDescriptionStep => _t('workerReportDescriptionStep');
+  String get workerReportDescriptionHint => _t('workerReportDescriptionHint');
+  String get workerReportSubmit => _t('workerReportSubmit');
+  String get workerReportSubmitted => _t('workerReportSubmitted');
+  String get workerReportNeedDescription => _t('workerReportNeedDescription');
+  String get workerReportPhotoPickFailed => _t('workerReportPhotoPickFailed');
+  String get workerReportMicPermission => _t('workerReportMicPermission');
+  String get workerReportSubmitting => _t('workerReportSubmitting');
+  String get workerReportSubmitFailed => _t('workerReportSubmitFailed');
+  String get foremanNotifications => _t('foremanNotifications');
+  String get foremanNotificationsEmpty => _t('foremanNotificationsEmpty');
+  String get foremanNotificationWorkerReportTitle =>
+      _t('foremanNotificationWorkerReportTitle');
+  String get foremanNotificationWorkerReportBodyFallback =>
+      _t('foremanNotificationWorkerReportBodyFallback');
 }
 
 class _AppLocalizationsDelegate

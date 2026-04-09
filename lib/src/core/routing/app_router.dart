@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/onboarding/presentation/pages/setup_flow_page.dart';
 import '../auth/auth_session_controller.dart';
+import '../auth/session_controller.dart';
 import '../setup/setup_flow_controller.dart';
 import '../../features/foreman/presentation/pages/client_form_page.dart';
 import '../../features/foreman/presentation/pages/employee_form_page.dart';
@@ -12,10 +13,14 @@ import '../../features/foreman/presentation/pages/project_form_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/legal/presentation/pages/terms_page.dart';
 import '../../features/worker/presentation/pages/worker_connect_page.dart';
+import '../../features/worker/presentation/pages/worker_project_detail_page.dart';
+import '../../features/worker/presentation/pages/worker_report_flow_page.dart';
+import '../../features/worker/presentation/pages/worker_shell_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authSessionProvider);
   final setupState = ref.watch(setupFlowCompletedProvider);
+  ref.watch(sessionProvider);
 
   return GoRouter(
     initialLocation: LoginPage.routePath,
@@ -40,19 +45,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       final isForemanRoute = loc.startsWith('/foreman');
+      final isWorkerAppRoute = loc.startsWith('/worker');
+      final isWorkerConnectRoute = loc == WorkerConnectPage.routePath;
       final isLoginRoute = loc == LoginPage.routePath;
-      final session = authState is AsyncData<AuthSession?>
+      final foremanSession = authState is AsyncData<AuthSession?>
           ? authState.value
           : null;
-      final isLoggedIn = session != null;
+      final isForemanLoggedIn = foremanSession != null;
+      final workerSession = ref.read(sessionProvider);
 
       if (authState.isLoading) return null;
 
-      if (!isLoggedIn && isForemanRoute) {
+      if (!isForemanLoggedIn && isForemanRoute) {
         return LoginPage.routePath;
       }
 
-      if (isLoggedIn && isLoginRoute) {
+      if (isWorkerAppRoute &&
+          !isWorkerConnectRoute &&
+          workerSession == null) {
+        return LoginPage.routePath;
+      }
+
+      if (isWorkerConnectRoute && workerSession != null) {
+        return WorkerShellPage.workPath;
+      }
+
+      // Allow worker shell when a worker session exists, even if foreman token
+      // is still stored (e.g. same device tested both roles).
+      if (isForemanLoggedIn &&
+          isWorkerAppRoute &&
+          !isWorkerConnectRoute &&
+          workerSession == null) {
+        return ForemanShellPage.dashboardPath;
+      }
+
+      if (!isForemanLoggedIn && workerSession != null && isLoginRoute) {
+        return WorkerShellPage.workPath;
+      }
+
+      if (isForemanLoggedIn && isLoginRoute) {
         return ForemanShellPage.dashboardPath;
       }
 
@@ -150,9 +181,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: WorkerShellPage.workPath,
+        name: 'worker_work',
+        builder: (context, state) =>
+            const WorkerShellPage(currentTab: WorkerTab.work),
+      ),
+      GoRoute(
+        path: WorkerShellPage.profilePath,
+        name: 'worker_profile',
+        builder: (context, state) =>
+            const WorkerShellPage(currentTab: WorkerTab.profile),
+      ),
+      GoRoute(
         path: WorkerConnectPage.routePath,
         name: WorkerConnectPage.routeName,
         builder: (context, state) => const WorkerConnectPage(),
+      ),
+      GoRoute(
+        path: '/worker/project/:projectId',
+        name: 'worker_project_detail',
+        builder: (context, state) {
+          final id = state.pathParameters['projectId']!;
+          return WorkerProjectDetailPage(projectId: id);
+        },
+        routes: [
+          GoRoute(
+            path: 'report',
+            name: 'worker_project_report',
+            builder: (context, state) {
+              final id = state.pathParameters['projectId']!;
+              return WorkerReportFlowPage(projectId: id);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: TermsPage.routePath,

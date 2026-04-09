@@ -217,7 +217,14 @@ class TeamPage extends ConsumerWidget {
                         data: payload,
                         size: 220,
                         backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: Colors.black,
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: Colors.black,
+                        ),
                         errorStateBuilder: (context, error) {
                           return SizedBox(
                             width: 220,
@@ -295,7 +302,14 @@ class TeamPage extends ConsumerWidget {
                         data: qrTargetUrl,
                         size: 220,
                         backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: Colors.black,
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: Colors.black,
+                        ),
                         errorStateBuilder: (context, error) {
                           return SizedBox(
                             width: 220,

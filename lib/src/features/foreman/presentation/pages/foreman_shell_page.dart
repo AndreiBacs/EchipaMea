@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
+import '../../application/foreman_notifications_coordinator.dart';
 import 'clients_page.dart';
 import 'dashboard_page.dart';
 import 'foreman_map_page.dart';
@@ -29,6 +30,7 @@ class ForemanShellPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final notifications = ref.watch(foremanNotificationsProvider);
     final body = switch (currentTab) {
       ForemanTab.dashboard => const DashboardPage(),
       ForemanTab.map => const ForemanMapPage(),
@@ -45,6 +47,15 @@ class ForemanShellPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.foremanShellTitle),
         actions: [
+          IconButton(
+            tooltip: l10n.foremanNotifications,
+            onPressed: () => _showNotificationsDialog(context, ref),
+            icon: Badge.count(
+              count: notifications.unreadCount,
+              isLabelVisible: notifications.unreadCount > 0,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+          ),
           IconButton(
             tooltip: l10n.logout,
             icon: const Icon(Icons.logout),
@@ -186,5 +197,50 @@ class ForemanShellPage extends ConsumerWidget {
       ForemanTab.profile => profilePath,
     };
     context.go(path);
+  }
+
+  Future<void> _showNotificationsDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final l10n = context.l10n;
+    ref.read(foremanNotificationsProvider.notifier).markAllRead();
+    final items = ref.read(foremanNotificationsProvider).items;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(l10n.foremanNotifications),
+          content: SizedBox(
+            width: 420,
+            child: items.isEmpty
+                ? Text(l10n.foremanNotificationsEmpty)
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: items.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final hh = item.receivedAt.hour.toString().padLeft(2, '0');
+                      final mm = item.receivedAt.minute.toString().padLeft(2, '0');
+                      return ListTile(
+                        dense: true,
+                        title: Text(item.title),
+                        subtitle: Text('${item.subtitle}\n$hh:$mm'),
+                        isThreeLine: true,
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.close),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
