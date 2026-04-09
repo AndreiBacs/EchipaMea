@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -43,6 +44,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
 
   @override
   void dispose() {
+    unawaited(_deleteMemoFile(_memoPath));
     _pageController.dispose();
     _descriptionController.dispose();
     unawaited(_audioRecorder.dispose());
@@ -120,7 +122,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                   memoUnsupported: _memoUnsupported,
                   onStart: _startRecording,
                   onStop: _stopRecording,
-                  onClear: () => setState(() => _memoPath = null),
+                  onClear: _clearMemo,
                 ),
                 _DescriptionStep(
                   l10n: l10n,
@@ -227,6 +229,12 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     });
   }
 
+  Future<void> _clearMemo() async {
+    final toDelete = _memoPath;
+    setState(() => _memoPath = null);
+    await _deleteMemoFile(toDelete);
+  }
+
   Future<void> _submit(
     BuildContext context,
     Project project,
@@ -269,6 +277,10 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
             ),
           );
       ref.read(projectsProvider.notifier).markProjectDone(project.id);
+      await _deleteMemoFile(_memoPath);
+      if (mounted) {
+        setState(() => _memoPath = null);
+      }
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -286,6 +298,19 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
       if (mounted) {
         setState(() => _submitting = false);
       }
+    }
+  }
+
+  Future<void> _deleteMemoFile(String? path) async {
+    if (kIsWeb) return;
+    if (path == null || path.trim().isEmpty) return;
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {
+      // Best effort cleanup for temporary recordings.
     }
   }
 }

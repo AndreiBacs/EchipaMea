@@ -75,7 +75,12 @@ class WorkerProjectDetailPage extends ConsumerWidget {
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: project.latitude != null && project.longitude != null
-                ? () => _openMaps(project.latitude!, project.longitude!)
+                ? () => _openMaps(
+                      context,
+                      l10n,
+                      project.latitude!,
+                      project.longitude!,
+                    )
                 : null,
             icon: const Icon(Icons.navigation),
             label: Text(l10n.workerOpenNavigation),
@@ -128,12 +133,37 @@ class WorkerProjectDetailPage extends ConsumerWidget {
     };
   }
 
-  static Future<void> _openMaps(double lat, double lng) async {
+  static Future<void> _openMaps(
+    BuildContext context,
+    AppLocalizations l10n,
+    double lat,
+    double lng,
+  ) async {
     final uri = Uri.parse(
       'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
     );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      if (!await canLaunchUrl(uri)) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.workerNavigationOpenFailed)),
+        );
+        return;
+      }
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.workerNavigationOpenFailed)),
+        );
+      }
+    } catch (error) {
+      debugPrint('Failed to open navigation URL: $error');
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.workerNavigationOpenFailed)),
+      );
     }
   }
 }

@@ -185,6 +185,8 @@ class AppLocalizations {
       'workerCoordinatesHint': 'Coordonate site',
       'workerAssignedWorkersLabel': 'Echipa pe proiect',
       'workerOpenNavigation': 'Deschide navigatia',
+      'workerNavigationOpenFailed':
+          'Nu am putut deschide navigatia pe acest dispozitiv.',
       'workerAnnounceArrival': 'Am ajuns la locatie',
       'workerArrivalSent': 'Seful de echipa a fost anuntat ca ai ajuns.',
       'workerLocationMissing':
@@ -386,6 +388,8 @@ class AppLocalizations {
       'workerCoordinatesHint': 'Helyszin koordinatak',
       'workerAssignedWorkersLabel': 'Csapat a projekten',
       'workerOpenNavigation': 'Navigacio megnyitasa',
+      'workerNavigationOpenFailed':
+          'A navigacio nem nyithato meg ezen az eszkozon.',
       'workerAnnounceArrival': 'Megérkeztem a helyszinre',
       'workerArrivalSent': 'A munkavezeto ertesult az erkezesrol.',
       'workerLocationMissing':
@@ -585,6 +589,8 @@ class AppLocalizations {
       'workerCoordinatesHint': 'Site coordinates',
       'workerAssignedWorkersLabel': 'Crew on this job',
       'workerOpenNavigation': 'Open navigation',
+      'workerNavigationOpenFailed':
+          'Could not open navigation on this device.',
       'workerAnnounceArrival': 'I have arrived on site',
       'workerArrivalSent': 'Your foreman is notified that you arrived.',
       'workerLocationMissing':
@@ -771,6 +777,7 @@ class AppLocalizations {
   String get workerCoordinatesHint => _t('workerCoordinatesHint');
   String get workerAssignedWorkersLabel => _t('workerAssignedWorkersLabel');
   String get workerOpenNavigation => _t('workerOpenNavigation');
+  String get workerNavigationOpenFailed => _t('workerNavigationOpenFailed');
   String get workerAnnounceArrival => _t('workerAnnounceArrival');
   String get workerArrivalSent => _t('workerArrivalSent');
   String get workerLocationMissing => _t('workerLocationMissing');
