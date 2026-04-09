@@ -130,12 +130,20 @@ class TeamPage extends ConsumerWidget {
   }
 
   Future<void> _showAppDownloadQrDialog(BuildContext context) async {
-    final downloadUrl = AppEnv.appDownloadUrl.trim();
-    if (downloadUrl.isEmpty) {
+    final landingUrl = AppEnv.appLandingUrl.trim();
+    final androidDownloadUrl = AppEnv.appDownloadUrl.trim();
+    final iosTestflightUrl = AppEnv.appIosTestflightUrl.trim();
+    final qrTargetUrl = _resolveQrTargetUrl(
+      landingUrl: landingUrl,
+      androidDownloadUrl: androidDownloadUrl,
+      iosTestflightUrl: iosTestflightUrl,
+    );
+
+    if (qrTargetUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'APP_DOWNLOAD_URL is empty. Add it in your .env file first.',
+            'APP_LANDING_URL or APP_DOWNLOAD_URL must be set in .env.',
           ),
         ),
       );
@@ -151,24 +159,40 @@ class TeamPage extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              QrImageView(data: downloadUrl, size: 220),
+              QrImageView(data: qrTargetUrl, size: 220),
               const SizedBox(height: 12),
-              const Text(
-                'Employees can scan with their phone camera to start the app download.',
+              Text(
+                landingUrl.isNotEmpty || iosTestflightUrl.isNotEmpty
+                    ? 'Employees can scan this one link. It can route iOS to TestFlight and Android to APK.'
+                    : 'Employees can scan with their phone camera to start the app download.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               SelectableText(
-                downloadUrl,
+                qrTargetUrl,
                 style: Theme.of(context).textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
+              if (landingUrl.isNotEmpty &&
+                  (androidDownloadUrl.isNotEmpty || iosTestflightUrl.isNotEmpty))
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    [
+                      if (androidDownloadUrl.isNotEmpty)
+                        'Android target is set.',
+                      if (iosTestflightUrl.isNotEmpty) 'iOS target is set.',
+                    ].join(' '),
+                    style: Theme.of(context).textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: downloadUrl));
+                await Clipboard.setData(ClipboardData(text: qrTargetUrl));
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Download link copied.')),
@@ -184,5 +208,33 @@ class TeamPage extends ConsumerWidget {
         );
       },
     );
+  }
+
+  String _resolveQrTargetUrl({
+    required String landingUrl,
+    required String androidDownloadUrl,
+    required String iosTestflightUrl,
+  }) {
+    if (landingUrl.isNotEmpty) {
+      final base = Uri.tryParse(landingUrl);
+      if (base != null && base.hasScheme && base.host.isNotEmpty) {
+        final hasAndroid = base.queryParameters.containsKey('android');
+        final hasIos = base.queryParameters.containsKey('ios');
+        if (!hasAndroid && !hasIos) {
+          final mergedQuery = <String, String>{
+            ...base.queryParameters,
+            if (androidDownloadUrl.isNotEmpty) 'android': androidDownloadUrl,
+            if (iosTestflightUrl.isNotEmpty) 'ios': iosTestflightUrl,
+          };
+          return base.replace(queryParameters: mergedQuery).toString();
+        }
+      }
+      return landingUrl;
+    }
+
+    if (androidDownloadUrl.isNotEmpty) {
+      return androidDownloadUrl;
+    }
+    return '';
   }
 }

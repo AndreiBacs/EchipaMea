@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EchipaMea App Download</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        line-height: 1.4;
+      }
+      main {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 32px 16px;
+      }
+      .card {
+        border: 1px solid #d0d0d0;
+        border-radius: 12px;
+        padding: 20px;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .button {
+        display: inline-block;
+        padding: 10px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #fff;
+        background: #1b5e20;
+      }
+      .button.secondary {
+        background: #1565c0;
+      }
+      .muted {
+        color: #666;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="card">
+        <h1>Install EchipaMea</h1>
+        <p id="status">Preparing download...</p>
+        <div class="actions">
+          <a id="androidBtn" class="button" href="#" hidden>Android download</a>
+          <a id="iosBtn" class="button secondary" href="#" hidden>Open TestFlight</a>
+        </div>
+        <p class="muted">
+          If automatic redirect does not start, use one of the buttons above.
+        </p>
+      </div>
+    </main>
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+
+        // Use query params first so you can reuse this page for multiple companies:
+        // ?android=https://example.com/app.apk&ios=https://testflight.apple.com/join/XXXX
+        // Fallback values can be hardcoded below if desired.
+        var androidUrl = params.get("android") || "";
+        var iosUrl = params.get("ios") || "";
+
+        var ua = navigator.userAgent || "";
+        var isAndroid = /Android/i.test(ua);
+        var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+        var status = document.getElementById("status");
+        var androidBtn = document.getElementById("androidBtn");
+        var iosBtn = document.getElementById("iosBtn");
+
+        if (androidUrl) {
+          androidBtn.href = androidUrl;
+          androidBtn.hidden = false;
+        }
+        if (iosUrl) {
+          iosBtn.href = iosUrl;
+          iosBtn.hidden = false;
+        }
+
+        if (isAndroid && androidUrl) {
+          status.textContent = "Android detected. Starting download...";
+          window.location.replace(androidUrl);
+          return;
+        }
+
+        if (isIOS && iosUrl) {
+          status.textContent = "iPhone detected. Opening TestFlight...";
+          window.location.replace(iosUrl);
+          return;
+        }
+
+        if (isIOS && !iosUrl) {
+          status.textContent =
+            "iPhone detected, but TestFlight link is missing. Ask your foreman.";
+          return;
+        }
+
+        if (isAndroid && !androidUrl) {
+          status.textContent =
+            "Android detected, but APK link is missing. Ask your foreman.";
+          return;
+        }
+
+        status.textContent = "Choose your platform using the buttons below.";
+      })();
+    </script>
+  </body>
+</html>
