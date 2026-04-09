@@ -1,0 +1,27 @@
+---
+description: Require README updates when adding new functionality
+alwaysApply: true
+---
+
+# README Update Requirement
+
+When you add or change user-visible functionality, update `README.md` in the same task.
+
+## Required README updates
+
+- Add or revise a short description of the new functionality.
+- Document any new setup, configuration, environment variables, or permissions.
+- Update usage instructions (commands, routes, flows, or screenshots) if behavior changed.
+- If no README change is needed, explicitly state why in the final response.
+
+## Examples
+
+```text
+Feature: Add QR worker pairing flow
+README: Add "Worker Pairing" section with steps and prerequisites.
+```
+
+```text
+Feature: Add AUTH_API_BASE_URL usage in login
+README: Update Configuration section with AUTH_API_BASE_URL and example value.
+```
