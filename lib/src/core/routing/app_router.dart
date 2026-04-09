@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../auth/auth_session_controller.dart';
 import '../../features/foreman/presentation/pages/client_form_page.dart';
 import '../../features/foreman/presentation/pages/employee_form_page.dart';
 import '../../features/foreman/presentation/pages/foreman_shell_page.dart';
@@ -10,9 +12,36 @@ import '../../features/legal/presentation/pages/terms_page.dart';
 import '../../features/worker/presentation/pages/worker_connect_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authSessionProvider);
+
   return GoRouter(
-    initialLocation: HomePage.routePath,
+    initialLocation: LoginPage.routePath,
+    redirect: (context, state) {
+      final isForemanRoute = state.matchedLocation.startsWith('/foreman');
+      final isLoginRoute = state.matchedLocation == LoginPage.routePath;
+      final session = authState is AsyncData<AuthSession?>
+          ? authState.value
+          : null;
+      final isLoggedIn = session != null;
+
+      if (authState.isLoading) return null;
+
+      if (!isLoggedIn && isForemanRoute) {
+        return LoginPage.routePath;
+      }
+
+      if (isLoggedIn && isLoginRoute) {
+        return ForemanShellPage.dashboardPath;
+      }
+
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: LoginPage.routePath,
+        name: LoginPage.routeName,
+        builder: (context, state) => const LoginPage(),
+      ),
       GoRoute(
         path: HomePage.routePath,
         name: HomePage.routeName,
