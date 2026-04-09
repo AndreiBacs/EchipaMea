@@ -70,7 +70,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return WorkerShellPage.workPath;
       }
 
-      if (isForemanLoggedIn && isWorkerAppRoute && !isWorkerConnectRoute) {
+      // Allow worker shell when a worker session exists, even if foreman token
+      // is still stored (e.g. same device tested both roles).
+      if (isForemanLoggedIn &&
+          isWorkerAppRoute &&
+          !isWorkerConnectRoute &&
+          workerSession == null) {
         return ForemanShellPage.dashboardPath;
       }
 

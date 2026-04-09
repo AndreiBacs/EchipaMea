@@ -86,7 +86,12 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
                       SnackBar(content: Text(l10n.workerConnected)),
                     );
                     if (!context.mounted) return;
-                    context.go(WorkerShellPage.workPath);
+                    // Defer navigation so session + GoRouter (ref.watch) settle
+                    // before redirect runs.
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!context.mounted) return;
+                      context.go(WorkerShellPage.workPath);
+                    });
                   },
                   onDetectError: (error, stackTrace) {
                     if (_invalidScanShown || _handled) return;

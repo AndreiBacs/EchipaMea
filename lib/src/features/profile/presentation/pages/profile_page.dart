@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/i18n/locale_controller.dart';
 import '../../../../core/profile/profile_controller.dart';
+import '../../../auth/presentation/pages/login_page.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -136,6 +138,21 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     onPressed: isSaving ? null : _saveProfile,
                     icon: const Icon(Icons.save),
                     label: Text(l10n.profileSaveButton),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await ref
+                            .read(authSessionProvider.notifier)
+                            .logout();
+                        if (!context.mounted) return;
+                        context.go(LoginPage.routePath);
+                      },
+                      icon: const Icon(Icons.logout),
+                      label: Text(l10n.logout),
+                    ),
                   ),
                 ],
               ),

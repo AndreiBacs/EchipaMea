@@ -9,22 +9,23 @@ import '../../../core/auth/session_controller.dart';
 import '../../../core/config/app_env.dart';
 import '../../foreman/presentation/providers/team_controller.dart';
 
-final workerTelemetryCoordinatorProvider = Provider<WorkerTelemetryCoordinator>((
-  ref,
-) {
-  final coordinator = WorkerTelemetryCoordinator();
-  ref.listen<WorkerSession?>(sessionProvider, (_, next) {
-    coordinator.updateSession(next);
-  }, fireImmediately: true);
-  ref.listen<List<Employee>>(teamProvider, (_, next) {
-    coordinator.updateEmployees(next);
-  }, fireImmediately: true);
-  ref.onDispose(coordinator.dispose);
-  return coordinator;
-});
+final workerTelemetryCoordinatorProvider = Provider<WorkerTelemetryCoordinator>(
+  (ref) {
+    final coordinator = WorkerTelemetryCoordinator();
+    ref.listen<WorkerSession?>(sessionProvider, (_, next) {
+      coordinator.updateSession(next);
+    }, fireImmediately: true);
+    ref.listen<List<Employee>>(teamProvider, (_, next) {
+      coordinator.updateEmployees(next);
+    }, fireImmediately: true);
+    ref.onDispose(coordinator.dispose);
+    return coordinator;
+  },
+);
 
 class WorkerTelemetryCoordinator {
-  static const Duration _pollInterval = Duration(seconds: 30);
+  /// How often to read GPS and send a `worker_location` message on the telemetry WebSocket.
+  static const Duration _pollInterval = Duration(minutes: 30);
 
   WorkerSession? _session;
   Map<String, Employee> _employeesById = const {};

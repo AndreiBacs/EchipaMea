@@ -187,6 +187,7 @@ class AppLocalizations {
       'workerOpenNavigation': 'Deschide navigatia',
       'workerNavigationOpenFailed':
           'Nu am putut deschide navigatia pe acest dispozitiv.',
+      'workerChooseNavigationApp': 'Alege aplicatia de navigatie',
       'workerAnnounceArrival': 'Am ajuns la locatie',
       'workerArrivalSent': 'Seful de echipa a fost anuntat ca ai ajuns.',
       'workerLocationMissing':
@@ -390,6 +391,7 @@ class AppLocalizations {
       'workerOpenNavigation': 'Navigacio megnyitasa',
       'workerNavigationOpenFailed':
           'A navigacio nem nyithato meg ezen az eszkozon.',
+      'workerChooseNavigationApp': 'Valassz navigacios alkalmazast',
       'workerAnnounceArrival': 'Megérkeztem a helyszinre',
       'workerArrivalSent': 'A munkavezeto ertesult az erkezesrol.',
       'workerLocationMissing':
@@ -591,6 +593,7 @@ class AppLocalizations {
       'workerOpenNavigation': 'Open navigation',
       'workerNavigationOpenFailed':
           'Could not open navigation on this device.',
+      'workerChooseNavigationApp': 'Choose a navigation app',
       'workerAnnounceArrival': 'I have arrived on site',
       'workerArrivalSent': 'Your foreman is notified that you arrived.',
       'workerLocationMissing':
@@ -778,6 +781,7 @@ class AppLocalizations {
   String get workerAssignedWorkersLabel => _t('workerAssignedWorkersLabel');
   String get workerOpenNavigation => _t('workerOpenNavigation');
   String get workerNavigationOpenFailed => _t('workerNavigationOpenFailed');
+  String get workerChooseNavigationApp => _t('workerChooseNavigationApp');
   String get workerAnnounceArrival => _t('workerAnnounceArrival');
   String get workerArrivalSent => _t('workerArrivalSent');
   String get workerLocationMissing => _t('workerLocationMissing');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:map_launcher/map_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/auth/session_controller.dart';
@@ -78,6 +79,7 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                 ? () => _openMaps(
                       context,
                       l10n,
+                      project.name,
                       project.latitude!,
                       project.longitude!,
                     )
@@ -136,16 +138,98 @@ class WorkerProjectDetailPage extends ConsumerWidget {
   static Future<void> _openMaps(
     BuildContext context,
     AppLocalizations l10n,
+    String destinationLabel,
+    double lat,
+    double lng,
+  ) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final coords = Coords(lat, lng);
+
+    try {
+      final maps = await MapLauncher.installedMaps;
+      if (!context.mounted) return;
+
+      if (maps.isEmpty) {
+        await _openMapsInBrowser(
+          messenger,
+          l10n,
+          lat,
+          lng,
+        );
+        return;
+      }
+
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (sheetContext) {
+          final maxHeight = MediaQuery.sizeOf(sheetContext).height * 0.55;
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Text(
+                    l10n.workerChooseNavigationApp,
+                    style: Theme.of(sheetContext).textTheme.titleMedium,
+                  ),
+                ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: maps.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (ctx, index) {
+                      final map = maps[index];
+                      return ListTile(
+                        leading: const Icon(Icons.navigation_outlined),
+                        title: Text(map.mapName),
+                        onTap: () async {
+                          Navigator.of(sheetContext).pop();
+                          try {
+                            await map.showDirections(
+                              destination: coords,
+                              destinationTitle: destinationLabel,
+                            );
+                          } catch (error) {
+                            debugPrint('showDirections failed: $error');
+                            messenger?.showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.workerNavigationOpenFailed),
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (error) {
+      debugPrint('MapLauncher.installedMaps failed: $error');
+      await _openMapsInBrowser(messenger, l10n, lat, lng);
+    }
+  }
+
+  static Future<void> _openMapsInBrowser(
+    ScaffoldMessengerState? messenger,
+    AppLocalizations l10n,
     double lat,
     double lng,
   ) async {
     final uri = Uri.parse(
       'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
     );
-    final messenger = ScaffoldMessenger.of(context);
     try {
       if (!await canLaunchUrl(uri)) {
-        messenger.showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(content: Text(l10n.workerNavigationOpenFailed)),
         );
         return;
@@ -155,13 +239,13 @@ class WorkerProjectDetailPage extends ConsumerWidget {
         mode: LaunchMode.externalApplication,
       );
       if (!launched) {
-        messenger.showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(content: Text(l10n.workerNavigationOpenFailed)),
         );
       }
     } catch (error) {
       debugPrint('Failed to open navigation URL: $error');
-      messenger.showSnackBar(
+      messenger?.showSnackBar(
         SnackBar(content: Text(l10n.workerNavigationOpenFailed)),
       );
     }

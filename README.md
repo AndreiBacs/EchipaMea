@@ -11,11 +11,11 @@ Mobile app for small contractor teams, built with Flutter.
   - Projects (list, add, edit, status, assigned workers)
   - Team (list, add, edit, contact data: phone/email, employee QR login generation)
   - Clients (list, add, edit, contact data: phone/email/address/person of contact)
-  - Profile (edit personal data and change app language)
+  - Profile (edit personal data, change app language, and logout)
   - Realtime notifications badge in the app bar for new worker report submissions (via websocket events from backend)
 - Worker area (fewer screens than foreman: work + profile):
   - **Work** (`/worker/work`): queue of jobs assigned to you (matched by your name on the project's worker list). The next job is highlighted; tap for details.
-  - **Job details** (`/worker/project/:id`): open turn-by-turn navigation in Google Maps when the project has coordinates, tap **I have arrived on site** to notify the foreman, and **Finish this job** to start the report flow.
+  - **Job details** (`/worker/project/:id`): **Open navigation** lists installed map apps (Google Maps, Apple Maps, Waze, etc.) via `map_launcher` and starts directions to the site; falls back to Google Maps in the browser if none are detected. Requires coordinates on the project.
   - **Report** (`/worker/project/:id/report`): three steps—optional site photos (up to 8), optional voice memo, required short description, then submit to backend with multipart/form-data (also marks project done in local demo data).
   - **Profile** (`/worker/profile`): app language and worker logout.
 - Worker login flow:
@@ -38,7 +38,8 @@ Mobile app for small contractor teams, built with Flutter.
 - `flutter_map` + OpenStreetMap tiles (foreman map view)
 - `geolocator` (worker GPS location)
 - `web_socket_channel` (worker telemetry to backend)
-- `url_launcher` (worker opens maps for job site navigation)
+- `url_launcher` (fallback open in browser when no map app is available)
+- `map_launcher` (pick installed navigation app: Google Maps, Apple Maps, Waze, …)
 - `image_picker` (optional photos on worker report)
 - `record` (optional voice memo on worker report)
 - `path_provider` (temp file path for recordings)
@@ -56,13 +57,14 @@ Behavior:
 
 - Each employee has configurable working days and start/end hour.
 - Location events are sent only while local device time is inside that employee's configured schedule.
+- While in schedule, the app sends the worker's current position about **every 30 minutes** on the same WebSocket (`type`: `worker_location`, same JSON shape as before). The first send runs shortly after the session becomes active in working hours.
 - Outside working hours, the app does not send telemetry and closes the WebSocket connection.
 - When a worker report upload succeeds, the app sends a best-effort websocket event so backend can notify foremen in realtime.
 
 ## Worker report permissions (mobile)
 
-- **Android**: `RECORD_AUDIO` is declared for voice memos; the photo picker uses the system photo picker where available.
-- **iOS**: `Info.plist` includes microphone, photo library, and camera usage strings for reports (camera is available if you extend the flow to capture photos).
+- **Android**: `RECORD_AUDIO` is declared for voice memos; the photo picker uses the system photo picker where available. `map_launcher` merges package visibility queries for common map apps.
+- **iOS**: `Info.plist` includes microphone, photo library, and camera usage strings for reports (camera is available if you extend the flow to capture photos). `LSApplicationQueriesSchemes` includes URL schemes so the app can detect and open third-party map apps (see `map_launcher` docs for the full list).
 
 ## Run the app
 
