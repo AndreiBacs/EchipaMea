@@ -1,0 +1,30 @@
+---
+description: Format code before committing changes
+alwaysApply: true
+---
+
+# Format Before Commit
+
+Before creating a commit, always format changed code files.
+
+## Required
+
+- Run formatter commands for the files you changed.
+- If a language formatter is available, prefer it over manual whitespace edits.
+- Re-run formatting if subsequent edits are made before commit.
+
+## Commands for this repository
+
+```bash
+dart format <changed-dart-files>
+```
+
+For broad formatting when needed:
+
+```bash
+dart format .
+```
+
+## Commit readiness
+
+Do not create a commit until formatting has been applied to the changed files.

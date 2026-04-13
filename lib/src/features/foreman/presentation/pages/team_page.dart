@@ -1,10 +1,11 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
-import 'dart:convert';
 
 import '../../../../core/config/app_env.dart';
 import '../../../../core/domain/entities/worker_role.dart';
@@ -14,6 +15,8 @@ import '../providers/team_controller.dart';
 
 class TeamPage extends ConsumerWidget {
   const TeamPage({super.key});
+
+  static const _workerLoginTicketType = 'foreman_worker_login_ticket';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,7 +112,9 @@ class TeamPage extends ConsumerWidget {
                                   Icon(
                                     Icons.badge_outlined,
                                     size: 16,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                   Text(employee.role.localizedLabel(l10n)),
                                 ],
@@ -139,8 +144,9 @@ class TeamPage extends ConsumerWidget {
                             IconButton(
                               icon: const Icon(Icons.edit_outlined),
                               tooltip: l10n.editEmployeeTooltip,
-                              onPressed: () =>
-                                  context.push('/foreman/team/${employee.id}/edit'),
+                              onPressed: () => context.push(
+                                '/foreman/team/${employee.id}/edit',
+                              ),
                             ),
                           ],
                         ),
@@ -167,17 +173,19 @@ class TeamPage extends ConsumerWidget {
 
   String _scheduleLabel(AppLocalizations l10n, Employee employee) {
     final orderedDays = employee.workingDays.toList()..sort();
-    final dayLabels = orderedDays.map((day) {
-      return switch (day) {
-        1 => l10n.weekdayMon,
-        2 => l10n.weekdayTue,
-        3 => l10n.weekdayWed,
-        4 => l10n.weekdayThu,
-        5 => l10n.weekdayFri,
-        6 => l10n.weekdaySat,
-        _ => l10n.weekdaySun,
-      };
-    }).join(', ');
+    final dayLabels = orderedDays
+        .map((day) {
+          return switch (day) {
+            1 => l10n.weekdayMon,
+            2 => l10n.weekdayTue,
+            3 => l10n.weekdayWed,
+            4 => l10n.weekdayThu,
+            5 => l10n.weekdayFri,
+            6 => l10n.weekdaySat,
+            _ => l10n.weekdaySun,
+          };
+        })
+        .join(', ');
     final start = employee.workStartHour.toString().padLeft(2, '0');
     final end = employee.workEndHour.toString().padLeft(2, '0');
     return '$dayLabels • $start:00-$end:00';
@@ -187,11 +195,20 @@ class TeamPage extends ConsumerWidget {
     BuildContext context,
     Employee employee,
   ) async {
+    final now = DateTime.now().toUtc();
+    final expiresAt = now.add(const Duration(seconds: 90));
+    // Use a platform-safe random source for mock ticket IDs.
+    // Keep max under web integer edge-cases (avoid 1 << 32).
+    final random = Random().nextInt(0x7fffffff).toRadixString(16);
+    final ticketId =
+        'ticket-${employee.id}-${now.microsecondsSinceEpoch}-$random';
     final payload = jsonEncode({
-      'type': 'employee_login',
+      'type': _workerLoginTicketType,
+      'ticketId': ticketId,
       'employeeId': employee.id,
       'employeeName': employee.name,
-      'issuedAt': DateTime.now().toIso8601String(),
+      'issuedAt': now.toIso8601String(),
+      'expiresAt': expiresAt.toIso8601String(),
     });
 
     await showDialog<void>(
@@ -274,11 +291,7 @@ class TeamPage extends ConsumerWidget {
 
     if (qrTargetUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.l10n.appDownloadMissingUrl,
-          ),
-        ),
+        SnackBar(content: Text(context.l10n.appDownloadMissingUrl)),
       );
       return;
     }
