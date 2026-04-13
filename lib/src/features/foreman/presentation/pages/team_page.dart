@@ -197,7 +197,9 @@ class TeamPage extends ConsumerWidget {
   ) async {
     final now = DateTime.now().toUtc();
     final expiresAt = now.add(const Duration(seconds: 90));
-    final random = Random.secure().nextInt(1 << 32).toRadixString(16);
+    // Use a platform-safe random source for mock ticket IDs.
+    // Keep max under web integer edge-cases (avoid 1 << 32).
+    final random = Random().nextInt(0x7fffffff).toRadixString(16);
     final ticketId =
         'ticket-${employee.id}-${now.microsecondsSinceEpoch}-$random';
     final payload = jsonEncode({
