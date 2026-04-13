@@ -8,10 +8,10 @@ Mobile app for small contractor teams, built with Flutter.
 - Foreman area includes:
   - Dashboard (employees, active projects, assignment visibility)
   - Map (active projects in progress and worker positions in one live overview)
-  - Projects (list, add, edit, status, assigned workers)
+- Projects (list, add, edit, status, assigned workers, and required client assignment)
   - Team (list, add, edit, contact data: phone/email, trade role chosen from a predefined list in a dropdown, employee QR login generation)
-  - Clients (list, add, edit, contact data: phone/email/address/person of contact)
-  - Profile (edit personal data, change app language, and logout)
+- Clients (list, add, edit, contact data: phone/email/split address fields/person of contact, plus client type/status/preferred contact method/notes and allocated projects per client, including a dedicated client-projects list page with direct "Add project" for that client)
+  - Profile (change app language and theme mode: Follow system/Light/Dark, edit personal data, manage foreman company data: name/address/IBAN/CUI/VAT/trade register number, and logout)
   - Phone fields on team, clients, and profile use `intl_phone_number_input`: country code is chosen from a short list (Romania +40 first), and the national number is formatted as you type.
   - Realtime notifications badge in the app bar for new worker report submissions (via websocket events from backend)
 - Worker area (fewer screens than foreman: work + profile):

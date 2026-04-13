@@ -11,6 +11,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
       Project(
         id: 'p1',
         name: 'Renovation - Main Street 15',
+        clientId: 'c1',
         status: ProjectStatus.inProgress,
         workers: ['Andrei D.', 'Vlad P.'],
         assignedEmployeeIds: ['e1'],
@@ -20,6 +21,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
       Project(
         id: 'p2',
         name: 'Roof repair - Industrial Hall',
+        clientId: 'c2',
         status: ProjectStatus.planned,
         workers: ['Ioana R.'],
         assignedEmployeeIds: ['e3'],
@@ -29,6 +31,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
       Project(
         id: 'p3',
         name: 'Kitchen fit-out - Cafe Luna',
+        clientId: 'c3',
         status: ProjectStatus.done,
         workers: ['Mihai S.'],
         assignedEmployeeIds: ['e2'],
@@ -40,6 +43,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
 
   void addProject({
     required String name,
+    required String clientId,
     required ProjectStatus status,
     required List<String> workers,
     List<String> assignedEmployeeIds = const [],
@@ -53,6 +57,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
       Project(
         id: nextId,
         name: name,
+        clientId: clientId,
         status: status,
         workers: workers,
         assignedEmployeeIds: assignedEmployeeIds,
@@ -65,6 +70,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
   void updateProject({
     required String id,
     required String name,
+    required String clientId,
     required ProjectStatus status,
     required List<String> workers,
     List<String> assignedEmployeeIds = const [],
@@ -76,6 +82,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
         if (project.id == id)
           project.copyWith(
             name: name,
+            clientId: clientId,
             status: status,
             workers: workers,
             assignedEmployeeIds: assignedEmployeeIds,
@@ -118,6 +125,7 @@ class Project {
   const Project({
     required this.id,
     required this.name,
+    required this.clientId,
     required this.status,
     required this.workers,
     this.assignedEmployeeIds = const [],
@@ -127,6 +135,7 @@ class Project {
 
   final String id;
   final String name;
+  final String clientId;
   final ProjectStatus status;
   final List<String> workers;
   /// When non-empty, prefer matching the signed-in worker by [Employee.id].
@@ -141,6 +150,7 @@ class Project {
 
   Project copyWith({
     String? name,
+    String? clientId,
     ProjectStatus? status,
     List<String>? workers,
     List<String>? assignedEmployeeIds,
@@ -150,6 +160,7 @@ class Project {
     return Project(
       id: id,
       name: name ?? this.name,
+      clientId: clientId ?? this.clientId,
       status: status ?? this.status,
       workers: workers ?? this.workers,
       assignedEmployeeIds: assignedEmployeeIds ?? this.assignedEmployeeIds,

@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +8,7 @@ import '../auth/auth_session_controller.dart';
 import '../auth/session_controller.dart';
 import '../setup/setup_flow_controller.dart';
 import '../../features/foreman/presentation/pages/client_form_page.dart';
+import '../../features/foreman/presentation/pages/client_projects_page.dart';
 import '../../features/foreman/presentation/pages/employee_form_page.dart';
 import '../../features/foreman/presentation/pages/foreman_shell_page.dart';
 import '../../features/foreman/presentation/pages/project_form_page.dart';
@@ -16,6 +18,16 @@ import '../../features/worker/presentation/pages/worker_connect_page.dart';
 import '../../features/worker/presentation/pages/worker_project_detail_page.dart';
 import '../../features/worker/presentation/pages/worker_report_flow_page.dart';
 import '../../features/worker/presentation/pages/worker_shell_page.dart';
+
+NoTransitionPage<void> _noTransitionPage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return NoTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+  );
+}
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authSessionProvider);
@@ -108,38 +120,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: ForemanShellPage.dashboardPath,
         name: 'foreman_dashboard',
-        builder: (context, state) =>
-            const ForemanShellPage(currentTab: ForemanTab.dashboard),
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const ForemanShellPage(currentTab: ForemanTab.dashboard),
+        ),
       ),
       GoRoute(
         path: ForemanShellPage.mapPath,
         name: 'foreman_map',
-        builder: (context, state) =>
-            const ForemanShellPage(currentTab: ForemanTab.map),
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const ForemanShellPage(currentTab: ForemanTab.map),
+        ),
       ),
       GoRoute(
         path: ForemanShellPage.projectsPath,
         name: 'foreman_projects',
-        builder: (context, state) =>
-            const ForemanShellPage(currentTab: ForemanTab.projects),
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const ForemanShellPage(currentTab: ForemanTab.projects),
+        ),
       ),
       GoRoute(
         path: ForemanShellPage.teamPath,
         name: 'foreman_team',
-        builder: (context, state) =>
-            const ForemanShellPage(currentTab: ForemanTab.team),
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const ForemanShellPage(currentTab: ForemanTab.team),
+        ),
       ),
       GoRoute(
         path: ForemanShellPage.clientsPath,
         name: 'foreman_clients',
-        builder: (context, state) =>
-            const ForemanShellPage(currentTab: ForemanTab.clients),
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const ForemanShellPage(currentTab: ForemanTab.clients),
+        ),
       ),
       GoRoute(
         path: ForemanShellPage.profilePath,
         name: 'foreman_profile',
-        builder: (context, state) =>
-            const ForemanShellPage(currentTab: ForemanTab.profile),
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const ForemanShellPage(currentTab: ForemanTab.profile),
+        ),
       ),
       GoRoute(
         path: ClientFormPage.createPath,
@@ -155,9 +179,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: ClientProjectsPage.path,
+        name: 'client_projects',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ClientProjectsPage(clientId: id);
+        },
+      ),
+      GoRoute(
         path: ProjectFormPage.createPath,
         name: 'project_create',
-        builder: (context, state) => const ProjectFormPage(),
+        builder: (context, state) {
+          final initialClientId = state.uri.queryParameters['clientId'];
+          return ProjectFormPage(initialClientId: initialClientId);
+        },
       ),
       GoRoute(
         path: ProjectFormPage.editPath,
@@ -183,14 +218,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: WorkerShellPage.workPath,
         name: 'worker_work',
-        builder: (context, state) =>
-            const WorkerShellPage(currentTab: WorkerTab.work),
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const WorkerShellPage(currentTab: WorkerTab.work),
+        ),
       ),
       GoRoute(
         path: WorkerShellPage.profilePath,
         name: 'worker_profile',
-        builder: (context, state) =>
-            const WorkerShellPage(currentTab: WorkerTab.profile),
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const WorkerShellPage(currentTab: WorkerTab.profile),
+        ),
       ),
       GoRoute(
         path: WorkerConnectPage.routePath,

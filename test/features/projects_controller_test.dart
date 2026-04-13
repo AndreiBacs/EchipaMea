@@ -24,6 +24,7 @@ void main() {
       for (final project in container.read(projectsProvider)) {
         expect(project.id, isNotEmpty);
         expect(project.name, isNotEmpty);
+        expect(project.clientId, isNotEmpty);
         expect(project.workers, isNotEmpty);
       }
     });
@@ -33,6 +34,7 @@ void main() {
     test('increases project count by one', () {
       container.read(projectsProvider.notifier).addProject(
             name: 'New Project',
+            clientId: 'c1',
             status: ProjectStatus.planned,
             workers: ['Worker A'],
           );
@@ -42,6 +44,7 @@ void main() {
     test('added project is appended to the end', () {
       container.read(projectsProvider.notifier).addProject(
             name: 'Last Project',
+            clientId: 'c1',
             status: ProjectStatus.done,
             workers: ['Worker B'],
           );
@@ -51,6 +54,7 @@ void main() {
     test('added project has all fields set correctly', () {
       container.read(projectsProvider.notifier).addProject(
             name: 'Full Fields',
+            clientId: 'c2',
             status: ProjectStatus.inProgress,
             workers: ['Alice', 'Bob'],
             latitude: 46.77,
@@ -58,6 +62,7 @@ void main() {
           );
       final added = container.read(projectsProvider).last;
       expect(added.name, 'Full Fields');
+      expect(added.clientId, 'c2');
       expect(added.status, ProjectStatus.inProgress);
       expect(added.workers, ['Alice', 'Bob']);
       expect(added.latitude, 46.77);
@@ -67,6 +72,7 @@ void main() {
     test('added project without coordinates has null lat/long', () {
       container.read(projectsProvider.notifier).addProject(
             name: 'No Coords',
+            clientId: 'c3',
             status: ProjectStatus.planned,
             workers: [],
           );
@@ -78,11 +84,13 @@ void main() {
     test('generated ids are unique for successive adds', () {
       container.read(projectsProvider.notifier).addProject(
             name: 'A',
+            clientId: 'c1',
             status: ProjectStatus.planned,
             workers: [],
           );
       container.read(projectsProvider.notifier).addProject(
             name: 'B',
+            clientId: 'c2',
             status: ProjectStatus.planned,
             workers: [],
           );
@@ -97,6 +105,7 @@ void main() {
       container.read(projectsProvider.notifier).updateProject(
             id: 'p1',
             name: 'Updated Name',
+            clientId: 'c1',
             status: ProjectStatus.inProgress,
             workers: ['Andrei D.', 'Vlad P.'],
           );
@@ -110,6 +119,7 @@ void main() {
       container.read(projectsProvider.notifier).updateProject(
             id: 'p2',
             name: 'Roof repair - Industrial Hall',
+            clientId: 'c2',
             status: ProjectStatus.done,
             workers: ['Ioana R.'],
           );
@@ -123,6 +133,7 @@ void main() {
       container.read(projectsProvider.notifier).updateProject(
             id: 'p3',
             name: 'Kitchen fit-out - Cafe Luna',
+            clientId: 'c3',
             status: ProjectStatus.done,
             workers: ['Worker X', 'Worker Y'],
           );
@@ -137,6 +148,7 @@ void main() {
       container.read(projectsProvider.notifier).updateProject(
             id: 'p1',
             name: 'X',
+            clientId: 'c1',
             status: ProjectStatus.planned,
             workers: [],
           );
@@ -147,6 +159,7 @@ void main() {
       container.read(projectsProvider.notifier).updateProject(
             id: 'p1',
             name: 'Changed',
+            clientId: 'c1',
             status: ProjectStatus.planned,
             workers: [],
           );
@@ -162,6 +175,7 @@ void main() {
       container.read(projectsProvider.notifier).updateProject(
             id: 'nonexistent',
             name: 'Ghost',
+            clientId: 'c1',
             status: ProjectStatus.planned,
             workers: [],
           );
@@ -214,6 +228,7 @@ void main() {
       const project = Project(
         id: 'x',
         name: 'X',
+        clientId: 'c1',
         status: ProjectStatus.planned,
         workers: [],
       );
@@ -224,6 +239,7 @@ void main() {
       const project = Project(
         id: 'x',
         name: 'X',
+        clientId: 'c1',
         status: ProjectStatus.planned,
         workers: ['Alice'],
       );
@@ -234,6 +250,7 @@ void main() {
       const project = Project(
         id: 'x',
         name: 'X',
+        clientId: 'c1',
         status: ProjectStatus.planned,
         workers: ['Alice', 'Bob', 'Carol'],
       );
@@ -245,6 +262,7 @@ void main() {
     const original = Project(
       id: 'orig',
       name: 'Original',
+      clientId: 'c1',
       status: ProjectStatus.planned,
       workers: ['W1'],
       latitude: 46.77,
@@ -255,6 +273,7 @@ void main() {
       final copy = original.copyWith();
       expect(copy.id, original.id);
       expect(copy.name, original.name);
+      expect(copy.clientId, original.clientId);
       expect(copy.status, original.status);
       expect(copy.workers, original.workers);
       expect(copy.latitude, original.latitude);
