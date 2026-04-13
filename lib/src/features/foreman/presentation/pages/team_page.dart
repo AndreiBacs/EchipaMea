@@ -1,11 +1,11 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
-import 'dart:convert';
-import 'dart:math';
 
 import '../../../../core/config/app_env.dart';
 import '../../../../core/domain/entities/worker_role.dart';
