@@ -14,7 +14,6 @@ import '../../../../core/i18n/app_localizations.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../../application/worker_reports_api_provider.dart';
 import '../providers/worker_assigned_projects_provider.dart';
-import '../providers/worker_completed_projects_provider.dart';
 import '../../application/worker_foreman_inbox_controller.dart';
 import 'worker_shell_page.dart';
 
@@ -278,9 +277,6 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
               hasVoiceMemo: _memoPath != null,
             ),
           );
-      ref
-          .read(workerCompletedProjectIdsProvider.notifier)
-          .markCompleted(project.id);
       await _deleteMemoFile(_memoPath);
       if (mounted) {
         setState(() => _memoPath = null);
@@ -363,7 +359,7 @@ class _PhotoThumbnail extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) =>
+        errorBuilder: (context, error, stackTrace) =>
             const Icon(Icons.broken_image_outlined, size: 32),
       ),
     );

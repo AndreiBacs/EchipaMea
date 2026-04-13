@@ -11,10 +11,12 @@ void main() {
     WidgetTester tester, {
     String? projectId,
     String? initialClientId,
+    int initialTabIndex = 0,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          locale: const Locale('en'),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -25,6 +27,7 @@ void main() {
           home: ProjectFormPage(
             projectId: projectId,
             initialClientId: initialClientId,
+            initialTabIndex: initialTabIndex,
           ),
         ),
       ),
@@ -65,5 +68,48 @@ void main() {
 
     expect(clientDropdown.initialValue, 'c1');
     expect(clientDropdown.onChanged, isNotNull);
+  });
+
+  testWidgets('use client address toggle syncs and locks address fields', (
+    tester,
+  ) async {
+    await pumpProjectForm(tester, initialClientId: 'c1');
+
+    expect(find.text('Str. Victoriei 12'), findsOneWidget);
+
+    await tester.tap(find.text('Use client address'));
+    await tester.pumpAndSettle();
+
+    final addressField = tester.widget<TextField>(
+      find.widgetWithText(TextField, 'Project address'),
+    );
+    expect(addressField.enabled, isTrue);
+  });
+
+  testWidgets('initialTabIndex opens phases tab with add phase', (tester) async {
+    await pumpProjectForm(tester, projectId: 'p1', initialTabIndex: 1);
+
+    expect(find.text('Add phase'), findsOneWidget);
+  });
+
+  testWidgets('swipe on draft phase opens edit phase dialog', (tester) async {
+    await pumpProjectForm(tester, initialTabIndex: 1);
+
+    await tester.tap(find.text('Add phase'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Phase name'),
+      'Swipe edit phase',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Add phase'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Swipe edit phase'), findsOneWidget);
+
+    await tester.drag(find.text('Swipe edit phase'), const Offset(400, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit phase'), findsOneWidget);
   });
 }

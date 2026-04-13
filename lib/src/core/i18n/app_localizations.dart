@@ -148,9 +148,48 @@ class AppLocalizations {
       'projectNameLabel': 'Nume proiect',
       'clientDropdownLabel': 'Client',
       'projectClientPrefix': 'Client',
+      'useClientAddress': 'Foloseste adresa clientului',
+      'projectAddressLabel': 'Adresa proiect',
       'statusLabel': 'Status',
       'workersCommaSeparatedLabel': 'Angajati (separati prin virgula)',
       'createProject': 'Creeaza proiect',
+      'phasesLabel': 'Faze',
+      'addPhase': 'Adauga faza',
+      'noPhasesYet': 'Nu exista faze inca.',
+      'phaseNameLabel': 'Nume faza',
+      'assignEmployees': 'Aloca angajati',
+      'submitLabel': 'Trimite',
+      'myPhases': 'Fazele mele',
+      'phaseSubmittedForReview': 'Faza a fost trimisa pentru verificare.',
+      'phaseStatusNotStarted': 'Neinceputa',
+      'phaseStatusPendingReview': 'In asteptarea verificarii',
+      'approve': 'Aproba',
+      'reject': 'Respinge',
+      'projectFormDetailsTab': 'Detalii',
+      'editPhase': 'Editeaza faza',
+      'removePhase': 'Sterge faza',
+      'clientLabel': 'Client',
+      'phaseDescriptionLabel': 'Descriere (optional)',
+      'phaseEditDoneHint':
+          'Faza este finalizata: poti actualiza doar descrierea; numele si echipa raman fixe.',
+      'phaseWorkInstructionsTitle': 'Instructiuni pentru echipa',
+      'phaseWorkInstructionsHint':
+          'Fiecare pas poate avea fotografii si note vocale proprii; sunt vizibile muncitorilor alocati pe faza.',
+      'phaseAddInstructionStep': 'Adauga pas',
+      'phaseRemoveInstructionStep': 'Elimina pas',
+      'phaseInstructionPhotosForStep': 'Fotografii pentru acest pas',
+      'phaseInstructionAddPhotos': 'Adauga fotografii',
+      'phaseInstructionAudioForStep': 'Note vocale pentru acest pas',
+      'phaseInstructionAddVoiceNote': 'Inregistreaza nota vocala',
+      'phaseInstructionRemovePhoto': 'Elimina fotografia',
+      'phaseInstructionRemoveAudio': 'Elimina nota',
+      'phaseInstructionStepLabel': 'Pas',
+      'phaseInstructionVoiceNoteLabel': 'Nota vocala',
+      'phaseInstructionPlay': 'Reda',
+      'phaseInstructionStop': 'Opreste',
+      'workerPhaseWorkInstructionsTitle': 'Instructiuni de la sef',
+      'workerPhaseInstructionAudioWebHint':
+          'Redarea notelor vocale in browser nu este disponibila; foloseste aplicatia pe telefon.',
       'employeeFormAddTitle': 'Adauga angajat',
       'employeeFormEditTitle': 'Editeaza angajat',
       'employeeNameLabel': 'Nume angajat',
@@ -419,9 +458,48 @@ class AppLocalizations {
       'projectNameLabel': 'Projekt neve',
       'clientDropdownLabel': 'Ugyfel',
       'projectClientPrefix': 'Ugyfel',
+      'useClientAddress': 'Ugyfel cim hasznalata',
+      'projectAddressLabel': 'Projekt cime',
       'statusLabel': 'Allapot',
       'workersCommaSeparatedLabel': 'Munkasok (vesszovel elvalasztva)',
       'createProject': 'Projekt letrehozasa',
+      'phasesLabel': 'Fazisok',
+      'addPhase': 'Fazis hozzaadasa',
+      'noPhasesYet': 'Meg nincsenek fazisok.',
+      'phaseNameLabel': 'Fazis neve',
+      'assignEmployees': 'Dolgozok hozzarendelese',
+      'submitLabel': 'Kuldes',
+      'myPhases': 'Sajat fazisok',
+      'phaseSubmittedForReview': 'A fazis ellenorzesre lett bekuldve.',
+      'phaseStatusNotStarted': 'Nincs elkezdve',
+      'phaseStatusPendingReview': 'Ellenorzesre var',
+      'approve': 'Jovahagyas',
+      'reject': 'Elutasitas',
+      'projectFormDetailsTab': 'Reszletek',
+      'editPhase': 'Fazis szerkesztese',
+      'removePhase': 'Fazis torlese',
+      'clientLabel': 'Ugyfel',
+      'phaseDescriptionLabel': 'Leiras (opcionalis)',
+      'phaseEditDoneHint':
+          'A fazis kesz: csak a leiras modosithato; a nev es a csapat valtozatlan marad.',
+      'phaseWorkInstructionsTitle': 'Utasitasok a csapatnak',
+      'phaseWorkInstructionsHint':
+          'Minden lepeshez kulon fotok es hangjegyzetek tartozhatnak; a fazishoz rendelt munkasok latjak.',
+      'phaseAddInstructionStep': 'Lepes hozzaadasa',
+      'phaseRemoveInstructionStep': 'Lepes torlese',
+      'phaseInstructionPhotosForStep': 'Referenciafotok ehhez a lepeshez',
+      'phaseInstructionAddPhotos': 'Fotok hozzaadasa',
+      'phaseInstructionAudioForStep': 'Hangjegyzetek ehhez a lepeshez',
+      'phaseInstructionAddVoiceNote': 'Hangjegyzet rogzitese',
+      'phaseInstructionRemovePhoto': 'Foto torlese',
+      'phaseInstructionRemoveAudio': 'Hang torlese',
+      'phaseInstructionStepLabel': 'Lepes',
+      'phaseInstructionVoiceNoteLabel': 'Hangjegyzet',
+      'phaseInstructionPlay': 'Lejatszas',
+      'phaseInstructionStop': 'Megallitas',
+      'workerPhaseWorkInstructionsTitle': 'Utasitasok a vezetotol',
+      'workerPhaseInstructionAudioWebHint':
+          'A hang lejatszasa bongeszoben nem elerheto; hasznald az alkalmazast mobilon.',
       'employeeFormAddTitle': 'Dolgozo hozzaadasa',
       'employeeFormEditTitle': 'Dolgozo szerkesztese',
       'employeeNameLabel': 'Dolgozo neve',
@@ -686,9 +764,48 @@ class AppLocalizations {
       'projectNameLabel': 'Project name',
       'clientDropdownLabel': 'Client',
       'projectClientPrefix': 'Client',
+      'useClientAddress': 'Use client address',
+      'projectAddressLabel': 'Project address',
       'statusLabel': 'Status',
       'workersCommaSeparatedLabel': 'Workers (comma separated)',
       'createProject': 'Create project',
+      'phasesLabel': 'Phases',
+      'addPhase': 'Add phase',
+      'noPhasesYet': 'No phases yet.',
+      'phaseNameLabel': 'Phase name',
+      'assignEmployees': 'Assign employees',
+      'submitLabel': 'Submit',
+      'myPhases': 'My phases',
+      'phaseSubmittedForReview': 'Phase submitted for foreman review.',
+      'phaseStatusNotStarted': 'Not started',
+      'phaseStatusPendingReview': 'Pending review',
+      'approve': 'Approve',
+      'reject': 'Reject',
+      'projectFormDetailsTab': 'Details',
+      'editPhase': 'Edit phase',
+      'removePhase': 'Remove phase',
+      'clientLabel': 'Client',
+      'phaseDescriptionLabel': 'Description (optional)',
+      'phaseEditDoneHint':
+          'This phase is done: you can only update the description; name and crew stay fixed.',
+      'phaseWorkInstructionsTitle': 'Instructions for the crew',
+      'phaseWorkInstructionsHint':
+          'Each step can include its own reference photos and voice memos; assigned workers see them on the job.',
+      'phaseAddInstructionStep': 'Add step',
+      'phaseRemoveInstructionStep': 'Remove step',
+      'phaseInstructionPhotosForStep': 'Photos for this step',
+      'phaseInstructionAddPhotos': 'Add photos',
+      'phaseInstructionAudioForStep': 'Voice notes for this step',
+      'phaseInstructionAddVoiceNote': 'Record voice note',
+      'phaseInstructionRemovePhoto': 'Remove photo',
+      'phaseInstructionRemoveAudio': 'Remove note',
+      'phaseInstructionStepLabel': 'Step',
+      'phaseInstructionVoiceNoteLabel': 'Voice note',
+      'phaseInstructionPlay': 'Play',
+      'phaseInstructionStop': 'Stop',
+      'workerPhaseWorkInstructionsTitle': 'Foreman instructions',
+      'workerPhaseInstructionAudioWebHint':
+          'Voice playback is not available in the browser; use the app on your phone.',
       'employeeFormAddTitle': 'Add employee',
       'employeeFormEditTitle': 'Edit employee',
       'employeeNameLabel': 'Employee name',
@@ -955,9 +1072,50 @@ class AppLocalizations {
   String get clientDropdownLabel => _t('clientDropdownLabel');
   String projectClientLabel(String clientName) =>
       '${_t('projectClientPrefix')}: $clientName';
+  String get useClientAddress => _t('useClientAddress');
+  String get projectAddressLabel => _t('projectAddressLabel');
   String get statusLabel => _t('statusLabel');
   String get workersCommaSeparatedLabel => _t('workersCommaSeparatedLabel');
   String get createProject => _t('createProject');
+  String get phasesLabel => _t('phasesLabel');
+  String get addPhase => _t('addPhase');
+  String get noPhasesYet => _t('noPhasesYet');
+  String get phaseNameLabel => _t('phaseNameLabel');
+  String get assignEmployees => _t('assignEmployees');
+  String get submitLabel => _t('submitLabel');
+  String get myPhases => _t('myPhases');
+  String get phaseSubmittedForReview => _t('phaseSubmittedForReview');
+  String get phaseStatusNotStarted => _t('phaseStatusNotStarted');
+  String get phaseStatusPendingReview => _t('phaseStatusPendingReview');
+  String get approve => _t('approve');
+  String get reject => _t('reject');
+  String get projectFormDetailsTab => _t('projectFormDetailsTab');
+  String get editPhase => _t('editPhase');
+  String get removePhase => _t('removePhase');
+  String get clientLabel => _t('clientLabel');
+  String get phaseDescriptionLabel => _t('phaseDescriptionLabel');
+  String get phaseEditDoneHint => _t('phaseEditDoneHint');
+  String get phaseWorkInstructionsTitle => _t('phaseWorkInstructionsTitle');
+  String get phaseWorkInstructionsHint => _t('phaseWorkInstructionsHint');
+  String get phaseAddInstructionStep => _t('phaseAddInstructionStep');
+  String get phaseRemoveInstructionStep => _t('phaseRemoveInstructionStep');
+  String get phaseInstructionPhotosForStep =>
+      _t('phaseInstructionPhotosForStep');
+  String get phaseInstructionAddPhotos => _t('phaseInstructionAddPhotos');
+  String get phaseInstructionAudioForStep =>
+      _t('phaseInstructionAudioForStep');
+  String get phaseInstructionAddVoiceNote => _t('phaseInstructionAddVoiceNote');
+  String get phaseInstructionRemovePhoto => _t('phaseInstructionRemovePhoto');
+  String get phaseInstructionRemoveAudio => _t('phaseInstructionRemoveAudio');
+  String get phaseInstructionStepLabel => _t('phaseInstructionStepLabel');
+  String get phaseInstructionVoiceNoteLabel =>
+      _t('phaseInstructionVoiceNoteLabel');
+  String get phaseInstructionPlay => _t('phaseInstructionPlay');
+  String get phaseInstructionStop => _t('phaseInstructionStop');
+  String get workerPhaseWorkInstructionsTitle =>
+      _t('workerPhaseWorkInstructionsTitle');
+  String get workerPhaseInstructionAudioWebHint =>
+      _t('workerPhaseInstructionAudioWebHint');
   String get employeeFormAddTitle => _t('employeeFormAddTitle');
   String get employeeFormEditTitle => _t('employeeFormEditTitle');
   String get employeeNameLabel => _t('employeeNameLabel');
