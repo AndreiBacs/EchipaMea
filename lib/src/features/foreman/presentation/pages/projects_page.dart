@@ -106,7 +106,7 @@ class ProjectsPage extends ConsumerWidget {
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               const SizedBox(height: 4),
-                              Text('Client: ${clientName ?? '-'}'),
+                              Text(l10n.projectClientLabel(clientName ?? '-')),
                             ],
                           ),
                         ),
