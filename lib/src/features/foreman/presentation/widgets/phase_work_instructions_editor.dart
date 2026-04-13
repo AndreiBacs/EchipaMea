@@ -493,13 +493,18 @@ class _InstructionPhotoThumb extends StatelessWidget {
         child: FutureBuilder<Uint8List>(
           future: XFile(path).readAsBytes(),
           builder: (context, snapshot) {
-            if (!snapshot.hasData) {
+            if (snapshot.connectionState != ConnectionState.done) {
               return const Center(
                 child: SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
+              );
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const Center(
+                child: Icon(Icons.broken_image_outlined, size: 32),
               );
             }
             return ClipRRect(

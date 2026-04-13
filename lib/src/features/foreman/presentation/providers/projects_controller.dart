@@ -118,15 +118,13 @@ class ProjectsNotifier extends Notifier<List<Project>> {
   }) {
     final nextId =
         'p${state.length + 1}_${DateTime.now().millisecondsSinceEpoch}';
-    final derivedStatus =
-        phases.isNotEmpty ? projectStatusFromPhases(phases) : status;
     state = [
       ...state,
       Project(
         id: nextId,
         name: name,
         clientId: clientId,
-        status: derivedStatus,
+        status: status,
         workers: workers,
         assignedEmployeeIds: assignedEmployeeIds,
         useClientAddress: useClientAddress,
@@ -157,15 +155,13 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     double? longitude,
     List<ProjectPhase> phases = const [],
   }) {
-    final derivedStatus =
-        phases.isNotEmpty ? projectStatusFromPhases(phases) : status;
     state = [
       for (final project in state)
         if (project.id == id)
           project.copyWith(
             name: name,
             clientId: clientId,
-            status: derivedStatus,
+            status: status,
             workers: workers,
             assignedEmployeeIds: assignedEmployeeIds,
             useClientAddress: useClientAddress,
