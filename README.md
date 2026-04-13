@@ -8,7 +8,7 @@ Mobile app for small contractor teams, built with Flutter.
 - Foreman area includes:
   - Dashboard (employees, active projects, assignment visibility)
   - Map (active projects in progress and worker positions in one live overview)
-  - Projects (list, add, edit, status, assigned workers, and required client assignment)
+  - Projects (list, add, edit, status, assigned workers, and required client assignment). List rows support horizontal swipe for quick actions (for example edit vs open the Phases tab on an existing project). On a project’s **Phases** tab, swipe a phase row horizontally to open the same edit flow as the edit icon (draft phases use the quick dialog; saved projects use the full-screen phase form). Each **phase** can include **work instructions** for assigned workers: an ordered list of steps, where **each step** can have its own reference photos (gallery) and **voice memos** (same recording approach as the worker report flow). Attachments are stored as local paths in the in-memory demo until a backend stores binaries.
   - Team (list, add, edit, contact data: phone/email, trade role chosen from a predefined list in a dropdown, employee QR login generation)
   - Clients (list, add, edit, contact data: phone/email/split address fields/person of contact, plus client type/status/preferred contact method/notes and allocated projects per client, including a dedicated client-projects list page with direct "Add project" for that client)
   - Profile (change app language and theme mode: Follow system/Light/Dark, edit personal data, manage foreman company data: name/address/IBAN/CUI/VAT/trade register number, and logout)
@@ -16,8 +16,8 @@ Mobile app for small contractor teams, built with Flutter.
   - Realtime notifications badge in the app bar for new worker report submissions (via websocket events from backend)
 - Worker area (fewer screens than foreman: work + profile):
   - **Work** (`/worker/work`): queue of jobs assigned to you. Projects store optional roster employee IDs (resolved from worker names when the foreman saves the project); assignment matches signed-in **employee ID** when those IDs are set, and otherwise falls back to your display name on the worker list. The next job is highlighted; tap for details.
-  - **Job details** (`/worker/project/:id`): **Open navigation** lists installed map apps (Google Maps, Apple Maps, Waze, etc.) via `map_launcher` and starts directions to the site; falls back to Google Maps in the browser if none are detected. Requires coordinates on the project.
-  - **Report** (`/worker/project/:id/report`): three steps—optional site photos (up to 8, with thumbnails in the list), optional voice memo, required short description, then submit to backend with multipart/form-data. The worker queue drops the job immediately after a successful submit; the foreman **Projects** list moves that job to **Done** when a `worker_report_submitted` event is received on `FOREMAN_NOTIFICATIONS_WS_URL` (local demo stays consistent when that websocket is wired up).
+  - **Job details** (`/worker/project/:id`): **Open navigation** lists installed map apps (Google Maps, Apple Maps, Waze, etc.) via `map_launcher` and starts directions to the site; falls back to Google Maps in the browser if none are detected. Requires coordinates on the project. Assigned **phases** show each instruction step in its own card with thumbnails and play/stop for that step’s voice notes where the platform supports it (voice playback is skipped on web with an on-screen hint).
+  - **Report** (`/worker/project/:id/report`): three steps—optional site photos (up to 8, with thumbnails in the list), optional voice memo, required short description, then submit to backend with multipart/form-data. The worker queue drops the job immediately after a successful submit; when a `worker_report_submitted` event is received on `FOREMAN_NOTIFICATIONS_WS_URL`, the relevant phase transitions to **Pending review** in the foreman flow. The overall project becomes **Done** only after all phases are approved (local demo stays consistent when that websocket is wired up).
   - **Profile** (`/worker/profile`): app language and worker logout.
 - Worker login flow:
   - Foreman generates a short-lived worker login QR ticket from Team
@@ -43,7 +43,8 @@ Mobile app for small contractor teams, built with Flutter.
 - `url_launcher` (fallback open in browser when no map app is available)
 - `map_launcher` (pick installed navigation app: Google Maps, Apple Maps, Waze, …)
 - `image_picker` (optional photos on worker report)
-- `record` (optional voice memo on worker report)
+- `record` (optional voice memo on worker report and foreman phase instructions)
+- `audioplayers` (play foreman instruction voice notes on the worker job details screen)
 - `path_provider` (temp file path for recordings)
 - `flutter_localizations` (i18n)
 - `intl_phone_number_input` (international phone entry with country selector and masking)

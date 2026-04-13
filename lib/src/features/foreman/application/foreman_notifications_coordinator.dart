@@ -9,6 +9,7 @@ import '../../../core/auth/auth_session_controller.dart';
 import '../../../core/config/app_env.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/locale_controller.dart';
+import '../domain/entities/foreman_notification.dart';
 import '../presentation/providers/projects_controller.dart';
 
 final foremanNotificationsProvider =
@@ -82,8 +83,36 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
     if (data['type'] != 'worker_report_submitted') return;
 
     final projectId = (data['projectId'] as String?)?.trim();
+    final phaseId = (data['phaseId'] as String?)?.trim();
     if (projectId != null && projectId.isNotEmpty) {
-      ref.read(projectsProvider.notifier).markProjectDone(projectId);
+      final projects = ref.read(projectsProvider);
+      Project? targetProject;
+      for (final p in projects) {
+        if (p.id == projectId) {
+          targetProject = p;
+          break;
+        }
+      }
+      if (targetProject != null) {
+        String? targetPhaseId = phaseId;
+        if (targetPhaseId == null || targetPhaseId.isEmpty) {
+          for (final phase in targetProject.phases) {
+            if (phase.status == PhaseStatus.notStarted ||
+                phase.status == PhaseStatus.inProgress) {
+              targetPhaseId = phase.id;
+              break;
+            }
+          }
+        }
+        if (targetPhaseId != null && targetPhaseId.isNotEmpty) {
+          final employeeId = (data['employeeId'] as String?)?.trim() ?? '';
+          ref.read(projectsProvider.notifier).submitPhaseForReview(
+                projectId: projectId,
+                phaseId: targetPhaseId,
+                employeeId: employeeId,
+              );
+        }
+      }
     }
 
     final employeeName = (data['employeeName'] as String?)?.trim();
@@ -113,41 +142,5 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
       unreadCount: state.unreadCount + 1,
     );
   }
-}
-
-class ForemanNotificationsState {
-  const ForemanNotificationsState({
-    required this.items,
-    required this.unreadCount,
-  });
-
-  const ForemanNotificationsState.empty()
-    : items = const [],
-      unreadCount = 0;
-
-  final List<ForemanNotificationItem> items;
-  final int unreadCount;
-
-  ForemanNotificationsState copyWith({
-    List<ForemanNotificationItem>? items,
-    int? unreadCount,
-  }) {
-    return ForemanNotificationsState(
-      items: items ?? this.items,
-      unreadCount: unreadCount ?? this.unreadCount,
-    );
-  }
-}
-
-class ForemanNotificationItem {
-  const ForemanNotificationItem({
-    required this.title,
-    required this.subtitle,
-    required this.receivedAt,
-  });
-
-  final String title;
-  final String subtitle;
-  final DateTime receivedAt;
 }
 

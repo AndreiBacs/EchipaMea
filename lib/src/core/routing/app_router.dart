@@ -12,6 +12,7 @@ import '../../features/foreman/presentation/pages/client_projects_page.dart';
 import '../../features/foreman/presentation/pages/employee_form_page.dart';
 import '../../features/foreman/presentation/pages/foreman_shell_page.dart';
 import '../../features/foreman/presentation/pages/project_form_page.dart';
+import '../../features/foreman/presentation/pages/project_phase_form_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/legal/presentation/pages/terms_page.dart';
 import '../../features/worker/presentation/pages/worker_connect_page.dart';
@@ -199,7 +200,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'project_edit',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return ProjectFormPage(projectId: id);
+          final tab = state.uri.queryParameters['tab'];
+          final initialTabIndex = tab == 'phases' ? 1 : 0;
+          return ProjectFormPage(
+            projectId: id,
+            initialTabIndex: initialTabIndex,
+          );
+        },
+      ),
+      GoRoute(
+        path: ProjectPhaseFormPage.newPath,
+        name: 'project_phase_new',
+        builder: (context, state) {
+          final projectId = state.pathParameters['projectId']!;
+          return ProjectPhaseFormPage(projectId: projectId);
+        },
+      ),
+      GoRoute(
+        path: ProjectPhaseFormPage.editPath,
+        name: 'project_phase_edit',
+        builder: (context, state) {
+          final projectId = state.pathParameters['projectId']!;
+          final phaseId = state.pathParameters['phaseId']!;
+          return ProjectPhaseFormPage(
+            projectId: projectId,
+            phaseId: phaseId,
+          );
         },
       ),
       GoRoute(

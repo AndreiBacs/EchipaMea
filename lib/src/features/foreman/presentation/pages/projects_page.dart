@@ -7,11 +7,16 @@ import 'project_form_page.dart';
 import '../providers/clients_controller.dart';
 import '../providers/projects_controller.dart';
 
-class ProjectsPage extends ConsumerWidget {
+class ProjectsPage extends ConsumerStatefulWidget {
   const ProjectsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProjectsPage> createState() => _ProjectsPageState();
+}
+
+class _ProjectsPageState extends ConsumerState<ProjectsPage> {
+  @override
+  Widget build(BuildContext context) {
     final projects = ref.watch(projectsProvider);
     final clients = ref.watch(clientsProvider);
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
@@ -51,7 +56,13 @@ class ProjectsPage extends ConsumerWidget {
                     key: ValueKey('project_${project.id}'),
                     direction: DismissDirection.horizontal,
                     confirmDismiss: (direction) async {
-                      context.push('/foreman/projects/${project.id}/edit');
+                      if (direction == DismissDirection.startToEnd) {
+                        context.push('/foreman/projects/${project.id}/edit');
+                      } else {
+                        context.push(
+                          ProjectFormPage.editPathWithPhasesTab(project.id),
+                        );
+                      }
                       return false;
                     },
                     background: _SwipeActionBackground(
@@ -61,8 +72,8 @@ class ProjectsPage extends ConsumerWidget {
                     ),
                     secondaryBackground: _SwipeActionBackground(
                       alignment: Alignment.centerRight,
-                      icon: Icons.edit_outlined,
-                      label: l10n.quickEdit,
+                      icon: Icons.layers_outlined,
+                      label: l10n.phasesLabel,
                     ),
                     child: Card(
                       elevation: 0,
@@ -103,14 +114,29 @@ class ProjectsPage extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(l10n.projectClientLabel(clientName ?? '-')),
+                              const SizedBox(height: 2),
+                              Text(project.fullAddress),
                             ],
                           ),
                         ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit_outlined),
-                          tooltip: l10n.editProjectTooltip,
-                          onPressed: () =>
-                              context.push('/foreman/projects/${project.id}/edit'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined),
+                              tooltip: l10n.editProjectTooltip,
+                              onPressed: () => context.push(
+                                '/foreman/projects/${project.id}/edit',
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.layers_outlined),
+                              tooltip: l10n.phasesLabel,
+                              onPressed: () => context.push(
+                                ProjectFormPage.editPathWithPhasesTab(project.id),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
