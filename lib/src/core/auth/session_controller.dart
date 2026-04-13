@@ -7,6 +7,9 @@ final sessionProvider = NotifierProvider<SessionNotifier, WorkerSession?>(
 );
 
 class SessionNotifier extends Notifier<WorkerSession?> {
+  static const _workerLoginTicketType = 'foreman_worker_login_ticket';
+  static const _mockWorkerTokenPrefix = 'mock-worker-session';
+
   @override
   WorkerSession? build() => null;
 
@@ -19,12 +22,24 @@ class SessionNotifier extends Notifier<WorkerSession?> {
       final normalizedPayload = _extractJsonPayload(payload);
       final data = jsonDecode(normalizedPayload);
       if (data is! Map<String, dynamic>) return false;
-      if (data['type'] != 'employee_login') return false;
+      if (data['type'] != _workerLoginTicketType) return false;
+      final ticketId = data['ticketId'] as String?;
       final employeeId = data['employeeId'] as String?;
       final employeeName = data['employeeName'] as String?;
+      final expiresAtRaw = data['expiresAt'] as String?;
+      if (ticketId == null || ticketId.isEmpty) return false;
       if (employeeId == null || employeeId.isEmpty) return false;
       if (employeeName == null || employeeName.isEmpty) return false;
-      state = WorkerSession(employeeId: employeeId, employeeName: employeeName);
+      if (expiresAtRaw == null || expiresAtRaw.isEmpty) return false;
+      final expiresAt = DateTime.tryParse(expiresAtRaw);
+      if (expiresAt == null) return false;
+      if (DateTime.now().isAfter(expiresAt.toUtc())) return false;
+
+      state = WorkerSession(
+        employeeId: employeeId,
+        employeeName: employeeName,
+        sessionToken: _buildMockSessionToken(ticketId, employeeId),
+      );
       return true;
     } catch (_) {
       return false;
@@ -61,11 +76,28 @@ class SessionNotifier extends Notifier<WorkerSession?> {
       return maybeJson;
     }
   }
+
+  String _buildMockSessionToken(String ticketId, String employeeId) {
+    final safeTicket = ticketId.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '-',
+    );
+    final safeEmployee = employeeId.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '-',
+    );
+    return '$_mockWorkerTokenPrefix-$safeEmployee-$safeTicket';
+  }
 }
 
 class WorkerSession {
-  const WorkerSession({required this.employeeId, required this.employeeName});
+  const WorkerSession({
+    required this.employeeId,
+    required this.employeeName,
+    required this.sessionToken,
+  });
 
   final String employeeId;
   final String employeeName;
+  final String sessionToken;
 }
