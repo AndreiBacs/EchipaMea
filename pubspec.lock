@@ -149,10 +149,10 @@ packages:
     dependency: transitive
     description:
       name: dlibphonenumber
-      sha256: fca091232eca14fd0f323d943d45363fa257b5c3f9e93133caeb4095cc050c27
+      sha256: "0dfe6a48823a1624b00c4547ae3dbad53bec6e7fd6f5bc99e6e1d58cd2d37d18"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.60"
+    version: "1.1.61"
   equatable:
     dependency: transitive
     description:

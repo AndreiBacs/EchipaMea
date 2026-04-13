@@ -32,11 +32,24 @@ class AppLocalizations {
           'Muncitorul vede lucrarile alocate, actualizeaza statusul si raporteaza activitatea.',
       'profileTitle': 'Profil',
       'profileLanguageSection': 'Limba aplicatiei',
+      'profileThemeSection': 'Tema aplicatiei',
+      'themeModeSystem': 'Urmareste sistemul',
+      'themeModeLight': 'Tema deschisa',
+      'themeModeDark': 'Tema inchisa',
       'profilePersonalDataSection': 'Date personale',
       'profileEmailLabel': 'Email',
       'profileFullNameLabel': 'Nume complet',
       'profilePhoneLabel': 'Telefon',
       'profileJobTitleLabel': 'Functie',
+      'profilePersonalTab': 'Personal',
+      'profileCompanyTab': 'Companie',
+      'profileCompanyDataSection': 'Date companie',
+      'profileCompanyNameLabel': 'Nume companie',
+      'profileCompanyAddressLabel': 'Adresa companie',
+      'profileCompanyIbanLabel': 'IBAN',
+      'profileCompanyCuiLabel': 'CUI',
+      'profileCompanyVatLabel': 'Cod TVA',
+      'profileCompanyRegComLabel': 'Nr. Reg. Com.',
       'profileSaveButton': 'Salveaza profilul',
       'profileSaved': 'Profil actualizat',
       'profileRequiredField': 'Acest camp este obligatoriu',
@@ -48,7 +61,8 @@ class AppLocalizations {
       'signingIn': 'Se autentifica...',
       'loginAsForeman': 'Autentifica-te ca sef de echipa',
       'workerLoginSection': 'Autentificare muncitor',
-      'workerLoginHint': 'Muncitorii trebuie sa scaneze codul QR generat de sef.',
+      'workerLoginHint':
+          'Muncitorii trebuie sa scaneze codul QR generat de sef.',
       'scanQrToLogin': 'Scaneaza QR pentru autentificare',
       'termsAndConditions': 'Termeni si conditii',
       'pleaseEnterEmailAndPassword': 'Introdu emailul si parola.',
@@ -72,6 +86,13 @@ class AppLocalizations {
       'quickEdit': 'Editare rapida',
       'quickQr': 'QR rapid',
       'editClientTooltip': 'Editeaza client',
+      'callClientTooltip': 'Apeleaza clientul',
+      'messageClientTooltip': 'Trimite mesaj clientului',
+      'whatsAppClientTooltip': 'Deschide WhatsApp',
+      'emailClientTooltip': 'Trimite email clientului',
+      'openClientMapTooltip': 'Vezi pe harta',
+      'copyClientPhoneTooltip': 'Copiaza telefonul clientului',
+      'copyClientEmailTooltip': 'Copiaza emailul clientului',
       'editProjectTooltip': 'Editeaza proiect',
       'editEmployeeTooltip': 'Editeaza angajat',
       'generateLoginQrTooltip': 'Genereaza QR de login',
@@ -84,20 +105,51 @@ class AppLocalizations {
       'employeesTitle': 'Angajati',
       'contactPersonLabel': 'Persoana de contact',
       'addressLabel': 'Adresa',
-      'workerCountSuffix': 'muncitor(i)',
+      'workerCountSuffix': 'angajat(i)',
       'clientFormAddTitle': 'Adauga client',
       'clientFormEditTitle': 'Editeaza client',
       'clientNameLabel': 'Nume client',
+      'clientTypeLabel': 'Tip client',
+      'clientTypeIndividual': 'Persoana fizica',
+      'clientTypeCompany': 'Companie',
+      'clientTypePublicInstitution': 'Institutie publica',
       'activeProjectsLabel': 'Proiecte active',
       'personOfContactLabel': 'Persoana de contact',
+      'preferredContactMethodLabel': 'Metoda de contact preferata',
+      'contactMethodPhone': 'Telefon',
+      'contactMethodEmail': 'Email',
+      'contactMethodWhatsApp': 'WhatsApp',
+      'cityLabel': 'Oras',
+      'countyLabel': 'Judet',
+      'zipCodeLabel': 'Cod postal',
+      'notesLabel': 'Note',
+      'typeLabel': 'Tip',
+      'oneActiveProject': '1 proiect activ',
+      'manyActiveProjects': 'proiecte active',
+      'noProjectsAllocated': 'Niciun proiect alocat',
+      'allocatedProjectsLabel': 'Proiecte alocate',
+      'viewClientProjects': 'Vezi proiectele clientului',
+      'clientProjectsTitle': 'Proiecte client',
+      'noProjectsForClient': 'Acest client nu are proiecte alocate.',
+      'statusActive': 'Activ',
+      'statusInactive': 'Inactiv',
+      'statusBlocked': 'Blocat',
+      'couldNotOpenDialer': 'Nu am putut deschide aplicatia de apel.',
+      'couldNotOpenMessaging': 'Nu am putut deschide aplicatia de mesaje.',
+      'couldNotOpenWhatsApp': 'Nu am putut deschide WhatsApp.',
+      'couldNotOpenEmailApp': 'Nu am putut deschide aplicatia de email.',
+      'couldNotOpenMapApp': 'Nu am putut deschide harta.',
+      'copiedToClipboard': 'Copiat in clipboard.',
       'cancel': 'Anuleaza',
       'saveChanges': 'Salveaza modificarile',
       'createClient': 'Creeaza client',
       'projectFormAddTitle': 'Adauga proiect',
       'projectFormEditTitle': 'Editeaza proiect',
       'projectNameLabel': 'Nume proiect',
+      'clientDropdownLabel': 'Client',
+      'projectClientPrefix': 'Client',
       'statusLabel': 'Status',
-      'workersCommaSeparatedLabel': 'Muncitori (separati prin virgula)',
+      'workersCommaSeparatedLabel': 'Angajati (separati prin virgula)',
       'createProject': 'Creeaza proiect',
       'employeeFormAddTitle': 'Adauga angajat',
       'employeeFormEditTitle': 'Editeaza angajat',
@@ -159,16 +211,16 @@ class AppLocalizations {
           '6. GDPR\nEchipaMea prelucreaza datele personale in conformitate cu Regulamentul general privind protectia datelor (UE) 2016/679. Utilizatorii au dreptul de acces, rectificare sau stergere a datelor personale si pot solicita restrictionarea prelucrarii, in limitele obligatiilor legale aplicabile.',
       'inProgress': 'In progres',
       'assignments': 'Alocari',
-      'totalWorkersAvailable': 'Total muncitori disponibili',
+      'totalWorkersAvailable': 'Total angajati disponibili',
       'activeProjectsNow': 'Proiecte active acum',
-      'workersWithActiveTasks': 'Muncitori cu sarcini active',
+      'workersWithActiveTasks': 'Angajati cu sarcini active',
       'clientsWithActiveJobs': 'Clienti cu lucrari active',
       'whoDoesWhat': 'Cine ce face',
       'whoWorksOnWhatProject': 'Cine lucreaza pe ce proiect',
       'projectLabel': 'Proiect',
-      'mapOverviewTitle': 'Harta proiecte si muncitori',
+      'mapOverviewTitle': 'Harta proiecte si angajati',
       'mapLegendProjects': 'Proiecte in progres',
-      'mapLegendWorkers': 'Pozitii muncitori',
+      'mapLegendWorkers': 'Pozitii angajati',
       'setupFlowTitle': 'Bun venit',
       'setupWelcomeHeadline': 'Coordoneaza-ti echipa',
       'setupWelcomeBody':
@@ -190,7 +242,8 @@ class AppLocalizations {
       'workerUpcomingWork': 'In continuare',
       'workerViewDetails': 'Vezi detalii',
       'workerProjectDetails': 'Detalii lucrare',
-      'workerProjectNotFound': 'Lucrarea nu a fost gasita sau nu este alocata tie.',
+      'workerProjectNotFound':
+          'Lucrarea nu a fost gasita sau nu este alocata tie.',
       'workerCoordinatesHint': 'Coordonate site',
       'workerAssignedWorkersLabel': 'Echipa pe proiect',
       'workerOpenNavigation': 'Deschide navigatia',
@@ -208,8 +261,7 @@ class AppLocalizations {
           'Adauga pana la 8 poze (optional). Treci mai departe daca nu ai.',
       'workerReportAddPhotos': 'Adauga poze',
       'workerReportMemoStep': 'Nota vocala',
-      'workerReportMemoHint':
-          'Inregistreaza un scurt mesaj vocal (optional).',
+      'workerReportMemoHint': 'Inregistreaza un scurt mesaj vocal (optional).',
       'workerReportStartRecording': 'Incepe inregistrarea',
       'workerReportStopRecording': 'Opreste inregistrarea',
       'workerReportRecordingSaved': 'Memo salvat',
@@ -219,8 +271,10 @@ class AppLocalizations {
       'workerReportDescriptionHint': 'Scurta descriere a lucrarilor',
       'workerReportSubmit': 'Trimite raportul',
       'workerReportSubmitted': 'Raport trimis. Multumim!',
-      'workerReportNeedDescription': 'Adauga o scurta descriere inainte de trimitere.',
-      'workerReportPhotoPickFailed': 'Nu am putut incarca pozele. Incearca din nou.',
+      'workerReportNeedDescription':
+          'Adauga o scurta descriere inainte de trimitere.',
+      'workerReportPhotoPickFailed':
+          'Nu am putut incarca pozele. Incearca din nou.',
       'workerReportMicPermission':
           'Permisiunea pentru microfon este necesara pentru memo.',
       'workerReportSubmitting': 'Se trimite...',
@@ -248,11 +302,24 @@ class AppLocalizations {
           'A munkas latja a kiosztott feladatokat, frissiti az allapotot es jelenti az elvegzett munkat.',
       'profileTitle': 'Profil',
       'profileLanguageSection': 'Alkalmazas nyelve',
+      'profileThemeSection': 'Alkalmazas tema',
+      'themeModeSystem': 'Rendszer beallitas kovetese',
+      'themeModeLight': 'Vilagos tema',
+      'themeModeDark': 'Sotet tema',
       'profilePersonalDataSection': 'Szemelyes adatok',
       'profileEmailLabel': 'Email',
       'profileFullNameLabel': 'Teljes nev',
       'profilePhoneLabel': 'Telefonszam',
       'profileJobTitleLabel': 'Beosztas',
+      'profilePersonalTab': 'Szemelyes',
+      'profileCompanyTab': 'Ceg',
+      'profileCompanyDataSection': 'Cegadatok',
+      'profileCompanyNameLabel': 'Ceg neve',
+      'profileCompanyAddressLabel': 'Ceg cime',
+      'profileCompanyIbanLabel': 'IBAN',
+      'profileCompanyCuiLabel': 'CUI',
+      'profileCompanyVatLabel': 'AFA kod',
+      'profileCompanyRegComLabel': 'Cegjegyzekszam',
       'profileSaveButton': 'Profil mentese',
       'profileSaved': 'Profil frissitve',
       'profileRequiredField': 'Ez a mezo kotelezo',
@@ -289,6 +356,13 @@ class AppLocalizations {
       'quickEdit': 'Gyors szerkesztes',
       'quickQr': 'Gyors QR',
       'editClientTooltip': 'Ugyfel szerkesztese',
+      'callClientTooltip': 'Ugyfel hivasa',
+      'messageClientTooltip': 'Uzenet kuldese az ugyfelnek',
+      'whatsAppClientTooltip': 'WhatsApp megnyitasa',
+      'emailClientTooltip': 'Email kuldese az ugyfelnek',
+      'openClientMapTooltip': 'Ugyfel terkepen megnyitasa',
+      'copyClientPhoneTooltip': 'Ugyfel telefonszamanak masolasa',
+      'copyClientEmailTooltip': 'Ugyfel email cimenek masolasa',
       'editProjectTooltip': 'Projekt szerkesztese',
       'editEmployeeTooltip': 'Dolgozo szerkesztese',
       'generateLoginQrTooltip': 'Bejelentkezo QR generalasa',
@@ -305,14 +379,46 @@ class AppLocalizations {
       'clientFormAddTitle': 'Ugyfel hozzaadasa',
       'clientFormEditTitle': 'Ugyfel szerkesztese',
       'clientNameLabel': 'Ugyfel neve',
+      'clientTypeLabel': 'Ugyfel tipusa',
+      'clientTypeIndividual': 'Maganszemely',
+      'clientTypeCompany': 'Ceg',
+      'clientTypePublicInstitution': 'Kozintezmeny',
       'activeProjectsLabel': 'Aktiv projektek',
       'personOfContactLabel': 'Kapcsolattarto szemely',
+      'preferredContactMethodLabel': 'Preferalt kapcsolattartas',
+      'contactMethodPhone': 'Telefon',
+      'contactMethodEmail': 'Email',
+      'contactMethodWhatsApp': 'WhatsApp',
+      'cityLabel': 'Varos',
+      'countyLabel': 'Megye',
+      'zipCodeLabel': 'Iranyitoszam',
+      'notesLabel': 'Megjegyzes',
+      'typeLabel': 'Tipus',
+      'oneActiveProject': '1 aktiv projekt',
+      'manyActiveProjects': 'aktiv projekt',
+      'noProjectsAllocated': 'Nincs kiosztott projekt',
+      'allocatedProjectsLabel': 'Kiosztott projektek',
+      'viewClientProjects': 'Ugyfel projektjeinek megtekintese',
+      'clientProjectsTitle': 'Ugyfel projektek',
+      'noProjectsForClient': 'Ehhez az ugyfelhez nincs kiosztott projekt.',
+      'statusActive': 'Aktiv',
+      'statusInactive': 'Inaktiv',
+      'statusBlocked': 'Tiltott',
+      'couldNotOpenDialer': 'Nem sikerult megnyitni a telefon hivast.',
+      'couldNotOpenMessaging':
+          'Nem sikerult megnyitni az uzenetkuldo alkalmazast.',
+      'couldNotOpenWhatsApp': 'Nem sikerult megnyitni a WhatsApp alkalmazast.',
+      'couldNotOpenEmailApp': 'Nem sikerult megnyitni az email alkalmazast.',
+      'couldNotOpenMapApp': 'Nem sikerult megnyitni a terkepet.',
+      'copiedToClipboard': 'Vagolapra masolva.',
       'cancel': 'Megse',
       'saveChanges': 'Valtozasok mentese',
       'createClient': 'Ugyfel letrehozasa',
       'projectFormAddTitle': 'Projekt hozzaadasa',
       'projectFormEditTitle': 'Projekt szerkesztese',
       'projectNameLabel': 'Projekt neve',
+      'clientDropdownLabel': 'Ugyfel',
+      'projectClientPrefix': 'Ugyfel',
       'statusLabel': 'Allapot',
       'workersCommaSeparatedLabel': 'Munkasok (vesszovel elvalasztva)',
       'createProject': 'Projekt letrehozasa',
@@ -393,7 +499,8 @@ class AppLocalizations {
       'setupLanguageHint':
           'Valaszd ki az alkalmazas nyelvet. Kesobb barmikor megvaltoztathatod a Profilban.',
       'setupRolesHeadline': 'Ket hasznalati mod',
-      'setupRolesIntro': 'A szerepedtol fuggoen igy fogod hasznalni az alkalmazast:',
+      'setupRolesIntro':
+          'A szerepedtol fuggoen igy fogod hasznalni az alkalmazast:',
       'setupBack': 'Vissza',
       'setupNext': 'Tovabb',
       'setupGetStarted': 'Inditas',
@@ -406,7 +513,8 @@ class AppLocalizations {
       'workerUpcomingWork': 'Kesobb',
       'workerViewDetails': 'Reszletek',
       'workerProjectDetails': 'Munka reszletei',
-      'workerProjectNotFound': 'A projekt nem talalhato vagy nincs hozzad rendelve.',
+      'workerProjectNotFound':
+          'A projekt nem talalhato vagy nincs hozzad rendelve.',
       'workerCoordinatesHint': 'Helyszin koordinatak',
       'workerAssignedWorkersLabel': 'Csapat a projekten',
       'workerOpenNavigation': 'Navigacio megnyitasa',
@@ -424,8 +532,7 @@ class AppLocalizations {
           'Legfeljebb 8 kepet adhatsz hozza (opcionalis). Folytathatod ugy is, ha nincs.',
       'workerReportAddPhotos': 'Kepek hozzadasa',
       'workerReportMemoStep': 'Hangjegyzet',
-      'workerReportMemoHint':
-          'Rovid hangos uzenet (opcionalis).',
+      'workerReportMemoHint': 'Rovid hangos uzenet (opcionalis).',
       'workerReportStartRecording': 'Felvetel inditasa',
       'workerReportStopRecording': 'Felvetel leallitasa',
       'workerReportRecordingSaved': 'Hangjegyzet elmentve',
@@ -464,11 +571,24 @@ class AppLocalizations {
           'Worker views assigned jobs, updates status, and logs completed work.',
       'profileTitle': 'Profile',
       'profileLanguageSection': 'App language',
+      'profileThemeSection': 'App theme',
+      'themeModeSystem': 'Follow system',
+      'themeModeLight': 'Light',
+      'themeModeDark': 'Dark',
       'profilePersonalDataSection': 'Personal data',
       'profileEmailLabel': 'Email',
       'profileFullNameLabel': 'Full name',
       'profilePhoneLabel': 'Phone',
       'profileJobTitleLabel': 'Job title',
+      'profilePersonalTab': 'Personal',
+      'profileCompanyTab': 'Company',
+      'profileCompanyDataSection': 'Company data',
+      'profileCompanyNameLabel': 'Company name',
+      'profileCompanyAddressLabel': 'Company address',
+      'profileCompanyIbanLabel': 'IBAN',
+      'profileCompanyCuiLabel': 'CUI',
+      'profileCompanyVatLabel': 'VAT number',
+      'profileCompanyRegComLabel': 'Trade register no.',
       'profileSaveButton': 'Save profile',
       'profileSaved': 'Profile updated',
       'profileRequiredField': 'This field is required',
@@ -504,6 +624,13 @@ class AppLocalizations {
       'quickEdit': 'Quick edit',
       'quickQr': 'Quick QR',
       'editClientTooltip': 'Edit client',
+      'callClientTooltip': 'Call client',
+      'messageClientTooltip': 'Message client',
+      'whatsAppClientTooltip': 'Open WhatsApp',
+      'emailClientTooltip': 'Email client',
+      'openClientMapTooltip': 'Open client map',
+      'copyClientPhoneTooltip': 'Copy client phone',
+      'copyClientEmailTooltip': 'Copy client email',
       'editProjectTooltip': 'Edit project',
       'editEmployeeTooltip': 'Edit employee',
       'generateLoginQrTooltip': 'Generate login QR',
@@ -520,14 +647,45 @@ class AppLocalizations {
       'clientFormAddTitle': 'Add client',
       'clientFormEditTitle': 'Edit client',
       'clientNameLabel': 'Client name',
+      'clientTypeLabel': 'Client type',
+      'clientTypeIndividual': 'Individual',
+      'clientTypeCompany': 'Company',
+      'clientTypePublicInstitution': 'Public institution',
       'activeProjectsLabel': 'Active projects',
       'personOfContactLabel': 'Person of contact',
+      'preferredContactMethodLabel': 'Preferred contact method',
+      'contactMethodPhone': 'Phone',
+      'contactMethodEmail': 'Email',
+      'contactMethodWhatsApp': 'WhatsApp',
+      'cityLabel': 'City',
+      'countyLabel': 'County',
+      'zipCodeLabel': 'ZIP',
+      'notesLabel': 'Notes',
+      'typeLabel': 'Type',
+      'oneActiveProject': '1 active project',
+      'manyActiveProjects': 'active projects',
+      'noProjectsAllocated': 'No projects allocated',
+      'allocatedProjectsLabel': 'Allocated projects',
+      'viewClientProjects': 'View client projects',
+      'clientProjectsTitle': 'Client projects',
+      'noProjectsForClient': 'This client has no allocated projects.',
+      'statusActive': 'Active',
+      'statusInactive': 'Inactive',
+      'statusBlocked': 'Blocked',
+      'couldNotOpenDialer': 'Could not open the dialer app.',
+      'couldNotOpenMessaging': 'Could not open the messaging app.',
+      'couldNotOpenWhatsApp': 'Could not open WhatsApp.',
+      'couldNotOpenEmailApp': 'Could not open the email app.',
+      'couldNotOpenMapApp': 'Could not open maps.',
+      'copiedToClipboard': 'Copied to clipboard.',
       'cancel': 'Cancel',
       'saveChanges': 'Save changes',
       'createClient': 'Create client',
       'projectFormAddTitle': 'Add project',
       'projectFormEditTitle': 'Edit project',
       'projectNameLabel': 'Project name',
+      'clientDropdownLabel': 'Client',
+      'projectClientPrefix': 'Client',
       'statusLabel': 'Status',
       'workersCommaSeparatedLabel': 'Workers (comma separated)',
       'createProject': 'Create project',
@@ -560,7 +718,8 @@ class AppLocalizations {
       'statusInProgress': 'In Progress',
       'statusDone': 'Done',
       'employeeLoginQrTitle': 'Employee login QR',
-      'workerScansToConnect': 'Worker scans this code to connect automatically.',
+      'workerScansToConnect':
+          'Worker scans this code to connect automatically.',
       'close': 'Close',
       'appDownloadQrTitle': 'App download QR',
       'appDownloadMissingUrl':
@@ -607,7 +766,8 @@ class AppLocalizations {
       'setupLanguageHint':
           'Pick your app language. You can change it anytime in Profile.',
       'setupRolesHeadline': 'Two ways to use the app',
-      'setupRolesIntro': 'Depending on your role, you will use the app differently:',
+      'setupRolesIntro':
+          'Depending on your role, you will use the app differently:',
       'setupBack': 'Back',
       'setupNext': 'Next',
       'setupGetStarted': 'Get started',
@@ -620,12 +780,12 @@ class AppLocalizations {
       'workerUpcomingWork': 'Coming up',
       'workerViewDetails': 'View details',
       'workerProjectDetails': 'Job details',
-      'workerProjectNotFound': 'This job was not found or is not assigned to you.',
+      'workerProjectNotFound':
+          'This job was not found or is not assigned to you.',
       'workerCoordinatesHint': 'Site coordinates',
       'workerAssignedWorkersLabel': 'Crew on this job',
       'workerOpenNavigation': 'Open navigation',
-      'workerNavigationOpenFailed':
-          'Could not open navigation on this device.',
+      'workerNavigationOpenFailed': 'Could not open navigation on this device.',
       'workerChooseNavigationApp': 'Choose a navigation app',
       'workerAnnounceArrival': 'I have arrived on site',
       'workerArrivalSent': 'Your foreman is notified that you arrived.',
@@ -648,7 +808,8 @@ class AppLocalizations {
       'workerReportDescriptionHint': 'Short summary of work done',
       'workerReportSubmit': 'Submit report',
       'workerReportSubmitted': 'Report sent. Thank you!',
-      'workerReportNeedDescription': 'Add a short description before submitting.',
+      'workerReportNeedDescription':
+          'Add a short description before submitting.',
       'workerReportPhotoPickFailed': 'Could not pick photos. Try again.',
       'workerReportMicPermission':
           'Microphone permission is required for a voice memo.',
@@ -680,11 +841,24 @@ class AppLocalizations {
   String get roleWorkerDescription => _t('roleWorkerDescription');
   String get profileTitle => _t('profileTitle');
   String get profileLanguageSection => _t('profileLanguageSection');
+  String get profileThemeSection => _t('profileThemeSection');
+  String get themeModeSystem => _t('themeModeSystem');
+  String get themeModeLight => _t('themeModeLight');
+  String get themeModeDark => _t('themeModeDark');
   String get profilePersonalDataSection => _t('profilePersonalDataSection');
   String get profileEmailLabel => _t('profileEmailLabel');
   String get profileFullNameLabel => _t('profileFullNameLabel');
   String get profilePhoneLabel => _t('profilePhoneLabel');
   String get profileJobTitleLabel => _t('profileJobTitleLabel');
+  String get profilePersonalTab => _t('profilePersonalTab');
+  String get profileCompanyTab => _t('profileCompanyTab');
+  String get profileCompanyDataSection => _t('profileCompanyDataSection');
+  String get profileCompanyNameLabel => _t('profileCompanyNameLabel');
+  String get profileCompanyAddressLabel => _t('profileCompanyAddressLabel');
+  String get profileCompanyIbanLabel => _t('profileCompanyIbanLabel');
+  String get profileCompanyCuiLabel => _t('profileCompanyCuiLabel');
+  String get profileCompanyVatLabel => _t('profileCompanyVatLabel');
+  String get profileCompanyRegComLabel => _t('profileCompanyRegComLabel');
   String get profileSaveButton => _t('profileSaveButton');
   String get profileSaved => _t('profileSaved');
   String get profileRequiredField => _t('profileRequiredField');
@@ -718,6 +892,13 @@ class AppLocalizations {
   String get quickEdit => _t('quickEdit');
   String get quickQr => _t('quickQr');
   String get editClientTooltip => _t('editClientTooltip');
+  String get callClientTooltip => _t('callClientTooltip');
+  String get messageClientTooltip => _t('messageClientTooltip');
+  String get whatsAppClientTooltip => _t('whatsAppClientTooltip');
+  String get emailClientTooltip => _t('emailClientTooltip');
+  String get openClientMapTooltip => _t('openClientMapTooltip');
+  String get copyClientPhoneTooltip => _t('copyClientPhoneTooltip');
+  String get copyClientEmailTooltip => _t('copyClientEmailTooltip');
   String get editProjectTooltip => _t('editProjectTooltip');
   String get editEmployeeTooltip => _t('editEmployeeTooltip');
   String get generateLoginQrTooltip => _t('generateLoginQrTooltip');
@@ -734,14 +915,46 @@ class AppLocalizations {
   String get clientFormAddTitle => _t('clientFormAddTitle');
   String get clientFormEditTitle => _t('clientFormEditTitle');
   String get clientNameLabel => _t('clientNameLabel');
+  String get clientTypeLabel => _t('clientTypeLabel');
+  String get clientTypeIndividual => _t('clientTypeIndividual');
+  String get clientTypeCompany => _t('clientTypeCompany');
+  String get clientTypePublicInstitution => _t('clientTypePublicInstitution');
   String get activeProjectsLabel => _t('activeProjectsLabel');
   String get personOfContactLabel => _t('personOfContactLabel');
+  String get preferredContactMethodLabel => _t('preferredContactMethodLabel');
+  String get contactMethodPhone => _t('contactMethodPhone');
+  String get contactMethodEmail => _t('contactMethodEmail');
+  String get contactMethodWhatsApp => _t('contactMethodWhatsApp');
+  String get cityLabel => _t('cityLabel');
+  String get countyLabel => _t('countyLabel');
+  String get zipCodeLabel => _t('zipCodeLabel');
+  String get notesLabel => _t('notesLabel');
+  String get typeLabel => _t('typeLabel');
+  String get oneActiveProject => _t('oneActiveProject');
+  String get manyActiveProjects => _t('manyActiveProjects');
+  String get noProjectsAllocated => _t('noProjectsAllocated');
+  String get allocatedProjectsLabel => _t('allocatedProjectsLabel');
+  String get viewClientProjects => _t('viewClientProjects');
+  String get clientProjectsTitle => _t('clientProjectsTitle');
+  String get noProjectsForClient => _t('noProjectsForClient');
+  String get statusActive => _t('statusActive');
+  String get statusInactive => _t('statusInactive');
+  String get statusBlocked => _t('statusBlocked');
+  String get couldNotOpenDialer => _t('couldNotOpenDialer');
+  String get couldNotOpenMessaging => _t('couldNotOpenMessaging');
+  String get couldNotOpenWhatsApp => _t('couldNotOpenWhatsApp');
+  String get couldNotOpenEmailApp => _t('couldNotOpenEmailApp');
+  String get couldNotOpenMapApp => _t('couldNotOpenMapApp');
+  String get copiedToClipboard => _t('copiedToClipboard');
   String get cancel => _t('cancel');
   String get saveChanges => _t('saveChanges');
   String get createClient => _t('createClient');
   String get projectFormAddTitle => _t('projectFormAddTitle');
   String get projectFormEditTitle => _t('projectFormEditTitle');
   String get projectNameLabel => _t('projectNameLabel');
+  String get clientDropdownLabel => _t('clientDropdownLabel');
+  String projectClientLabel(String clientName) =>
+      '${_t('projectClientPrefix')}: $clientName';
   String get statusLabel => _t('statusLabel');
   String get workersCommaSeparatedLabel => _t('workersCommaSeparatedLabel');
   String get createProject => _t('createProject');

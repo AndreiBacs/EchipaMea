@@ -5,16 +5,18 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
 import 'foreman_shell_page.dart';
+import '../providers/clients_controller.dart';
 import '../providers/projects_controller.dart';
 import '../providers/team_controller.dart';
 
 class ProjectFormPage extends ConsumerStatefulWidget {
-  const ProjectFormPage({super.key, this.projectId});
+  const ProjectFormPage({super.key, this.projectId, this.initialClientId});
 
   static const createPath = '/foreman/projects/new';
   static const editPath = '/foreman/projects/:id/edit';
 
   final String? projectId;
+  final String? initialClientId;
 
   @override
   ConsumerState<ProjectFormPage> createState() => _ProjectFormPageState();
@@ -24,6 +26,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
   late final TextEditingController _nameController;
   late final TextEditingController _workersController;
   late ProjectStatus _selectedStatus;
+  String? _selectedClientId;
 
   @override
   void initState() {
@@ -36,6 +39,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
       text: existing?.workers.join(', ') ?? '',
     );
     _selectedStatus = existing?.status ?? ProjectStatus.planned;
+    _selectedClientId = existing?.clientId ?? widget.initialClientId;
   }
 
   @override
@@ -48,7 +52,12 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.projectId != null;
+    final lockClientSelection = !isEdit && widget.initialClientId != null;
     final l10n = context.l10n;
+    final clients = ref.watch(clientsProvider);
+    // Normalize: if the stored clientId is no longer in the list, treat as unselected.
+    final validClientId =
+        clients.any((c) => c.id == _selectedClientId) ? _selectedClientId : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -77,6 +86,24 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
                     TextField(
                       controller: _nameController,
                       decoration: InputDecoration(labelText: l10n.projectNameLabel),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: validClientId,
+                      items: clients
+                          .map(
+                            (client) => DropdownMenuItem<String>(
+                              value: client.id,
+                              child: Text(client.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: lockClientSelection
+                          ? null
+                          : (value) {
+                              setState(() => _selectedClientId = value);
+                            },
+                      decoration: InputDecoration(labelText: l10n.clientDropdownLabel),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<ProjectStatus>(
@@ -135,12 +162,13 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
 
   void _save(BuildContext context, {required bool isEdit}) {
     final name = _nameController.text.trim();
+    final clientId = _selectedClientId?.trim() ?? '';
     final workers = _workersController.text
         .split(',')
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
-    if (name.isEmpty) return;
+    if (name.isEmpty || clientId.isEmpty) return;
 
     final team = ref.read(teamProvider);
     final assignedEmployeeIds = _resolveWorkerEmployeeIds(workers, team);
@@ -151,6 +179,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
           .updateProject(
             id: widget.projectId!,
             name: name,
+            clientId: clientId,
             status: _selectedStatus,
             workers: workers,
             assignedEmployeeIds: assignedEmployeeIds,
@@ -158,6 +187,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
     } else {
       ref.read(projectsProvider.notifier).addProject(
             name: name,
+            clientId: clientId,
             status: _selectedStatus,
             workers: workers,
             assignedEmployeeIds: assignedEmployeeIds,

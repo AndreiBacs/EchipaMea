@@ -28,7 +28,11 @@ void main() {
         expect(client.name, isNotEmpty);
         expect(client.email, isNotEmpty);
         expect(client.phone, isNotEmpty);
-        expect(client.address, isNotEmpty);
+        expect(client.addressLine1, isNotEmpty);
+        expect(client.city, isNotEmpty);
+        expect(client.state, isNotEmpty);
+        expect(client.zipCode, isNotEmpty);
+        expect(client.notes, isNotNull);
         expect(client.contactPerson, isNotEmpty);
       }
     });
@@ -39,9 +43,16 @@ void main() {
       container.read(clientsProvider.notifier).addClient(
             name: 'New Corp',
             activeProjects: 2,
+            type: ClientType.company,
+            status: ClientStatus.active,
+            preferredContactMethod: ClientContactMethod.email,
+            notes: 'Important client',
             email: 'new@corp.com',
             phone: '+40 700 000 001',
-            address: 'Str. Test 1',
+            addressLine1: 'Str. Test 1',
+            city: 'Bucuresti',
+            stateProvince: 'Bucuresti',
+            zipCode: '010101',
             contactPerson: 'Ion Pop',
           );
       expect(container.read(clientsProvider).length, 4);
@@ -51,9 +62,16 @@ void main() {
       container.read(clientsProvider.notifier).addClient(
             name: 'Appended Corp',
             activeProjects: 0,
+            type: ClientType.company,
+            status: ClientStatus.inactive,
+            preferredContactMethod: ClientContactMethod.phone,
+            notes: '',
             email: 'a@b.com',
             phone: '0700',
-            address: 'Addr',
+            addressLine1: 'Addr',
+            city: 'City',
+            stateProvince: 'State',
+            zipCode: '1000',
             contactPerson: 'Contact',
           );
       final clients = container.read(clientsProvider);
@@ -64,17 +82,31 @@ void main() {
       container.read(clientsProvider.notifier).addClient(
             name: 'Field Test',
             activeProjects: 5,
+            type: ClientType.individual,
+            status: ClientStatus.active,
+            preferredContactMethod: ClientContactMethod.whatsApp,
+            notes: 'Call before noon',
             email: 'ft@example.com',
             phone: '+40 700 999 888',
-            address: 'Bd. Test 99',
+            addressLine1: 'Bd. Test 99',
+            city: 'Iasi',
+            stateProvince: 'Iasi',
+            zipCode: '700100',
             contactPerson: 'Maria D.',
           );
       final added = container.read(clientsProvider).last;
       expect(added.name, 'Field Test');
       expect(added.activeProjects, 5);
+      expect(added.type, ClientType.individual);
+      expect(added.status, ClientStatus.active);
+      expect(added.preferredContactMethod, ClientContactMethod.whatsApp);
+      expect(added.notes, 'Call before noon');
       expect(added.email, 'ft@example.com');
       expect(added.phone, '+40 700 999 888');
-      expect(added.address, 'Bd. Test 99');
+      expect(added.addressLine1, 'Bd. Test 99');
+      expect(added.city, 'Iasi');
+      expect(added.state, 'Iasi');
+      expect(added.zipCode, '700100');
       expect(added.contactPerson, 'Maria D.');
     });
 
@@ -82,17 +114,31 @@ void main() {
       container.read(clientsProvider.notifier).addClient(
             name: 'A',
             activeProjects: 0,
+            type: ClientType.individual,
+            status: ClientStatus.active,
+            preferredContactMethod: ClientContactMethod.phone,
+            notes: '',
             email: 'a@a.com',
             phone: '0',
-            address: 'A',
+            addressLine1: 'A',
+            city: 'A',
+            stateProvince: 'A',
+            zipCode: '1',
             contactPerson: 'A',
           );
       container.read(clientsProvider.notifier).addClient(
             name: 'B',
             activeProjects: 0,
+            type: ClientType.company,
+            status: ClientStatus.blocked,
+            preferredContactMethod: ClientContactMethod.email,
+            notes: '',
             email: 'b@b.com',
             phone: '0',
-            address: 'B',
+            addressLine1: 'B',
+            city: 'B',
+            stateProvince: 'B',
+            zipCode: '2',
             contactPerson: 'B',
           );
       final clients = container.read(clientsProvider);
@@ -107,9 +153,16 @@ void main() {
             id: 'c1',
             name: 'Updated Name',
             activeProjects: 2,
+            type: ClientType.individual,
+            status: ClientStatus.active,
+            preferredContactMethod: ClientContactMethod.phone,
+            notes: 'Updated note',
             email: 'elena.popescu@example.com',
             phone: '+40 731 100 101',
-            address: 'Str. Victoriei 12, Bucuresti',
+            addressLine1: 'Str. Victoriei 12',
+            city: 'Bucuresti',
+            stateProvince: 'Bucuresti',
+            zipCode: '010072',
             contactPerson: 'Elena Popescu',
           );
       final updated = container
@@ -123,9 +176,16 @@ void main() {
             id: 'c2',
             name: 'SC BuildFast SRL',
             activeProjects: 10,
+            type: ClientType.company,
+            status: ClientStatus.active,
+            preferredContactMethod: ClientContactMethod.email,
+            notes: '',
             email: 'office@buildfast.example.com',
             phone: '+40 744 222 333',
-            address: 'Bd. Independentei 7, Cluj-Napoca',
+            addressLine1: 'Bd. Independentei 7',
+            city: 'Cluj-Napoca',
+            stateProvince: 'Cluj',
+            zipCode: '400015',
             contactPerson: 'Radu Ionescu',
           );
       final updated = container
@@ -140,9 +200,16 @@ void main() {
             id: 'c1',
             name: 'X',
             activeProjects: 0,
+            type: ClientType.individual,
+            status: ClientStatus.inactive,
+            preferredContactMethod: ClientContactMethod.phone,
+            notes: '',
             email: 'x@x.com',
             phone: '0',
-            address: 'X',
+            addressLine1: 'X',
+            city: 'X',
+            stateProvince: 'X',
+            zipCode: '9',
             contactPerson: 'X',
           );
       expect(container.read(clientsProvider).length, before);
@@ -153,9 +220,16 @@ void main() {
             id: 'c1',
             name: 'Changed',
             activeProjects: 0,
+            type: ClientType.individual,
+            status: ClientStatus.active,
+            preferredContactMethod: ClientContactMethod.phone,
+            notes: '',
             email: 'e@e.com',
             phone: '0',
-            address: 'A',
+            addressLine1: 'A',
+            city: 'A',
+            stateProvince: 'A',
+            zipCode: '1',
             contactPerson: 'A',
           );
       final c2 = container
@@ -170,9 +244,16 @@ void main() {
             id: 'nonexistent',
             name: 'Ghost',
             activeProjects: 0,
+            type: ClientType.company,
+            status: ClientStatus.blocked,
+            preferredContactMethod: ClientContactMethod.email,
+            notes: '',
             email: 'g@g.com',
             phone: '0',
-            address: 'G',
+            addressLine1: 'G',
+            city: 'G',
+            stateProvince: 'G',
+            zipCode: '0',
             contactPerson: 'G',
           );
       final after = container.read(clientsProvider).map((c) => c.name).toList();
@@ -204,9 +285,16 @@ void main() {
       id: 'x',
       name: 'X',
       activeProjects: 0,
+      type: ClientType.individual,
+      status: ClientStatus.active,
+      preferredContactMethod: ClientContactMethod.phone,
+      notes: '',
       email: 'x@x.com',
       phone: '0',
-      address: 'A',
+      addressLine1: 'A',
+      city: 'City',
+      state: 'State',
+      zipCode: '1000',
       contactPerson: 'A',
     );
 
@@ -215,9 +303,16 @@ void main() {
         id: 'x',
         name: 'X',
         activeProjects: 1,
+        type: ClientType.individual,
+        status: ClientStatus.active,
+        preferredContactMethod: ClientContactMethod.phone,
+        notes: '',
         email: 'x@x.com',
         phone: '0',
-        address: 'A',
+        addressLine1: 'A',
+        city: 'City',
+        state: 'State',
+        zipCode: '1000',
         contactPerson: 'A',
       );
       expect(client.activeProjectsLabel, '1 active project');
@@ -232,9 +327,16 @@ void main() {
         id: 'x',
         name: 'X',
         activeProjects: 2,
+        type: ClientType.individual,
+        status: ClientStatus.active,
+        preferredContactMethod: ClientContactMethod.phone,
+        notes: '',
         email: 'x@x.com',
         phone: '0',
-        address: 'A',
+        addressLine1: 'A',
+        city: 'City',
+        state: 'State',
+        zipCode: '1000',
         contactPerson: 'A',
       );
       expect(client.activeProjectsLabel, '2 active projects');
@@ -245,9 +347,16 @@ void main() {
         id: 'x',
         name: 'X',
         activeProjects: 10,
+        type: ClientType.individual,
+        status: ClientStatus.active,
+        preferredContactMethod: ClientContactMethod.phone,
+        notes: '',
         email: 'x@x.com',
         phone: '0',
-        address: 'A',
+        addressLine1: 'A',
+        city: 'City',
+        state: 'State',
+        zipCode: '1000',
         contactPerson: 'A',
       );
       expect(client.activeProjectsLabel, '10 active projects');
@@ -259,9 +368,16 @@ void main() {
       id: 'orig',
       name: 'Original',
       activeProjects: 1,
+      type: ClientType.company,
+      status: ClientStatus.active,
+      preferredContactMethod: ClientContactMethod.email,
+      notes: 'Orig note',
       email: 'o@o.com',
       phone: '111',
-      address: 'Orig Addr',
+      addressLine1: 'Orig Addr',
+      city: 'City',
+      state: 'State',
+      zipCode: '1000',
       contactPerson: 'Orig Contact',
     );
 
@@ -270,9 +386,16 @@ void main() {
       expect(copy.id, original.id);
       expect(copy.name, original.name);
       expect(copy.activeProjects, original.activeProjects);
+      expect(copy.type, original.type);
+      expect(copy.status, original.status);
+      expect(copy.preferredContactMethod, original.preferredContactMethod);
+      expect(copy.notes, original.notes);
       expect(copy.email, original.email);
       expect(copy.phone, original.phone);
-      expect(copy.address, original.address);
+      expect(copy.addressLine1, original.addressLine1);
+      expect(copy.city, original.city);
+      expect(copy.state, original.state);
+      expect(copy.zipCode, original.zipCode);
       expect(copy.contactPerson, original.contactPerson);
     });
 

@@ -1,0 +1,25 @@
+---
+description: Update app localizations when adding new user-facing text
+globs: **/*.dart
+alwaysApply: false
+---
+
+# Localization Update Requirement
+
+When you add or change user-facing text, update `lib/src/core/i18n/app_localizations.dart` in the same task.
+
+## Required updates
+
+- Add new translation keys for all supported languages already in the file (Romanian, Hungarian, English).
+- Add or update the corresponding getter(s) in `AppLocalizations`.
+- Replace hardcoded UI strings in edited widgets/pages with `context.l10n.<key>`.
+- Keep wording consistent across screens for the same concept.
+
+## Example
+
+```dart
+// If a new "Preferred contact method" label is introduced in a form,
+// add a key in each language map and expose a getter:
+// 'preferredContactMethodLabel': 'Preferred contact method'
+// then use: context.l10n.preferredContactMethodLabel
+```

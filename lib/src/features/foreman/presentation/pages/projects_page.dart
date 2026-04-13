@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
 import 'project_form_page.dart';
+import '../providers/clients_controller.dart';
 import '../providers/projects_controller.dart';
 
 class ProjectsPage extends ConsumerWidget {
@@ -12,8 +13,11 @@ class ProjectsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projects = ref.watch(projectsProvider);
+    final clients = ref.watch(clientsProvider);
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;
+    // Build a map once so each row can do O(1) lookups instead of O(clients).
+    final clientNameById = {for (final c in clients) c.id: c.name};
 
     return Stack(
       children: [
@@ -42,6 +46,7 @@ class ProjectsPage extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final project = projects[index];
+                  final clientName = clientNameById[project.clientId];
                   return Dismissible(
                     key: ValueKey('project_${project.id}'),
                     direction: DismissDirection.horizontal,
@@ -96,6 +101,8 @@ class ProjectsPage extends ConsumerWidget {
                                 project.workersLabel,
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
+                              const SizedBox(height: 4),
+                              Text(l10n.projectClientLabel(clientName ?? '-')),
                             ],
                           ),
                         ),

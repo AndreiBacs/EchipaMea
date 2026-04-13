@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/i18n/app_localizations.dart';
 import 'core/i18n/locale_controller.dart';
 import 'core/routing/app_router.dart';
+import 'core/theme/theme_mode_controller.dart';
 import 'features/foreman/application/foreman_notifications_coordinator.dart';
 import 'features/worker/application/worker_telemetry_coordinator.dart';
 
@@ -22,6 +23,8 @@ class EchipaMeaApp extends ConsumerWidget {
     ref.watch(foremanNotificationsProvider);
     final router = ref.watch(appRouterProvider);
     final selectedLocale = ref.watch(localeProvider);
+    final selectedThemeMode =
+        ref.watch(themeModeProvider).asData?.value ?? ThemeMode.system;
 
     return MaterialApp.router(
       onGenerateTitle: (context) => context.l10n.appTitle,
@@ -57,7 +60,7 @@ class EchipaMeaApp extends ConsumerWidget {
         ),
         useMaterial3: true,
       ),
-      themeMode: ThemeMode.system,
+      themeMode: selectedThemeMode,
       locale: selectedLocale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

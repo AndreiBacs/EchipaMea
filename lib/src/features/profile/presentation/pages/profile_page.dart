@@ -6,6 +6,7 @@ import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/i18n/locale_controller.dart';
 import '../../../../core/profile/profile_controller.dart';
+import '../../../../core/theme/theme_mode_controller.dart';
 import '../../../../core/ui/app_international_phone_field.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 
@@ -18,9 +19,17 @@ class ProfilePage extends ConsumerStatefulWidget {
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends ConsumerState<ProfilePage> {
+class _ProfilePageState extends ConsumerState<ProfilePage>
+    with SingleTickerProviderStateMixin {
   late final TextEditingController _fullNameController;
   late final TextEditingController _jobTitleController;
+  late final TextEditingController _companyNameController;
+  late final TextEditingController _companyAddressController;
+  late final TextEditingController _companyIbanController;
+  late final TextEditingController _companyCuiController;
+  late final TextEditingController _companyVatController;
+  late final TextEditingController _companyRegComController;
+  late final TabController _profileTabController;
   final _formKey = GlobalKey<FormState>();
   bool _didPrefill = false;
   String _profilePhone = '';
@@ -30,12 +39,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     super.initState();
     _fullNameController = TextEditingController();
     _jobTitleController = TextEditingController();
+    _companyNameController = TextEditingController();
+    _companyAddressController = TextEditingController();
+    _companyIbanController = TextEditingController();
+    _companyCuiController = TextEditingController();
+    _companyVatController = TextEditingController();
+    _companyRegComController = TextEditingController();
+    _profileTabController = TabController(length: 2, vsync: this)
+      ..addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _fullNameController.dispose();
     _jobTitleController.dispose();
+    _companyNameController.dispose();
+    _companyAddressController.dispose();
+    _companyIbanController.dispose();
+    _companyCuiController.dispose();
+    _companyVatController.dispose();
+    _companyRegComController.dispose();
+    _profileTabController.dispose();
     super.dispose();
   }
 
@@ -43,6 +67,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final selectedLocale = ref.watch(localeProvider);
+    final selectedThemeMode =
+        ref.watch(themeModeProvider).asData?.value ?? ThemeMode.system;
     final authSession = ref.watch(authSessionProvider).asData?.value;
     final profileState = ref.watch(profileProvider);
     final isSaving = profileState.isLoading;
@@ -57,6 +83,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             _fullNameController.text = profile.fullName;
             _profilePhone = profile.phone;
             _jobTitleController.text = profile.jobTitle;
+            _companyNameController.text = profile.companyName;
+            _companyAddressController.text = profile.companyAddress;
+            _companyIbanController.text = profile.companyIban;
+            _companyCuiController.text = profile.companyCui;
+            _companyVatController.text = profile.companyVat;
+            _companyRegComController.text = profile.companyRegCom;
             _didPrefill = true;
           }
 
@@ -92,49 +124,136 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     onChanged: (locale) =>
                         ref.read(localeProvider.notifier).setLocale(locale),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   Text(
-                    l10n.profilePersonalDataSection,
+                    l10n.profileThemeSection,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  TextFormField(
-                    initialValue: authSession?.email ?? '',
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: l10n.profileEmailLabel,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _fullNameController,
-                    decoration: InputDecoration(
-                      labelText: l10n.profileFullNameLabel,
-                    ),
-                    validator: (value) {
-                      if ((value ?? '').trim().isEmpty) {
-                        return l10n.profileRequiredField;
-                      }
-                      return null;
+                  DropdownButtonFormField<ThemeMode>(
+                    key: ValueKey(selectedThemeMode.name),
+                    initialValue: selectedThemeMode,
+                    items: [
+                      DropdownMenuItem<ThemeMode>(
+                        value: ThemeMode.system,
+                        child: Text(l10n.themeModeSystem),
+                      ),
+                      DropdownMenuItem<ThemeMode>(
+                        value: ThemeMode.light,
+                        child: Text(l10n.themeModeLight),
+                      ),
+                      DropdownMenuItem<ThemeMode>(
+                        value: ThemeMode.dark,
+                        child: Text(l10n.themeModeDark),
+                      ),
+                    ],
+                    onChanged: (mode) {
+                      if (mode == null) return;
+                      ref.read(themeModeProvider.notifier).setThemeMode(mode);
                     },
                   ),
-                  const SizedBox(height: 12),
-                  AppInternationalPhoneField(
-                    key: ValueKey(profile.phone),
-                    initialPhone: profile.phone,
-                    decoration: InputDecoration(
-                      labelText: l10n.profilePhoneLabel,
-                    ),
-                    onChanged: (value) =>
-                        setState(() => _profilePhone = value),
+                  const SizedBox(height: 24),
+                  TabBar(
+                    controller: _profileTabController,
+                    tabs: [
+                      Tab(text: l10n.profilePersonalTab),
+                      Tab(text: l10n.profileCompanyTab),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _jobTitleController,
-                    decoration: InputDecoration(
-                      labelText: l10n.profileJobTitleLabel,
+                  if (_profileTabController.index == 0) ...[
+                    Text(
+                      l10n.profilePersonalDataSection,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      initialValue: authSession?.email ?? '',
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileEmailLabel,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _fullNameController,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileFullNameLabel,
+                      ),
+                      validator: (value) {
+                        if ((value ?? '').trim().isEmpty) {
+                          return l10n.profileRequiredField;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    AppInternationalPhoneField(
+                      key: ValueKey(profile.phone),
+                      initialPhone: profile.phone,
+                      decoration: InputDecoration(
+                        labelText: l10n.profilePhoneLabel,
+                      ),
+                      onChanged: (value) =>
+                          setState(() => _profilePhone = value),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _jobTitleController,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileJobTitleLabel,
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      l10n.profileCompanyDataSection,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _companyNameController,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileCompanyNameLabel,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _companyAddressController,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileCompanyAddressLabel,
+                      ),
+                      minLines: 2,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _companyIbanController,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileCompanyIbanLabel,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _companyCuiController,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileCompanyCuiLabel,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _companyVatController,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileCompanyVatLabel,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _companyRegComController,
+                      decoration: InputDecoration(
+                        labelText: l10n.profileCompanyRegComLabel,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   FilledButton.icon(
                     onPressed: isSaving ? null : _saveProfile,
@@ -146,9 +265,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        await ref
-                            .read(authSessionProvider.notifier)
-                            .logout();
+                        await ref.read(authSessionProvider.notifier).logout();
                         if (!context.mounted) return;
                         context.go(LoginPage.routePath);
                       },
@@ -174,6 +291,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           fullName: _fullNameController.text,
           phone: _profilePhone,
           jobTitle: _jobTitleController.text,
+          companyName: _companyNameController.text,
+          companyAddress: _companyAddressController.text,
+          companyIban: _companyIbanController.text,
+          companyCui: _companyCuiController.text,
+          companyVat: _companyVatController.text,
+          companyRegCom: _companyRegComController.text,
         );
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
