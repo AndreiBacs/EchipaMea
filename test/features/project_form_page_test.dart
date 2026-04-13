@@ -70,7 +70,7 @@ void main() {
     expect(clientDropdown.onChanged, isNotNull);
   });
 
-  testWidgets('use client address toggle syncs and locks address fields', (
+  testWidgets('use client address toggle unlocks address fields for manual editing', (
     tester,
   ) async {
     await pumpProjectForm(tester, initialClientId: 'c1');

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
@@ -8,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'package:universal_io/io.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
 import '../../domain/entities/project.dart';
@@ -20,11 +20,13 @@ class PhaseWorkInstructionsSnapshot {
 
   static const empty = PhaseWorkInstructionsSnapshot(items: []);
 
-  /// Non-empty text rows only, trimmed (stable ids and media lists kept).
+  /// Rows with any text, photos, or audio; text is trimmed before saving.
   List<PhaseWorkInstruction> forPersistence() {
     return [
       for (final i in items)
-        if (i.text.trim().isNotEmpty)
+        if (i.text.trim().isNotEmpty ||
+            i.photoPaths.isNotEmpty ||
+            i.audioPaths.isNotEmpty)
           PhaseWorkInstruction(
             id: i.id,
             text: i.text.trim(),

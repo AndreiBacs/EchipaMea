@@ -54,6 +54,7 @@ dependencies:
   map_launcher: ^4.5.0
   intl_phone_number_input: ^0.7.5
   audioplayers: ^6.1.0
+  universal_io: ^2.2.2
 
 dev_dependencies:
   flutter_test:

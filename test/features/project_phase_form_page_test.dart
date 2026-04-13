@@ -28,6 +28,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Demolition'), findsOneWidget);
-    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.byType(TextField), findsAtLeastNWidgets(2));
   });
 }

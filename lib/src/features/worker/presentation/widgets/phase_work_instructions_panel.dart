@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:universal_io/io.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../foreman/domain/entities/project.dart';
@@ -124,13 +125,18 @@ class _WorkerInstructionPhotoThumb extends StatelessWidget {
         child: FutureBuilder<Uint8List>(
           future: XFile(path).readAsBytes(),
           builder: (context, snapshot) {
-            if (!snapshot.hasData) {
+            if (snapshot.connectionState != ConnectionState.done) {
               return const Center(
                 child: SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
+              );
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const Center(
+                child: Icon(Icons.broken_image_outlined, size: 32),
               );
             }
             return ClipRRect(

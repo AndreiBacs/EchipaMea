@@ -115,80 +115,90 @@ class WorkerProjectDetailPage extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: 32),
-          if (project.phases.isNotEmpty) ...[
-            Text(
-              l10n.myPhases,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            ...project.phases
-                .where((phase) => phase.assignedEmployeeIds.contains(session.employeeId))
-                .map(
-                  (phase) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      phase.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${l10n.statusLabel}: ${_phaseStatusLabel(l10n, phase.status)}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
-                                    ),
-                                  ],
-                                ),
+          ...(() {
+            final assignedPhases = project.phases
+                .where(
+                  (phase) =>
+                      phase.assignedEmployeeIds.contains(session.employeeId),
+                )
+                .toList();
+
+            if (assignedPhases.isEmpty) {
+              return <Widget>[];
+            }
+
+            return <Widget>[
+              Text(
+                l10n.myPhases,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              ...assignedPhases.map(
+                (phase) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    phase.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${l10n.statusLabel}: ${_phaseStatusLabel(l10n, phase.status)}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium,
+                                  ),
+                                ],
                               ),
-                              if (phase.status != PhaseStatus.pendingReview &&
-                                  phase.status != PhaseStatus.done)
-                                FilledButton.tonal(
-                                  onPressed: () {
-                                    ref
-                                        .read(projectsProvider.notifier)
-                                        .submitPhaseForReview(
-                                          projectId: project.id,
-                                          phaseId: phase.id,
-                                          employeeId: session.employeeId,
-                                        );
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          l10n.phaseSubmittedForReview,
-                                        ),
+                            ),
+                            if (phase.status != PhaseStatus.pendingReview &&
+                                phase.status != PhaseStatus.done)
+                              FilledButton.tonal(
+                                onPressed: () {
+                                  ref
+                                      .read(projectsProvider.notifier)
+                                      .submitPhaseForReview(
+                                        projectId: project.id,
+                                        phaseId: phase.id,
+                                        employeeId: session.employeeId,
+                                      );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        l10n.phaseSubmittedForReview,
                                       ),
-                                    );
-                                  },
-                                  child: Text(l10n.submitLabel),
-                                ),
-                            ],
-                          ),
-                          PhaseWorkInstructionsPanel(
-                            l10n: l10n,
-                            phase: phase,
-                          ),
-                        ],
-                      ),
+                                    ),
+                                  );
+                                },
+                                child: Text(l10n.submitLabel),
+                              ),
+                          ],
+                        ),
+                        PhaseWorkInstructionsPanel(
+                          l10n: l10n,
+                          phase: phase,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-            const SizedBox(height: 16),
-          ],
+              ),
+              const SizedBox(height: 16),
+            ];
+          }()),
           if (project.status != ProjectStatus.done)
             FilledButton.icon(
               onPressed: () => context.push(

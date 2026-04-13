@@ -118,13 +118,15 @@ class ProjectsNotifier extends Notifier<List<Project>> {
   }) {
     final nextId =
         'p${state.length + 1}_${DateTime.now().millisecondsSinceEpoch}';
+    final derivedStatus =
+        phases.isNotEmpty ? projectStatusFromPhases(phases) : status;
     state = [
       ...state,
       Project(
         id: nextId,
         name: name,
         clientId: clientId,
-        status: status,
+        status: derivedStatus,
         workers: workers,
         assignedEmployeeIds: assignedEmployeeIds,
         useClientAddress: useClientAddress,
@@ -155,13 +157,15 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     double? longitude,
     List<ProjectPhase> phases = const [],
   }) {
+    final derivedStatus =
+        phases.isNotEmpty ? projectStatusFromPhases(phases) : status;
     state = [
       for (final project in state)
         if (project.id == id)
           project.copyWith(
             name: name,
             clientId: clientId,
-            status: status,
+            status: derivedStatus,
             workers: workers,
             assignedEmployeeIds: assignedEmployeeIds,
             useClientAddress: useClientAddress,
@@ -203,31 +207,25 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     List<PhaseWorkInstruction> workInstructions = const [],
   }) {
     final phaseId = '${projectId}_phase_${DateTime.now().millisecondsSinceEpoch}';
+    final newPhase = ProjectPhase(
+      id: phaseId,
+      name: name,
+      description: description,
+      workInstructions: workInstructions,
+      assignedEmployeeIds: assignedEmployeeIds,
+      status: PhaseStatus.notStarted,
+    );
     state = [
       for (final project in state)
         if (project.id == projectId)
           project.copyWith(
             phases: [
               ...project.phases,
-              ProjectPhase(
-                id: phaseId,
-                name: name,
-                description: description,
-                workInstructions: workInstructions,
-                assignedEmployeeIds: assignedEmployeeIds,
-                status: PhaseStatus.notStarted,
-              ),
+              newPhase,
             ],
             status: projectStatusFromPhases([
               ...project.phases,
-              ProjectPhase(
-                id: phaseId,
-                name: name,
-                description: description,
-                workInstructions: workInstructions,
-                assignedEmployeeIds: assignedEmployeeIds,
-                status: PhaseStatus.notStarted,
-              ),
+              newPhase,
             ]),
           )
         else
@@ -240,27 +238,44 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     required String phaseId,
     required String employeeId,
   }) {
+    final normalizedEmployeeId = employeeId.trim();
+
     state = [
       for (final project in state)
         if (project.id == projectId)
-          project.copyWith(
-            phases: [
+          () {
+            var didUpdatePhase = false;
+
+            final updatedPhases = [
               for (final phase in project.phases)
                 if (phase.id == phaseId)
-                  phase.copyWith(
-                    status: PhaseStatus.pendingReview,
-                    submittedAt: DateTime.now(),
-                    submittedByEmployeeIds: [
-                      ...phase.submittedByEmployeeIds,
-                      if (!phase.submittedByEmployeeIds.contains(employeeId))
-                        employeeId,
-                    ],
-                  )
+                  () {
+                    didUpdatePhase = true;
+                    return phase.copyWith(
+                      status: PhaseStatus.pendingReview,
+                      submittedAt: DateTime.now(),
+                      submittedByEmployeeIds: [
+                        ...phase.submittedByEmployeeIds,
+                        if (normalizedEmployeeId.isNotEmpty &&
+                            !phase.submittedByEmployeeIds
+                                .contains(normalizedEmployeeId))
+                          normalizedEmployeeId,
+                      ],
+                    );
+                  }()
                 else
                   phase,
-            ],
-            status: ProjectStatus.inProgress,
-          )
+            ];
+
+            if (!didUpdatePhase) {
+              return project;
+            }
+
+            return project.copyWith(
+              phases: updatedPhases,
+              status: ProjectStatus.inProgress,
+            );
+          }()
         else
           project,
     ];
