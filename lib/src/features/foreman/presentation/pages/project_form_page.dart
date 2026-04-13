@@ -55,6 +55,9 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
     final lockClientSelection = !isEdit && widget.initialClientId != null;
     final l10n = context.l10n;
     final clients = ref.watch(clientsProvider);
+    // Normalize: if the stored clientId is no longer in the list, treat as unselected.
+    final validClientId =
+        clients.any((c) => c.id == _selectedClientId) ? _selectedClientId : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -86,7 +89,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: _selectedClientId,
+                      value: validClientId,
                       items: clients
                           .map(
                             (client) => DropdownMenuItem<String>(
@@ -100,7 +103,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage> {
                           : (value) {
                               setState(() => _selectedClientId = value);
                             },
-                      decoration: const InputDecoration(labelText: 'Client'),
+                      decoration: InputDecoration(labelText: l10n.clientDropdownLabel),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<ProjectStatus>(

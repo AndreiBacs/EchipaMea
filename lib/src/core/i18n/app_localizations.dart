@@ -146,6 +146,8 @@ class AppLocalizations {
       'projectFormAddTitle': 'Adauga proiect',
       'projectFormEditTitle': 'Editeaza proiect',
       'projectNameLabel': 'Nume proiect',
+      'clientDropdownLabel': 'Client',
+      'projectClientPrefix': 'Client',
       'statusLabel': 'Status',
       'workersCommaSeparatedLabel': 'Angajati (separati prin virgula)',
       'createProject': 'Creeaza proiect',
@@ -415,6 +417,8 @@ class AppLocalizations {
       'projectFormAddTitle': 'Projekt hozzaadasa',
       'projectFormEditTitle': 'Projekt szerkesztese',
       'projectNameLabel': 'Projekt neve',
+      'clientDropdownLabel': 'Ugyfel',
+      'projectClientPrefix': 'Ugyfel',
       'statusLabel': 'Allapot',
       'workersCommaSeparatedLabel': 'Munkasok (vesszovel elvalasztva)',
       'createProject': 'Projekt letrehozasa',
@@ -680,6 +684,8 @@ class AppLocalizations {
       'projectFormAddTitle': 'Add project',
       'projectFormEditTitle': 'Edit project',
       'projectNameLabel': 'Project name',
+      'clientDropdownLabel': 'Client',
+      'projectClientPrefix': 'Client',
       'statusLabel': 'Status',
       'workersCommaSeparatedLabel': 'Workers (comma separated)',
       'createProject': 'Create project',
@@ -946,6 +952,9 @@ class AppLocalizations {
   String get projectFormAddTitle => _t('projectFormAddTitle');
   String get projectFormEditTitle => _t('projectFormEditTitle');
   String get projectNameLabel => _t('projectNameLabel');
+  String get clientDropdownLabel => _t('clientDropdownLabel');
+  String projectClientLabel(String clientName) =>
+      '${_t('projectClientPrefix')}: $clientName';
   String get statusLabel => _t('statusLabel');
   String get workersCommaSeparatedLabel => _t('workersCommaSeparatedLabel');
   String get createProject => _t('createProject');

@@ -19,6 +19,11 @@ class ClientsPage extends ConsumerWidget {
     final projects = ref.watch(projectsProvider);
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;
+    // Precompute once so each row renders in O(1) instead of O(projects).
+    final projectsByClientId = <String, List<Project>>{};
+    for (final project in projects) {
+      projectsByClientId.putIfAbsent(project.clientId, () => []).add(project);
+    }
 
     return Stack(
       children: [
@@ -47,9 +52,8 @@ class ClientsPage extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final client = clients[index];
-                  final allocatedProjects = projects
-                      .where((project) => project.clientId == client.id)
-                      .toList();
+                  final allocatedProjects =
+                      projectsByClientId[client.id] ?? const [];
                   return Dismissible(
                     key: ValueKey('client_${client.id}'),
                     direction: DismissDirection.horizontal,

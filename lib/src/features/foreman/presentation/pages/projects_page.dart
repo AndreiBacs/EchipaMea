@@ -16,6 +16,8 @@ class ProjectsPage extends ConsumerWidget {
     final clients = ref.watch(clientsProvider);
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;
+    // Build a map once so each row can do O(1) lookups instead of O(clients).
+    final clientNameById = {for (final c in clients) c.id: c.name};
 
     return Stack(
       children: [
@@ -44,13 +46,7 @@ class ProjectsPage extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final project = projects[index];
-                  String? clientName;
-                  for (final client in clients) {
-                    if (client.id == project.clientId) {
-                      clientName = client.name;
-                      break;
-                    }
-                  }
+                  final clientName = clientNameById[project.clientId];
                   return Dismissible(
                     key: ValueKey('project_${project.id}'),
                     direction: DismissDirection.horizontal,

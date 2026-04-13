@@ -17,7 +17,8 @@ class ClientProjectsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final client = ref.read(clientsProvider.notifier).findById(clientId);
+    final clients = ref.watch(clientsProvider);
+    final client = clients.where((c) => c.id == clientId).firstOrNull;
     final projects = ref
         .watch(projectsProvider)
         .where((project) => project.clientId == clientId)
