@@ -123,14 +123,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: ForemanShellPage.mapPath,
-        name: 'foreman_map',
-        pageBuilder: (context, state) => _noTransitionPage(
-          state: state,
-          child: const ForemanShellPage(currentTab: ForemanTab.map),
-        ),
-      ),
-      GoRoute(
         path: ForemanShellPage.projectsPath,
         name: 'foreman_projects',
         pageBuilder: (context, state) => _noTransitionPage(
@@ -139,19 +131,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: ForemanShellPage.teamPath,
-        name: 'foreman_team',
-        pageBuilder: (context, state) => _noTransitionPage(
-          state: state,
-          child: const ForemanShellPage(currentTab: ForemanTab.team),
-        ),
-      ),
-      GoRoute(
         path: ForemanShellPage.clientsPath,
         name: 'foreman_clients',
         pageBuilder: (context, state) => _noTransitionPage(
           state: state,
           child: const ForemanShellPage(currentTab: ForemanTab.clients),
+        ),
+      ),
+      GoRoute(
+        path: ForemanShellPage.teamPath,
+        name: 'foreman_team',
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const ForemanShellPage(currentTab: ForemanTab.team),
         ),
       ),
       GoRoute(

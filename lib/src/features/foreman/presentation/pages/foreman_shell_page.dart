@@ -8,21 +8,19 @@ import '../../../../core/ui/adaptive_breakpoints.dart';
 import '../../application/foreman_notifications_coordinator.dart';
 import 'clients_page.dart';
 import 'dashboard_page.dart';
-import 'foreman_map_page.dart';
 import 'projects_page.dart';
 import 'team_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 
-enum ForemanTab { dashboard, map, projects, team, clients, profile }
+enum ForemanTab { dashboard, projects, clients, team, profile }
 
 class ForemanShellPage extends ConsumerWidget {
   const ForemanShellPage({super.key, required this.currentTab});
 
   static const dashboardPath = '/foreman/dashboard';
-  static const mapPath = '/foreman/map';
   static const projectsPath = '/foreman/projects';
-  static const teamPath = '/foreman/team';
   static const clientsPath = '/foreman/clients';
+  static const teamPath = '/foreman/team';
   static const profilePath = '/foreman/profile';
 
   final ForemanTab currentTab;
@@ -33,10 +31,9 @@ class ForemanShellPage extends ConsumerWidget {
     final notifications = ref.watch(foremanNotificationsProvider);
     final body = switch (currentTab) {
       ForemanTab.dashboard => const DashboardPage(),
-      ForemanTab.map => const ForemanMapPage(),
       ForemanTab.projects => const ProjectsPage(),
-      ForemanTab.team => const TeamPage(),
       ForemanTab.clients => const ClientsPage(),
+      ForemanTab.team => const TeamPage(),
       ForemanTab.profile => const ProfilePage(),
     };
     final sizeClass = AdaptiveBreakpoints.fromContext(context);
@@ -81,20 +78,16 @@ class ForemanShellPage extends ConsumerWidget {
                         label: Text(l10n.dashboardTab),
                       ),
                       NavigationRailDestination(
-                        icon: const Icon(Icons.map_outlined),
-                        label: Text(l10n.mapTab),
-                      ),
-                      NavigationRailDestination(
                         icon: const Icon(Icons.work),
                         label: Text(l10n.projectsTab),
                       ),
                       NavigationRailDestination(
-                        icon: const Icon(Icons.groups),
-                        label: Text(l10n.teamTab),
-                      ),
-                      NavigationRailDestination(
                         icon: const Icon(Icons.handshake),
                         label: Text(l10n.clientsTab),
+                      ),
+                      NavigationRailDestination(
+                        icon: const Icon(Icons.groups),
+                        label: Text(l10n.teamTab),
                       ),
                       NavigationRailDestination(
                         icon: const Icon(Icons.person),
@@ -125,20 +118,16 @@ class ForemanShellPage extends ConsumerWidget {
                           label: Text(l10n.dashboardTab),
                         ),
                         NavigationDrawerDestination(
-                          icon: const Icon(Icons.map_outlined),
-                          label: Text(l10n.mapTab),
-                        ),
-                        NavigationDrawerDestination(
                           icon: const Icon(Icons.work),
                           label: Text(l10n.projectsTab),
                         ),
                         NavigationDrawerDestination(
-                          icon: const Icon(Icons.groups),
-                          label: Text(l10n.teamTab),
-                        ),
-                        NavigationDrawerDestination(
                           icon: const Icon(Icons.handshake),
                           label: Text(l10n.clientsTab),
+                        ),
+                        NavigationDrawerDestination(
+                          icon: const Icon(Icons.groups),
+                          label: Text(l10n.teamTab),
                         ),
                         NavigationDrawerDestination(
                           icon: const Icon(Icons.person),
@@ -161,20 +150,16 @@ class ForemanShellPage extends ConsumerWidget {
                   label: l10n.dashboardTab,
                 ),
                 NavigationDestination(
-                  icon: const Icon(Icons.map_outlined),
-                  label: l10n.mapTab,
-                ),
-                NavigationDestination(
                   icon: const Icon(Icons.work),
                   label: l10n.projectsTab,
                 ),
                 NavigationDestination(
-                  icon: const Icon(Icons.groups),
-                  label: l10n.teamTab,
-                ),
-                NavigationDestination(
                   icon: const Icon(Icons.handshake),
                   label: l10n.clientsTab,
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.groups),
+                  label: l10n.teamTab,
                 ),
                 NavigationDestination(
                   icon: const Icon(Icons.person),
@@ -190,10 +175,9 @@ class ForemanShellPage extends ConsumerWidget {
     final tab = ForemanTab.values[index];
     final path = switch (tab) {
       ForemanTab.dashboard => dashboardPath,
-      ForemanTab.map => mapPath,
       ForemanTab.projects => projectsPath,
-      ForemanTab.team => teamPath,
       ForemanTab.clients => clientsPath,
+      ForemanTab.team => teamPath,
       ForemanTab.profile => profilePath,
     };
     context.go(path);
@@ -222,8 +206,14 @@ class ForemanShellPage extends ConsumerWidget {
                     separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final item = items[index];
-                      final hh = item.receivedAt.hour.toString().padLeft(2, '0');
-                      final mm = item.receivedAt.minute.toString().padLeft(2, '0');
+                      final hh = item.receivedAt.hour.toString().padLeft(
+                        2,
+                        '0',
+                      );
+                      final mm = item.receivedAt.minute.toString().padLeft(
+                        2,
+                        '0',
+                      );
                       return ListTile(
                         dense: true,
                         title: Text(item.title),
