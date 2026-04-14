@@ -17,6 +17,7 @@ import '../../features/foreman/presentation/pages/project_phase_form_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/legal/presentation/pages/terms_page.dart';
 import '../../features/worker/presentation/pages/worker_connect_page.dart';
+import '../../features/worker/presentation/pages/worker_phase_detail_page.dart';
 import '../../features/worker/presentation/pages/worker_project_detail_page.dart';
 import '../../features/worker/presentation/pages/worker_report_flow_page.dart';
 import '../../features/worker/presentation/pages/worker_shell_page.dart';
@@ -261,11 +262,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
         routes: [
           GoRoute(
-            path: 'report',
+            path: 'phase/:phaseId',
+            name: 'worker_phase_detail',
+            builder: (context, state) {
+              final projectId = state.pathParameters['projectId']!;
+              final phaseId = state.pathParameters['phaseId']!;
+              return WorkerPhaseDetailPage(
+                projectId: projectId,
+                phaseId: phaseId,
+              );
+            },
+          ),
+          GoRoute(
+            path: 'phase/:phaseId/report',
             name: 'worker_project_report',
             builder: (context, state) {
-              final id = state.pathParameters['projectId']!;
-              return WorkerReportFlowPage(projectId: id);
+              final projectId = state.pathParameters['projectId']!;
+              final phaseId = state.pathParameters['phaseId']!;
+              return WorkerReportFlowPage(
+                projectId: projectId,
+                phaseId: phaseId,
+              );
             },
           ),
         ],

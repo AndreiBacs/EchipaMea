@@ -34,6 +34,8 @@ class ProjectPhase {
   const ProjectPhase({
     required this.id,
     required this.name,
+    required this.startDate,
+    required this.endDate,
     this.description = '',
     required this.assignedEmployeeIds,
     required this.status,
@@ -47,8 +49,12 @@ class ProjectPhase {
 
   final String id;
   final String name;
+  final DateTime startDate;
+  final DateTime endDate;
+
   /// Foreman notes / scope for this phase (optional).
   final String description;
+
   /// Ordered work instructions; each may include photos and voice memos.
   final List<PhaseWorkInstruction> workInstructions;
   final List<String> assignedEmployeeIds;
@@ -61,6 +67,8 @@ class ProjectPhase {
 
   ProjectPhase copyWith({
     String? name,
+    DateTime? startDate,
+    DateTime? endDate,
     String? description,
     List<PhaseWorkInstruction>? workInstructions,
     List<String>? assignedEmployeeIds,
@@ -74,6 +82,8 @@ class ProjectPhase {
     return ProjectPhase(
       id: id,
       name: name ?? this.name,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
       description: description ?? this.description,
       workInstructions: workInstructions ?? this.workInstructions,
       assignedEmployeeIds: assignedEmployeeIds ?? this.assignedEmployeeIds,
@@ -111,6 +121,7 @@ class Project {
   final String clientId;
   final ProjectStatus status;
   final List<String> workers;
+
   /// When non-empty, prefer matching the signed-in worker by [Employee.id].
   final List<String> assignedEmployeeIds;
   final bool useClientAddress;

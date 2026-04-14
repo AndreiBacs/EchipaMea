@@ -9,58 +9,111 @@ import '../../domain/entities/foreman_workflow_step.dart';
 import 'client_form_page.dart';
 import 'employee_form_page.dart';
 import 'foreman_getting_started_page.dart';
+import 'foreman_map_page.dart';
 import 'foreman_shell_page.dart';
 import 'project_form_page.dart';
 import 'project_phase_form_page.dart';
 import '../providers/projects_controller.dart';
+import '../providers/team_controller.dart';
 
-class DashboardPage extends ConsumerWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    const employees = [
-      _EmployeeAssignment(
-        employeeName: 'Andrei D.',
-        role: WorkerRole.electrician,
-        projectName: 'Renovation - Main Street 15',
-        currentTask: 'Wiring floor 2',
-      ),
-      _EmployeeAssignment(
-        employeeName: 'Mihai S.',
-        role: WorkerRole.plumber,
-        projectName: 'Kitchen fit-out - Cafe Luna',
-        currentTask: 'Install sink lines',
-      ),
-      _EmployeeAssignment(
-        employeeName: 'Ioana R.',
-        role: WorkerRole.generalWorker,
-        projectName: 'Roof repair - Industrial Hall',
-        currentTask: 'Material prep and transport',
-      ),
-      _EmployeeAssignment(
-        employeeName: 'Vlad P.',
-        role: WorkerRole.carpenter,
-        projectName: 'Renovation - Main Street 15',
-        currentTask: 'Build partition walls',
-      ),
-    ];
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+}
 
-    const projectAllocations = [
-      _ProjectAllocation(
-        projectName: 'Renovation - Main Street 15',
-        workers: ['Andrei D.', 'Vlad P.'],
-      ),
-      _ProjectAllocation(
-        projectName: 'Kitchen fit-out - Cafe Luna',
-        workers: ['Mihai S.'],
-      ),
-      _ProjectAllocation(
-        projectName: 'Roof repair - Industrial Hall',
-        workers: ['Ioana R.'],
-      ),
+enum _FinishedProjectsPeriod { thisMonth, lastMonth, custom }
+
+class _DashboardPageState extends ConsumerState<DashboardPage> {
+  _FinishedProjectsPeriod _finishedProjectsPeriod =
+      _FinishedProjectsPeriod.thisMonth;
+  DateTimeRange? _customRange;
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final initial =
+        _customRange ??
+        DateTimeRange(
+          start: DateTime(now.year, now.month, 1),
+          end: now,
+        );
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: initial,
+    );
+    if (!mounted) return;
+    if (picked == null) {
+      if (_customRange == null) {
+        setState(() => _finishedProjectsPeriod = _FinishedProjectsPeriod.thisMonth);
+      }
+      return;
+    }
+    setState(() {
+      _customRange = DateTimeRange(
+        start: DateTime(
+          picked.start.year,
+          picked.start.month,
+          picked.start.day,
+        ),
+        end: DateTime(
+          picked.end.year,
+          picked.end.month,
+          picked.end.day,
+        ),
+      );
+      _finishedProjectsPeriod = _FinishedProjectsPeriod.custom;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final team = ref.watch(teamProvider);
+    final projects = ref.watch(projectsProvider);
+    final projectsNotifier = ref.read(projectsProvider.notifier);
+    final employeesById = {for (final e in team) e.id: e};
+    final today = DateTime.now();
+
+    final employeeAssignments = <_EmployeeAssignment>[];
+    for (final project in projects) {
+      for (final phase in project.phases) {
+        for (final employeeId in phase.assignedEmployeeIds) {
+          final employee = employeesById[employeeId];
+          if (employee == null) continue;
+          employeeAssignments.add(
+            _EmployeeAssignment(
+              employeeName: employee.name,
+              role: employee.role,
+              projectName: project.name,
+              currentTask: phase.name,
+            ),
+          );
+        }
+      }
+    }
+
+    final projectAllocations = [
+      for (final project in projects)
+        _ProjectAllocation(projectName: project.name, workers: project.workers),
     ];
+    final uniqueWorkersWithActiveTasks = <String>{};
+    for (final project in projects) {
+      if (project.status == ProjectStatus.done) continue;
+      for (final phase in project.phases) {
+        if (phase.status == PhaseStatus.done) continue;
+        for (final employeeId in phase.assignedEmployeeIds) {
+          uniqueWorkersWithActiveTasks.add(employeeId);
+        }
+      }
+    }
+    final activeClientIds = <String>{
+      for (final project in projects)
+        if (project.status == ProjectStatus.inProgress) project.clientId,
+    };
+    final finishedProjectsCount = _countFinishedProjects(projects);
 
     final workflowState = ref.watch(foremanWorkflowProgressProvider);
 
@@ -110,25 +163,49 @@ class DashboardPage extends ConsumerWidget {
                 delegate: SliverChildListDelegate([
                   _KpiCard(
                     title: l10n.employeesTitle,
-                    value: '${employees.length}',
+                    value: '${team.length}',
                     subtitle: l10n.totalWorkersAvailable,
                   ),
                   _KpiCard(
                     title: l10n.inProgress,
-                    value: '${projectAllocations.length}',
+                    value:
+                        '${projects.where((p) => p.status == ProjectStatus.inProgress).length}',
                     subtitle: l10n.activeProjectsNow,
                   ),
                   _KpiCard(
                     title: l10n.assignments,
-                    value: '${employees.length}',
+                    value: '${uniqueWorkersWithActiveTasks.length}',
                     subtitle: l10n.workersWithActiveTasks,
                   ),
                   _KpiCard(
                     title: l10n.clientsTitle,
-                    value: '${projectAllocations.length}',
+                    value: '${activeClientIds.length}',
                     subtitle: l10n.clientsWithActiveJobs,
                   ),
                 ]),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                12,
+                horizontalMargin + 16,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: _FinishedProjectsCard(
+                  count: finishedProjectsCount,
+                  selectedPeriod: _finishedProjectsPeriod,
+                  customRange: _customRange,
+                  onPeriodChanged: (period) {
+                    setState(() => _finishedProjectsPeriod = period);
+                    if (period == _FinishedProjectsPeriod.custom &&
+                        _customRange == null) {
+                      _pickCustomRange();
+                    }
+                  },
+                  onPickCustomRange: _pickCustomRange,
+                ),
               ),
             ),
             SliverPadding(
@@ -152,7 +229,7 @@ class DashboardPage extends ConsumerWidget {
               padding: EdgeInsets.symmetric(horizontal: horizontalMargin + 16),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  final item = employees[index];
+                  final item = employeeAssignments[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Card(
@@ -170,7 +247,127 @@ class DashboardPage extends ConsumerWidget {
                       ),
                     ),
                   );
-                }, childCount: employees.length),
+                }, childCount: employeeAssignments.length),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                16,
+                horizontalMargin + 16,
+                8,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  l10n.dashboardTodayWorkerSequence,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalMargin + 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final employee = team[index];
+                  final sequenceRows = <String>[];
+                  String? targetProjectId;
+                  for (final project in projects) {
+                    final sequence = projectsNotifier.sequenceForDay(
+                      projectId: project.id,
+                      workerId: employee.id,
+                      day: today,
+                    );
+                    if (sequence.orderedPhaseIds.isEmpty) continue;
+                    final namesById = {
+                      for (final phase in project.phases) phase.id: phase.name,
+                    };
+                    final phaseNames = [
+                      for (final phaseId in sequence.orderedPhaseIds)
+                        if (namesById.containsKey(phaseId)) namesById[phaseId]!,
+                    ];
+                    if (phaseNames.isEmpty) continue;
+                    targetProjectId ??= project.id;
+                    sequenceRows.add(
+                      '${project.name}: ${phaseNames.join(' -> ')}',
+                    );
+                  }
+                  if (targetProjectId == null) {
+                    for (final project in projects) {
+                      final hasAssignedPhase = project.phases.any(
+                        (phase) =>
+                            phase.assignedEmployeeIds.contains(employee.id),
+                      );
+                      if (hasAssignedPhase) {
+                        targetProjectId = project.id;
+                        break;
+                      }
+                    }
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: targetProjectId == null
+                        ? Card(
+                            child: ListTile(
+                              title: Text(employee.name),
+                              subtitle: Text(
+                                sequenceRows.isEmpty
+                                    ? l10n.dashboardNoSequencePlannedToday
+                                    : sequenceRows.join('\n'),
+                              ),
+                              isThreeLine: sequenceRows.length > 1,
+                              trailing: TextButton(
+                                onPressed: null,
+                                child: Text(l10n.dashboardPlan),
+                              ),
+                            ),
+                          )
+                        : Dismissible(
+                            key: ValueKey(
+                              'sequence_plan_${employee.id}_$targetProjectId',
+                            ),
+                            direction: DismissDirection.horizontal,
+                            confirmDismiss: (_) async {
+                              context.push(
+                                ProjectFormPage.editPathWithPhasesTab(
+                                  targetProjectId!,
+                                ),
+                              );
+                              return false;
+                            },
+                            background: _SwipePlanBackground(
+                              alignment: Alignment.centerLeft,
+                              label: l10n.dashboardPlan,
+                            ),
+                            secondaryBackground: _SwipePlanBackground(
+                              alignment: Alignment.centerRight,
+                              label: l10n.dashboardPlan,
+                            ),
+                            child: Card(
+                              child: ListTile(
+                                title: Text(employee.name),
+                                subtitle: Text(
+                                  sequenceRows.isEmpty
+                                      ? l10n.dashboardNoSequencePlannedToday
+                                      : sequenceRows.join('\n'),
+                                ),
+                                isThreeLine: sequenceRows.length > 1,
+                                trailing: TextButton(
+                                  onPressed: () => context.push(
+                                    ProjectFormPage.editPathWithPhasesTab(
+                                      targetProjectId!,
+                                    ),
+                                  ),
+                                  child: Text(l10n.dashboardPlan),
+                                ),
+                              ),
+                            ),
+                          ),
+                  );
+                }, childCount: team.length),
               ),
             ),
             SliverPadding(
@@ -195,7 +392,7 @@ class DashboardPage extends ConsumerWidget {
                 horizontalMargin + 16,
                 0,
                 horizontalMargin + 16,
-                24,
+                12,
               ),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
@@ -224,10 +421,114 @@ class DashboardPage extends ConsumerWidget {
                 }, childCount: projectAllocations.length),
               ),
             ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                0,
+                horizontalMargin + 16,
+                24,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        l10n.dashboardMapSectionTitle,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 420,
+                      child: Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: const ForemanMapPage(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                0,
+                horizontalMargin + 16,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => context.go(ForemanShellPage.projectsPath),
+                    child: Text(l10n.dashboardOpenFullProjectPlanning),
+                  ),
+                ),
+              ),
+            ),
           ],
         );
       },
     );
+  }
+
+  int _countFinishedProjects(List<Project> projects) {
+    final range = _selectedFinishedRange();
+    var count = 0;
+    for (final project in projects) {
+      if (project.status != ProjectStatus.done) continue;
+      final finishedAt = _projectFinishedAt(project);
+      if (finishedAt == null) continue;
+      if (finishedAt.isBefore(range.start) || finishedAt.isAfter(range.end)) {
+        continue;
+      }
+      count += 1;
+    }
+    return count;
+  }
+
+  DateTimeRange _selectedFinishedRange() {
+    final now = DateTime.now();
+    if (_finishedProjectsPeriod == _FinishedProjectsPeriod.custom &&
+        _customRange != null) {
+      return _customRange!;
+    }
+    if (_finishedProjectsPeriod == _FinishedProjectsPeriod.lastMonth) {
+      final thisMonthStart = DateTime(now.year, now.month, 1);
+      final lastMonthEnd = thisMonthStart.subtract(const Duration(days: 1));
+      final lastMonthStart = DateTime(lastMonthEnd.year, lastMonthEnd.month, 1);
+      return DateTimeRange(start: lastMonthStart, end: lastMonthEnd);
+    }
+    return DateTimeRange(
+      start: DateTime(now.year, now.month, 1),
+      end: DateTime(now.year, now.month, now.day),
+    );
+  }
+
+  DateTime? _projectFinishedAt(Project project) {
+    DateTime? latestReview;
+    for (final phase in project.phases) {
+      final reviewedAt = phase.reviewedAt;
+      if (reviewedAt == null) continue;
+      if (latestReview == null || reviewedAt.isAfter(latestReview)) {
+        latestReview = reviewedAt;
+      }
+    }
+    if (latestReview != null) {
+      return DateTime(latestReview.year, latestReview.month, latestReview.day);
+    }
+    if (project.phases.isEmpty) return null;
+    DateTime latestEnd = project.phases.first.endDate;
+    for (final phase in project.phases) {
+      if (phase.endDate.isAfter(latestEnd)) {
+        latestEnd = phase.endDate;
+      }
+    }
+    return DateTime(latestEnd.year, latestEnd.month, latestEnd.day);
   }
 
   void _openStep(
@@ -248,7 +549,9 @@ class DashboardPage extends ConsumerWidget {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.go(ForemanShellPage.projectsPath);
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              final messenger = ScaffoldMessenger.maybeOf(rootNavigator.context);
+              final messenger = ScaffoldMessenger.maybeOf(
+                rootNavigator.context,
+              );
               if (messenger == null) return;
               messenger
                 ..hideCurrentSnackBar()
@@ -265,6 +568,95 @@ class DashboardPage extends ConsumerWidget {
       case ForemanWorkflowStep.addEmployee:
         context.push(EmployeeFormPage.createPath);
     }
+  }
+}
+
+class _FinishedProjectsCard extends StatelessWidget {
+  const _FinishedProjectsCard({
+    required this.count,
+    required this.selectedPeriod,
+    required this.customRange,
+    required this.onPeriodChanged,
+    required this.onPickCustomRange,
+  });
+
+  final int count;
+  final _FinishedProjectsPeriod selectedPeriod;
+  final DateTimeRange? customRange;
+  final ValueChanged<_FinishedProjectsPeriod> onPeriodChanged;
+  final VoidCallback onPickCustomRange;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final localizations = MaterialLocalizations.of(context);
+    final rangeLabel = customRange == null
+        ? l10n.dashboardFinishedProjectsNoCustomRange
+        : '${localizations.formatMediumDate(customRange!.start)} - ${localizations.formatMediumDate(customRange!.end)}';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.dashboardFinishedProjectsTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            Text('$count', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 4),
+            Text(l10n.dashboardFinishedProjectsSubtitle),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  label: Text(l10n.dashboardPeriodThisMonth),
+                  selected: selectedPeriod == _FinishedProjectsPeriod.thisMonth,
+                  onSelected: (_) =>
+                      onPeriodChanged(_FinishedProjectsPeriod.thisMonth),
+                ),
+                ChoiceChip(
+                  label: Text(l10n.dashboardPeriodLastMonth),
+                  selected: selectedPeriod == _FinishedProjectsPeriod.lastMonth,
+                  onSelected: (_) =>
+                      onPeriodChanged(_FinishedProjectsPeriod.lastMonth),
+                ),
+                ChoiceChip(
+                  label: Text(l10n.dashboardPeriodCustom),
+                  selected: selectedPeriod == _FinishedProjectsPeriod.custom,
+                  onSelected: (_) =>
+                      onPeriodChanged(_FinishedProjectsPeriod.custom),
+                ),
+              ],
+            ),
+            if (selectedPeriod == _FinishedProjectsPeriod.custom) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onPickCustomRange,
+                    icon: const Icon(Icons.date_range),
+                    label: Text(l10n.dashboardSelectCustomPeriod),
+                  ),
+                  Text(
+                    rangeLabel,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -320,6 +712,43 @@ class _ProjectAllocation {
   final List<String> workers;
 }
 
+class _SwipePlanBackground extends StatelessWidget {
+  const _SwipePlanBackground({required this.alignment, required this.label});
+
+  final Alignment alignment;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: alignment,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.event_note_outlined,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _GettingStartedCard extends StatelessWidget {
   const _GettingStartedCard({
     required this.state,
@@ -338,7 +767,7 @@ class _GettingStartedCard extends StatelessWidget {
     final l10n = context.l10n;
     return state.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
       data: (workflow) {
         if (workflow.cardDismissed || workflow.allStepsCompleted) {
           return const SizedBox.shrink();

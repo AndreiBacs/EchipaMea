@@ -10,6 +10,8 @@ class WorkerReportsApi {
   Future<void> submitReport({
     required String projectId,
     required String projectName,
+    required String phaseId,
+    required String phaseName,
     required String employeeId,
     required String employeeName,
     required String description,
@@ -26,6 +28,8 @@ class WorkerReportsApi {
     final request = http.MultipartRequest('POST', uri);
     request.fields['projectId'] = projectId;
     request.fields['projectName'] = projectName;
+    request.fields['phaseId'] = phaseId;
+    request.fields['phaseName'] = phaseName;
     request.fields['employeeId'] = employeeId;
     request.fields['employeeName'] = employeeName;
     request.fields['description'] = description;
@@ -68,6 +72,8 @@ class WorkerReportsApi {
     await _notifyForemanReportSubmitted(
       projectId: projectId,
       projectName: projectName,
+      phaseId: phaseId,
+      phaseName: phaseName,
       employeeId: employeeId,
       employeeName: employeeName,
       description: description,
@@ -80,6 +86,8 @@ class WorkerReportsApi {
   Future<void> _notifyForemanReportSubmitted({
     required String projectId,
     required String projectName,
+    required String phaseId,
+    required String phaseName,
     required String employeeId,
     required String employeeName,
     required String description,
@@ -101,6 +109,8 @@ class WorkerReportsApi {
         'type': 'worker_report_submitted',
         'projectId': projectId,
         'projectName': projectName,
+        'phaseId': phaseId,
+        'phaseName': phaseName,
         'employeeId': employeeId,
         'employeeName': employeeName,
         'description': description,

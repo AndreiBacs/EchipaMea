@@ -10,7 +10,7 @@ import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../providers/worker_assigned_projects_provider.dart';
 import '../../application/worker_foreman_inbox_controller.dart';
 import '../widgets/phase_work_instructions_panel.dart';
-import 'worker_report_flow_page.dart';
+import 'worker_phase_detail_page.dart';
 
 class WorkerProjectDetailPage extends ConsumerWidget {
   const WorkerProjectDetailPage({super.key, required this.projectId});
@@ -136,62 +136,85 @@ class WorkerProjectDetailPage extends ConsumerWidget {
               ...assignedPhases.map(
                 (phase) => Card(
                   margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    phase.name,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${l10n.statusLabel}: ${_phaseStatusLabel(l10n, phase.status)}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (phase.status != PhaseStatus.pendingReview &&
-                                phase.status != PhaseStatus.done)
-                              FilledButton.tonal(
-                                onPressed: () {
-                                  ref
-                                      .read(projectsProvider.notifier)
-                                      .submitPhaseForReview(
-                                        projectId: project.id,
-                                        phaseId: phase.id,
-                                        employeeId: session.employeeId,
-                                      );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.phaseSubmittedForReview,
-                                      ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => context.push(
+                      WorkerPhaseDetailPage.pathFor(
+                        projectId: project.id,
+                        phaseId: phase.id,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      phase.name,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
                                     ),
-                                  );
-                                },
-                                child: Text(l10n.submitLabel),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${l10n.statusLabel}: ${_phaseStatusLabel(l10n, phase.status)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                    ),
+                                  ],
+                                ),
                               ),
-                          ],
-                        ),
-                        PhaseWorkInstructionsPanel(
-                          l10n: l10n,
-                          phase: phase,
-                        ),
-                      ],
+                              if (phase.status != PhaseStatus.pendingReview &&
+                                  phase.status != PhaseStatus.done)
+                                FilledButton.tonal(
+                                  onPressed: () {
+                                    ref
+                                        .read(projectsProvider.notifier)
+                                        .submitPhaseForReview(
+                                          projectId: project.id,
+                                          phaseId: phase.id,
+                                          employeeId: session.employeeId,
+                                        );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          l10n.phaseSubmittedForReview,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                child: Text(l10n.workerSubmitForReview),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () => context.push(
+                                WorkerPhaseDetailPage.pathFor(
+                                  projectId: project.id,
+                                  phaseId: phase.id,
+                                ),
+                              ),
+                              icon: const Icon(Icons.open_in_new),
+                              label: Text(l10n.workerViewDetails),
+                            ),
+                          ),
+                          PhaseWorkInstructionsPanel(
+                            l10n: l10n,
+                            phase: phase,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -199,14 +222,6 @@ class WorkerProjectDetailPage extends ConsumerWidget {
               const SizedBox(height: 16),
             ];
           }()),
-          if (project.status != ProjectStatus.done)
-            FilledButton.icon(
-              onPressed: () => context.push(
-                WorkerReportFlowPage.pathFor(project.id),
-              ),
-              icon: const Icon(Icons.task_alt),
-              label: Text(l10n.workerCompleteWork),
-            ),
         ],
       ),
     );

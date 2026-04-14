@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,11 +20,19 @@ import '../../application/worker_foreman_inbox_controller.dart';
 import 'worker_shell_page.dart';
 
 class WorkerReportFlowPage extends ConsumerStatefulWidget {
-  const WorkerReportFlowPage({super.key, required this.projectId});
+  const WorkerReportFlowPage({
+    super.key,
+    required this.projectId,
+    required this.phaseId,
+  });
 
-  static String pathFor(String projectId) => '/worker/project/$projectId/report';
+  static String pathFor({
+    required String projectId,
+    required String phaseId,
+  }) => '/worker/project/$projectId/phase/$phaseId/report';
 
   final String projectId;
+  final String phaseId;
 
   @override
   ConsumerState<WorkerReportFlowPage> createState() =>
@@ -34,20 +44,39 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
   final _descriptionController = TextEditingController();
   final _picker = ImagePicker();
   final _audioRecorder = AudioRecorder();
+  final _memoPlayer = AudioPlayer();
 
   final List<XFile> _photos = [];
   String? _memoPath;
   bool _recording = false;
+  bool _playingMemo = false;
   bool _memoUnsupported = false;
   bool _submitting = false;
   int _pageIndex = 0;
+  StreamSubscription<void>? _memoCompleteSub;
+  final Stopwatch _recordingStopwatch = Stopwatch();
+  Timer? _recordingTicker;
+  String _recordingElapsedLabel = '00:00';
+
+  @override
+  void initState() {
+    super.initState();
+    _memoCompleteSub = _memoPlayer.onPlayerComplete.listen((_) {
+      if (!mounted) return;
+      setState(() => _playingMemo = false);
+    });
+  }
 
   @override
   void dispose() {
+    unawaited(_memoPlayer.stop());
+    unawaited(_memoPlayer.dispose());
+    unawaited(_memoCompleteSub?.cancel());
     unawaited(_deleteMemoFile(_memoPath));
     _pageController.dispose();
     _descriptionController.dispose();
     unawaited(_audioRecorder.dispose());
+    _recordingTicker?.cancel();
     super.dispose();
   }
 
@@ -62,9 +91,14 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     }));
     final session = ref.watch(sessionProvider);
     final assigned = ref.watch(workerAssignedProjectsProvider);
+    final phase = project?.phases.where((p) => p.id == widget.phaseId).firstOrNull;
+    final workerAssignedToPhase = session != null &&
+        phase != null &&
+        phase.assignedEmployeeIds.contains(session.employeeId);
     final ok = project != null &&
         session != null &&
-        assigned.any((p) => p.id == project.id);
+        assigned.any((p) => p.id == project.id) &&
+        workerAssignedToPhase;
 
     if (!ok) {
       return Scaffold(
@@ -113,23 +147,34 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                 _PhotosStep(
                   l10n: l10n,
                   photos: _photos,
-                  onAdd: _pickPhotos,
+                  onAddFromGallery: _pickPhotosFromGallery,
+                  onCapturePhoto: _capturePhoto,
+                  onPreview: _openPhotoPreview,
                   onRemove: (i) => setState(() => _photos.removeAt(i)),
                 ),
                 _MemoStep(
                   l10n: l10n,
                   recording: _recording,
+                  recordingElapsedLabel: _recordingElapsedLabel,
                   memoPath: _memoPath,
                   memoUnsupported: _memoUnsupported,
+                  isPlaying: _playingMemo,
                   onStart: _startRecording,
                   onStop: _stopRecording,
+                  onTogglePlay: _toggleMemoPlayback,
                   onClear: _clearMemo,
                 ),
                 _DescriptionStep(
                   l10n: l10n,
                   controller: _descriptionController,
                   isSubmitting: _submitting,
-                  onSubmit: () => _submit(context, project, session),
+                  onSubmit: () {
+                    final selectedPhase = phase;
+                    if (selectedPhase == null) {
+                      return;
+                    }
+                    _submit(context, project, selectedPhase, session);
+                  },
                 ),
               ],
             ),
@@ -171,7 +216,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     );
   }
 
-  Future<void> _pickPhotos() async {
+  Future<void> _pickPhotosFromGallery() async {
     final l10n = context.l10n;
     try {
       final files = await _picker.pickMultiImage(imageQuality: 85);
@@ -180,6 +225,27 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
         for (final f in files) {
           if (_photos.length >= 8) break;
           _photos.add(f);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.workerReportPhotoPickFailed)),
+      );
+    }
+  }
+
+  Future<void> _capturePhoto() async {
+    final l10n = context.l10n;
+    try {
+      final file = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+      if (file == null) return;
+      setState(() {
+        if (_photos.length < 8) {
+          _photos.add(file);
         }
       });
     } catch (_) {
@@ -211,9 +277,20 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
         const RecordConfig(encoder: AudioEncoder.aacLc),
         path: path,
       );
+      _recordingStopwatch
+        ..reset()
+        ..start();
+      _recordingTicker?.cancel();
+      _recordingTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        setState(() {
+          _recordingElapsedLabel = _formatElapsed(_recordingStopwatch.elapsed);
+        });
+      });
       setState(() {
         _recording = true;
         _memoUnsupported = false;
+        _recordingElapsedLabel = '00:00';
       });
     } catch (_) {
       setState(() => _memoUnsupported = true);
@@ -222,8 +299,11 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
 
   Future<void> _stopRecording() async {
     final path = await _audioRecorder.stop();
+    _recordingTicker?.cancel();
+    _recordingStopwatch.stop();
     setState(() {
       _recording = false;
+      _playingMemo = false;
       if (path != null && path.isNotEmpty) {
         _memoPath = path;
       }
@@ -231,14 +311,83 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
   }
 
   Future<void> _clearMemo() async {
+    await _memoPlayer.stop();
     final toDelete = _memoPath;
-    setState(() => _memoPath = null);
+    setState(() {
+      _memoPath = null;
+      _playingMemo = false;
+    });
     await _deleteMemoFile(toDelete);
+  }
+
+  Future<void> _toggleMemoPlayback() async {
+    final path = _memoPath;
+    if (path == null || path.trim().isEmpty) return;
+    if (kIsWeb) {
+      if (mounted) {
+        setState(() => _memoUnsupported = true);
+      }
+      return;
+    }
+    if (_playingMemo) {
+      await _memoPlayer.stop();
+      if (mounted) {
+        setState(() => _playingMemo = false);
+      }
+      return;
+    }
+    try {
+      await _memoPlayer.stop();
+      await _memoPlayer.play(DeviceFileSource(path));
+      if (mounted) {
+        setState(() {
+          _playingMemo = true;
+          _memoUnsupported = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _memoUnsupported = true);
+      }
+    }
+  }
+
+  Future<void> _openPhotoPreview(XFile photo) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  tooltip: context.l10n.close,
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+              Flexible(
+                child: InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 4,
+                  child: _LargePhotoPreview(file: photo),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _submit(
     BuildContext context,
     Project project,
+    ProjectPhase phase,
     WorkerSession session,
   ) async {
     final l10n = context.l10n;
@@ -257,6 +406,8 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
       await ref.read(workerReportsApiProvider).submitReport(
         projectId: project.id,
         projectName: project.name,
+        phaseId: phase.id,
+        phaseName: phase.name,
         employeeId: session.employeeId,
         employeeName: session.employeeName,
         description: description,
@@ -270,6 +421,8 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
               at: DateTime.now().toUtc(),
               projectId: project.id,
               projectName: project.name,
+              phaseId: phase.id,
+              phaseName: phase.name,
               employeeId: session.employeeId,
               employeeName: session.employeeName,
               description: description,
@@ -277,9 +430,13 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
               hasVoiceMemo: _memoPath != null,
             ),
           );
+      await _memoPlayer.stop();
       await _deleteMemoFile(_memoPath);
       if (mounted) {
-        setState(() => _memoPath = null);
+        setState(() {
+          _memoPath = null;
+          _playingMemo = false;
+        });
       }
 
       if (!context.mounted) return;
@@ -312,6 +469,12 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     } catch (_) {
       // Best effort cleanup for temporary recordings.
     }
+  }
+
+  String _formatElapsed(Duration elapsed) {
+    final minutes = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 }
 
@@ -370,13 +533,17 @@ class _PhotosStep extends StatelessWidget {
   const _PhotosStep({
     required this.l10n,
     required this.photos,
-    required this.onAdd,
+    required this.onAddFromGallery,
+    required this.onCapturePhoto,
+    required this.onPreview,
     required this.onRemove,
   });
 
   final AppLocalizations l10n;
   final List<XFile> photos;
-  final VoidCallback onAdd;
+  final VoidCallback onAddFromGallery;
+  final VoidCallback onCapturePhoto;
+  final Future<void> Function(XFile photo) onPreview;
   final void Function(int index) onRemove;
 
   @override
@@ -394,22 +561,37 @@ class _PhotosStep extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: photos.length >= 8 ? null : onAdd,
-          icon: const Icon(Icons.add_photo_alternate_outlined),
-          label: Text(l10n.workerReportAddPhotos),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: photos.length >= 8 ? null : onAddFromGallery,
+              icon: const Icon(Icons.add_photo_alternate_outlined),
+              label: Text(l10n.workerReportAddPhotos),
+            ),
+            OutlinedButton.icon(
+              onPressed: photos.length >= 8 ? null : onCapturePhoto,
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: Text(l10n.workerReportCapturePhoto),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         ...List.generate(photos.length, (i) {
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
-              leading: _PhotoThumbnail(file: photos[i]),
+              leading: GestureDetector(
+                onTap: () => onPreview(photos[i]),
+                child: _PhotoThumbnail(file: photos[i]),
+              ),
               title: Text(
                 photos[i].name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+              subtitle: Text(l10n.workerReportViewPhoto),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () => onRemove(i),
@@ -426,19 +608,25 @@ class _MemoStep extends StatelessWidget {
   const _MemoStep({
     required this.l10n,
     required this.recording,
+    required this.recordingElapsedLabel,
     required this.memoPath,
     required this.memoUnsupported,
+    required this.isPlaying,
     required this.onStart,
     required this.onStop,
+    required this.onTogglePlay,
     required this.onClear,
   });
 
   final AppLocalizations l10n;
   final bool recording;
+  final String recordingElapsedLabel;
   final String? memoPath;
   final bool memoUnsupported;
+  final bool isPlaying;
   final VoidCallback onStart;
   final VoidCallback onStop;
+  final VoidCallback onTogglePlay;
   final VoidCallback onClear;
 
   @override
@@ -478,15 +666,137 @@ class _MemoStep extends StatelessWidget {
               ),
           ],
         ),
+        if (recording) ...[
+          const SizedBox(height: 12),
+          _RecordingIndicator(
+            inProgressLabel: l10n.inProgress,
+            elapsedLabel: recordingElapsedLabel,
+          ),
+        ],
         if (memoPath != null) ...[
           const SizedBox(height: 16),
           ListTile(
             leading: const Icon(Icons.audiotrack),
             title: Text(l10n.workerReportRecordingSaved),
-            trailing: TextButton(onPressed: onClear, child: Text(l10n.cancel)),
+            subtitle: Row(
+              children: [
+                TextButton.icon(
+                  onPressed: onTogglePlay,
+                  icon: Icon(isPlaying ? Icons.stop : Icons.play_arrow),
+                  label: Text(
+                    isPlaying
+                        ? l10n.workerReportStopPlayback
+                        : l10n.workerReportPlayMemo,
+                  ),
+                ),
+                TextButton(
+                  onPressed: onClear,
+                  child: Text(l10n.workerReportRemoveMemo),
+                ),
+              ],
+            ),
           ),
         ],
       ],
+    );
+  }
+}
+
+class _RecordingIndicator extends StatefulWidget {
+  const _RecordingIndicator({
+    required this.inProgressLabel,
+    required this.elapsedLabel,
+  });
+
+  final String inProgressLabel;
+  final String elapsedLabel;
+
+  @override
+  State<_RecordingIndicator> createState() => _RecordingIndicatorState();
+}
+
+class _RecordingIndicatorState extends State<_RecordingIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+      lowerBound: 0.7,
+      upperBound: 1,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          FadeTransition(
+            opacity: _pulseController,
+            child: Icon(Icons.mic, color: Theme.of(context).colorScheme.error),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '${widget.inProgressLabel}: ${widget.elapsedLabel}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargePhotoPreview extends StatelessWidget {
+  const _LargePhotoPreview({required this.file});
+
+  final XFile file;
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return FutureBuilder<Uint8List>(
+        future: file.readAsBytes(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const SizedBox(
+              height: 180,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return Image.memory(snapshot.data!, fit: BoxFit.contain);
+        },
+      );
+    }
+    return Image.file(
+      File(file.path),
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) =>
+          const Icon(Icons.broken_image_outlined, size: 40),
     );
   }
 }

@@ -256,10 +256,49 @@ class AppLocalizations {
       'clientsWithActiveJobs': 'Clienti cu lucrari active',
       'whoDoesWhat': 'Cine ce face',
       'whoWorksOnWhatProject': 'Cine lucreaza pe ce proiect',
+      'dashboardTodayWorkerSequence': 'Secventa de lucru de azi',
+      'dashboardNoSequencePlannedToday':
+          'Nicio secventa planificata pentru azi',
+      'dashboardPlan': 'Planifica',
+      'dashboardMapSectionTitle': 'Harta',
+      'dashboardOpenFullProjectPlanning': 'Deschide planificarea completa',
+      'dashboardFinishedProjectsTitle': 'Proiecte finalizate',
+      'dashboardFinishedProjectsSubtitle': 'Finalizate in perioada selectata',
+      'dashboardPeriodThisMonth': 'Luna aceasta',
+      'dashboardPeriodLastMonth': 'Luna trecuta',
+      'dashboardPeriodCustom': 'Perioada custom',
+      'dashboardSelectCustomPeriod': 'Alege perioada',
+      'dashboardFinishedProjectsNoCustomRange':
+          'Nicio perioada custom selectata',
       'projectLabel': 'Proiect',
       'mapOverviewTitle': 'Harta proiecte si angajati',
       'mapLegendProjects': 'Proiecte in progres',
       'mapLegendWorkers': 'Pozitii angajati',
+      'plannerMembersByPhase': 'Membri pe faza',
+      'plannerWorkSequenceForDay': 'Secventa de lucru pentru',
+      'plannerChangeDay': 'Schimba ziua',
+      'plannerNoWorkersAssignedToPhasesYet':
+          'Nu exista muncitori alocati fazelor inca.',
+      'plannerManual': 'Manual',
+      'plannerAuto': 'Auto',
+      'plannerManualHint': 'Ordine personalizata aplicata pentru aceasta zi.',
+      'plannerAutoHint': 'Generata automat din datele fazelor si alocari.',
+      'plannerNoPhaseForDayWindow':
+          'Nicio faza nu se incadreaza in intervalul acestei zile pentru muncitor.',
+      'plannerNoSavedCustomOrder':
+          'Nu exista ordine personalizata salvata. Foloseste sugestia automata.',
+      'plannerUseAutoSuggestion': 'Foloseste sugestia automata',
+      'plannerMoveLastToFirst': 'Muta ultima pe primul loc',
+      'plannerResetToAuto': 'Reseteaza la auto',
+      'plannerSortAz': 'Sorteaza A-Z',
+      'plannerMoveDown': 'Muta in jos',
+      'plannerMoveUp': 'Muta in sus',
+      'plannerDragToReorderHint': 'Trage pentru a reordona fazele.',
+      'plannerFromPrefix': 'De la',
+      'plannerToPrefix': 'Pana la',
+      'phaseDateValidationEndAfterStart':
+          'Data de final trebuie sa fie dupa data de inceput.',
+      'phaseAssignedCount': 'Alocati',
       'setupFlowTitle': 'Bun venit',
       'setupWelcomeHeadline': 'Coordoneaza-ti echipa',
       'setupWelcomeBody':
@@ -280,6 +319,7 @@ class AppLocalizations {
       'workerNextUp': 'Urmatoarea lucrare',
       'workerUpcomingWork': 'In continuare',
       'workerViewDetails': 'Vezi detalii',
+      'workerSubmitForReview': 'Trimite pentru verificare',
       'workerProjectDetails': 'Detalii lucrare',
       'workerProjectNotFound':
           'Lucrarea nu a fost gasita sau nu este alocata tie.',
@@ -293,17 +333,26 @@ class AppLocalizations {
       'workerArrivalSent': 'Seful de echipa a fost anuntat ca ai ajuns.',
       'workerLocationMissing':
           'Nu exista coordonate pentru acest proiect; navigatia nu poate fi deschisa.',
+      'workerWeatherLoading': 'Se incarca vremea',
+      'workerWeatherWind': 'Vant',
+      'workerWeatherUnavailable': 'Vreme indisponibila',
+      'workerWeatherLocationMissing': 'Coordonate lipsa pentru vreme',
       'workerCompleteWork': 'Finalizeaza lucrarea',
       'workerReportTitle': 'Raport de lucru',
       'workerReportPhotosStep': 'Poze de pe santier',
       'workerReportPhotosHint':
           'Adauga pana la 8 poze (optional). Treci mai departe daca nu ai.',
       'workerReportAddPhotos': 'Adauga poze',
+      'workerReportCapturePhoto': 'Fa o poza',
+      'workerReportViewPhoto': 'Apasa pentru marire',
       'workerReportMemoStep': 'Nota vocala',
       'workerReportMemoHint': 'Inregistreaza un scurt mesaj vocal (optional).',
       'workerReportStartRecording': 'Incepe inregistrarea',
       'workerReportStopRecording': 'Opreste inregistrarea',
       'workerReportRecordingSaved': 'Memo salvat',
+      'workerReportPlayMemo': 'Reda memo',
+      'workerReportStopPlayback': 'Opreste redarea',
+      'workerReportRemoveMemo': 'Elimina memo',
       'workerReportRecordingUnavailable':
           'Inregistrarea nu este disponibila pe acest dispozitiv.',
       'workerReportDescriptionStep': 'Descriere si trimitere',
@@ -589,10 +638,49 @@ class AppLocalizations {
       'clientsWithActiveJobs': 'Aktiv munkaval rendelkezo ugyfelek',
       'whoDoesWhat': 'Ki mit csinal',
       'whoWorksOnWhatProject': 'Ki melyik projekten dolgozik',
+      'dashboardTodayWorkerSequence': 'Mai munkasorrend',
+      'dashboardNoSequencePlannedToday': 'Mara nincs tervezett sorrend',
+      'dashboardPlan': 'Tervezes',
+      'dashboardMapSectionTitle': 'Terkep',
+      'dashboardOpenFullProjectPlanning': 'Teljes tervezes megnyitasa',
+      'dashboardFinishedProjectsTitle': 'Lezart projektek',
+      'dashboardFinishedProjectsSubtitle': 'Lezarva a kivalasztott idoszakban',
+      'dashboardPeriodThisMonth': 'Ez a honap',
+      'dashboardPeriodLastMonth': 'Elozo honap',
+      'dashboardPeriodCustom': 'Egyedi idoszak',
+      'dashboardSelectCustomPeriod': 'Idoszak valasztasa',
+      'dashboardFinishedProjectsNoCustomRange':
+          'Nincs egyedi idoszak kivalasztva',
       'projectLabel': 'Projekt',
       'mapOverviewTitle': 'Projekt es munkas terkep',
       'mapLegendProjects': 'Folyamatban levo projektek',
       'mapLegendWorkers': 'Munkas poziciok',
+      'plannerMembersByPhase': 'Tagok fazisonkent',
+      'plannerWorkSequenceForDay': 'Munkasorrend erre a napra',
+      'plannerChangeDay': 'Nap modositas',
+      'plannerNoWorkersAssignedToPhasesYet':
+          'Meg nincsenek fazisokhoz rendelt munkasok.',
+      'plannerManual': 'Kezileg',
+      'plannerAuto': 'Auto',
+      'plannerManualHint': 'Egyedi sorrend alkalmazva erre a napra.',
+      'plannerAutoHint':
+          'Automatikusan generalva fazisdatumok es hozzarendeles alapjan.',
+      'plannerNoPhaseForDayWindow':
+          'Erre a napra nincs a munkashoz tartozo ervenyes fazis.',
+      'plannerNoSavedCustomOrder':
+          'Nincs mentett egyedi sorrend. Hasznald az automatikus javaslatot.',
+      'plannerUseAutoSuggestion': 'Automatikus javaslat',
+      'plannerMoveLastToFirst': 'Utolso elore',
+      'plannerResetToAuto': 'Vissza automatikusra',
+      'plannerSortAz': 'Rendezes A-Z',
+      'plannerMoveDown': 'Lejjebb mozgat',
+      'plannerMoveUp': 'Feljebb mozgat',
+      'plannerDragToReorderHint': 'Huzd es dobd a fazisok sorrendjehez.',
+      'plannerFromPrefix': 'Tol',
+      'plannerToPrefix': 'Ig',
+      'phaseDateValidationEndAfterStart':
+          'A befejezes datuma kesobbi kell legyen, mint a kezdes.',
+      'phaseAssignedCount': 'Hozzarendelve',
       'setupFlowTitle': 'Udvozlunk',
       'setupWelcomeHeadline': 'Szervezd a csapatodat',
       'setupWelcomeBody':
@@ -613,6 +701,7 @@ class AppLocalizations {
       'workerNextUp': 'Kovetkezo munka',
       'workerUpcomingWork': 'Kesobb',
       'workerViewDetails': 'Reszletek',
+      'workerSubmitForReview': 'Bekuldes ellenorzesre',
       'workerProjectDetails': 'Munka reszletei',
       'workerProjectNotFound':
           'A projekt nem talalhato vagy nincs hozzad rendelve.',
@@ -626,17 +715,26 @@ class AppLocalizations {
       'workerArrivalSent': 'A munkavezeto ertesult az erkezesrol.',
       'workerLocationMissing':
           'Ehhez a projekthez nincsenek koordinatak; a navigacio nem nyithato meg.',
+      'workerWeatherLoading': 'Idojaras betoltese',
+      'workerWeatherWind': 'Szel',
+      'workerWeatherUnavailable': 'Idojaras nem elerheto',
+      'workerWeatherLocationMissing': 'Nincs koordinata az idojarashoz',
       'workerCompleteWork': 'Munka befejezese',
       'workerReportTitle': 'Munkajelentes',
       'workerReportPhotosStep': 'Helyszini fenykepek',
       'workerReportPhotosHint':
           'Legfeljebb 8 kepet adhatsz hozza (opcionalis). Folytathatod ugy is, ha nincs.',
       'workerReportAddPhotos': 'Kepek hozzadasa',
+      'workerReportCapturePhoto': 'Foto keszitese',
+      'workerReportViewPhoto': 'Koppints a nagyitashoz',
       'workerReportMemoStep': 'Hangjegyzet',
       'workerReportMemoHint': 'Rovid hangos uzenet (opcionalis).',
       'workerReportStartRecording': 'Felvetel inditasa',
       'workerReportStopRecording': 'Felvetel leallitasa',
       'workerReportRecordingSaved': 'Hangjegyzet elmentve',
+      'workerReportPlayMemo': 'Hangjegyzet lejatszasa',
+      'workerReportStopPlayback': 'Lejatszas leallitasa',
+      'workerReportRemoveMemo': 'Hangjegyzet torlese',
       'workerReportRecordingUnavailable':
           'A felvetel nem elerheto ezen az eszkozon.',
       'workerReportDescriptionStep': 'Leiras es kuldes',
@@ -918,10 +1016,46 @@ class AppLocalizations {
       'clientsWithActiveJobs': 'Clients with active jobs',
       'whoDoesWhat': 'Who does what',
       'whoWorksOnWhatProject': 'Who works on what project',
+      'dashboardTodayWorkerSequence': 'Today\'s worker sequence',
+      'dashboardNoSequencePlannedToday': 'No sequence planned for today',
+      'dashboardPlan': 'Plan',
+      'dashboardMapSectionTitle': 'Map',
+      'dashboardOpenFullProjectPlanning': 'Open full project planning',
+      'dashboardFinishedProjectsTitle': 'Finished projects',
+      'dashboardFinishedProjectsSubtitle': 'Finished in selected period',
+      'dashboardPeriodThisMonth': 'This month',
+      'dashboardPeriodLastMonth': 'Last month',
+      'dashboardPeriodCustom': 'Custom period',
+      'dashboardSelectCustomPeriod': 'Select period',
+      'dashboardFinishedProjectsNoCustomRange': 'No custom period selected',
       'projectLabel': 'Project',
       'mapOverviewTitle': 'Projects and workers map',
       'mapLegendProjects': 'Projects in progress',
       'mapLegendWorkers': 'Worker positions',
+      'plannerMembersByPhase': 'Members by phase',
+      'plannerWorkSequenceForDay': 'Work sequence for',
+      'plannerChangeDay': 'Change day',
+      'plannerNoWorkersAssignedToPhasesYet':
+          'No workers assigned to phases yet.',
+      'plannerManual': 'Manual',
+      'plannerAuto': 'Auto',
+      'plannerManualHint': 'Custom order applied for this day.',
+      'plannerAutoHint': 'Auto-generated from phase dates and assignments.',
+      'plannerNoPhaseForDayWindow':
+          'No phase falls in this worker\'s date window for this day.',
+      'plannerNoSavedCustomOrder':
+          'No saved custom order. Use auto suggestion.',
+      'plannerUseAutoSuggestion': 'Use auto suggestion',
+      'plannerMoveLastToFirst': 'Move last to first',
+      'plannerResetToAuto': 'Reset to auto',
+      'plannerSortAz': 'Sort A-Z',
+      'plannerMoveDown': 'Move down',
+      'plannerMoveUp': 'Move up',
+      'plannerDragToReorderHint': 'Drag to reorder phases.',
+      'plannerFromPrefix': 'From',
+      'plannerToPrefix': 'To',
+      'phaseDateValidationEndAfterStart': 'End date must be after start date.',
+      'phaseAssignedCount': 'Assigned',
       'setupFlowTitle': 'Welcome',
       'setupWelcomeHeadline': 'Run your crew with confidence',
       'setupWelcomeBody':
@@ -942,6 +1076,7 @@ class AppLocalizations {
       'workerNextUp': 'Next up',
       'workerUpcomingWork': 'Coming up',
       'workerViewDetails': 'View details',
+      'workerSubmitForReview': 'Submit for review',
       'workerProjectDetails': 'Job details',
       'workerProjectNotFound':
           'This job was not found or is not assigned to you.',
@@ -954,17 +1089,26 @@ class AppLocalizations {
       'workerArrivalSent': 'Your foreman is notified that you arrived.',
       'workerLocationMissing':
           'This project has no coordinates; navigation cannot be opened.',
+      'workerWeatherLoading': 'Loading weather',
+      'workerWeatherWind': 'Wind',
+      'workerWeatherUnavailable': 'Weather unavailable',
+      'workerWeatherLocationMissing': 'No coordinates for weather',
       'workerCompleteWork': 'Finish this job',
       'workerReportTitle': 'Work report',
       'workerReportPhotosStep': 'Site photos',
       'workerReportPhotosHint':
           'Add up to 8 photos (optional). You can skip if you have none.',
       'workerReportAddPhotos': 'Add photos',
+      'workerReportCapturePhoto': 'Take photo',
+      'workerReportViewPhoto': 'Tap to enlarge',
       'workerReportMemoStep': 'Voice memo',
       'workerReportMemoHint': 'Record a short voice note (optional).',
       'workerReportStartRecording': 'Start recording',
       'workerReportStopRecording': 'Stop recording',
       'workerReportRecordingSaved': 'Memo saved',
+      'workerReportPlayMemo': 'Play memo',
+      'workerReportStopPlayback': 'Stop playback',
+      'workerReportRemoveMemo': 'Remove memo',
       'workerReportRecordingUnavailable':
           'Recording is not available on this device.',
       'workerReportDescriptionStep': 'Description and submit',
@@ -1239,10 +1383,50 @@ class AppLocalizations {
   String get clientsWithActiveJobs => _t('clientsWithActiveJobs');
   String get whoDoesWhat => _t('whoDoesWhat');
   String get whoWorksOnWhatProject => _t('whoWorksOnWhatProject');
+  String get dashboardTodayWorkerSequence => _t('dashboardTodayWorkerSequence');
+  String get dashboardNoSequencePlannedToday =>
+      _t('dashboardNoSequencePlannedToday');
+  String get dashboardPlan => _t('dashboardPlan');
+  String get dashboardMapSectionTitle => _t('dashboardMapSectionTitle');
+  String get dashboardOpenFullProjectPlanning =>
+      _t('dashboardOpenFullProjectPlanning');
+  String get dashboardFinishedProjectsTitle =>
+      _t('dashboardFinishedProjectsTitle');
+  String get dashboardFinishedProjectsSubtitle =>
+      _t('dashboardFinishedProjectsSubtitle');
+  String get dashboardPeriodThisMonth => _t('dashboardPeriodThisMonth');
+  String get dashboardPeriodLastMonth => _t('dashboardPeriodLastMonth');
+  String get dashboardPeriodCustom => _t('dashboardPeriodCustom');
+  String get dashboardSelectCustomPeriod => _t('dashboardSelectCustomPeriod');
+  String get dashboardFinishedProjectsNoCustomRange =>
+      _t('dashboardFinishedProjectsNoCustomRange');
   String get projectLabel => _t('projectLabel');
   String get mapOverviewTitle => _t('mapOverviewTitle');
   String get mapLegendProjects => _t('mapLegendProjects');
   String get mapLegendWorkers => _t('mapLegendWorkers');
+  String get plannerMembersByPhase => _t('plannerMembersByPhase');
+  String get plannerWorkSequenceForDay => _t('plannerWorkSequenceForDay');
+  String get plannerChangeDay => _t('plannerChangeDay');
+  String get plannerNoWorkersAssignedToPhasesYet =>
+      _t('plannerNoWorkersAssignedToPhasesYet');
+  String get plannerManual => _t('plannerManual');
+  String get plannerAuto => _t('plannerAuto');
+  String get plannerManualHint => _t('plannerManualHint');
+  String get plannerAutoHint => _t('plannerAutoHint');
+  String get plannerNoPhaseForDayWindow => _t('plannerNoPhaseForDayWindow');
+  String get plannerNoSavedCustomOrder => _t('plannerNoSavedCustomOrder');
+  String get plannerUseAutoSuggestion => _t('plannerUseAutoSuggestion');
+  String get plannerMoveLastToFirst => _t('plannerMoveLastToFirst');
+  String get plannerResetToAuto => _t('plannerResetToAuto');
+  String get plannerSortAz => _t('plannerSortAz');
+  String get plannerMoveDown => _t('plannerMoveDown');
+  String get plannerMoveUp => _t('plannerMoveUp');
+  String get plannerDragToReorderHint => _t('plannerDragToReorderHint');
+  String get phaseDateValidationEndAfterStart =>
+      _t('phaseDateValidationEndAfterStart');
+  String get phaseAssignedCount => _t('phaseAssignedCount');
+  String plannerFromDate(String date) => '${_t('plannerFromPrefix')}: $date';
+  String plannerToDate(String date) => '${_t('plannerToPrefix')}: $date';
   String get setupFlowTitle => _t('setupFlowTitle');
   String get setupWelcomeHeadline => _t('setupWelcomeHeadline');
   String get setupWelcomeBody => _t('setupWelcomeBody');
@@ -1259,6 +1443,7 @@ class AppLocalizations {
   String get workerNextUp => _t('workerNextUp');
   String get workerUpcomingWork => _t('workerUpcomingWork');
   String get workerViewDetails => _t('workerViewDetails');
+  String get workerSubmitForReview => _t('workerSubmitForReview');
   String get workerProjectDetails => _t('workerProjectDetails');
   String get workerProjectNotFound => _t('workerProjectNotFound');
   String get workerCoordinatesHint => _t('workerCoordinatesHint');
@@ -1270,15 +1455,24 @@ class AppLocalizations {
   String get workerArrivalSent => _t('workerArrivalSent');
   String get workerLocationMissing => _t('workerLocationMissing');
   String get workerCompleteWork => _t('workerCompleteWork');
+  String get workerWeatherLoading => _t('workerWeatherLoading');
+  String get workerWeatherWind => _t('workerWeatherWind');
+  String get workerWeatherUnavailable => _t('workerWeatherUnavailable');
+  String get workerWeatherLocationMissing => _t('workerWeatherLocationMissing');
   String get workerReportTitle => _t('workerReportTitle');
   String get workerReportPhotosStep => _t('workerReportPhotosStep');
   String get workerReportPhotosHint => _t('workerReportPhotosHint');
   String get workerReportAddPhotos => _t('workerReportAddPhotos');
+  String get workerReportCapturePhoto => _t('workerReportCapturePhoto');
+  String get workerReportViewPhoto => _t('workerReportViewPhoto');
   String get workerReportMemoStep => _t('workerReportMemoStep');
   String get workerReportMemoHint => _t('workerReportMemoHint');
   String get workerReportStartRecording => _t('workerReportStartRecording');
   String get workerReportStopRecording => _t('workerReportStopRecording');
   String get workerReportRecordingSaved => _t('workerReportRecordingSaved');
+  String get workerReportPlayMemo => _t('workerReportPlayMemo');
+  String get workerReportStopPlayback => _t('workerReportStopPlayback');
+  String get workerReportRemoveMemo => _t('workerReportRemoveMemo');
   String get workerReportRecordingUnavailable =>
       _t('workerReportRecordingUnavailable');
   String get workerReportDescriptionStep => _t('workerReportDescriptionStep');

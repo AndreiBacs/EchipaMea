@@ -27,6 +27,10 @@ final workerAssignedProjectsProvider = Provider<List<Project>>((ref) {
     if (p.status == ProjectStatus.done) return false;
     if (completedLocally.contains(p.id)) return false;
     if (p.assignedEmployeeIds.contains(session.employeeId)) return true;
+    final assignedToAnyPhase = p.phases.any(
+      (phase) => phase.assignedEmployeeIds.contains(session.employeeId),
+    );
+    if (assignedToAnyPhase) return true;
     final displayName = employee?.name ?? session.employeeName;
     final normalized = displayName.trim().toLowerCase();
     return p.workers.any((w) => w.trim().toLowerCase() == normalized);
