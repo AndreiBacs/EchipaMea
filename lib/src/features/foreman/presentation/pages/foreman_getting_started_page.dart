@@ -26,7 +26,19 @@ class ForemanGettingStartedPage extends ConsumerWidget {
       appBar: AppBar(title: Text(l10n.foremanGettingStartedTitle)),
       body: workflowState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text(error.toString())),
+        error: (error, stackTrace) {
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              exception: error,
+              stack: stackTrace,
+              library: 'foreman_getting_started_page',
+              context: ErrorDescription(
+                'while rendering foreman getting-started screen',
+              ),
+            ),
+          );
+          return Center(child: Text(l10n.genericErrorMessage));
+        },
         data: (workflow) {
           final steps = ForemanWorkflowStep.values;
           final completedCount = workflow.completedCount;
@@ -94,12 +106,18 @@ class ForemanGettingStartedPage extends ConsumerWidget {
       case ForemanWorkflowStep.configurePhase:
         final projects = ref.read(projectsProvider);
         if (projects.isEmpty) {
-          context.go(ForemanShellPage.projectsPath);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.foremanGettingStartedPhaseHint),
-            ),
-          );
+          final phaseHint = context.l10n.foremanGettingStartedPhaseHint;
+          final rootNavigator = Navigator.of(context, rootNavigator: true);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context.go(ForemanShellPage.projectsPath);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final messenger = ScaffoldMessenger.maybeOf(rootNavigator.context);
+              if (messenger == null) return;
+              messenger
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(content: Text(phaseHint)));
+            });
+          });
           return;
         }
         final path = ProjectPhaseFormPage.newPath.replaceFirst(

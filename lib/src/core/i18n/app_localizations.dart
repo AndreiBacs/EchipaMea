@@ -345,6 +345,7 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeTitle': 'Adauga angajat',
       'foremanWorkflowAddEmployeeDescription':
           'Completeaza echipa cu un angajat nou.',
+      'genericErrorMessage': 'A aparut o eroare. Te rugam sa incerci din nou.',
     },
     'hu': {
       'appTitle': 'EchipaMea',
@@ -675,6 +676,7 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeTitle': 'Dolgozo hozzaadasa',
       'foremanWorkflowAddEmployeeDescription':
           'Bovitsd a csapatot egy uj dolgozoval.',
+      'genericErrorMessage': 'Hiba tortent. Kerjuk, probald ujra.',
     },
     'en': {
       'appTitle': 'EchipaMea',
@@ -1003,6 +1005,7 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeTitle': 'Add an employee',
       'foremanWorkflowAddEmployeeDescription':
           'Grow your crew by adding a new employee.',
+      'genericErrorMessage': 'Something went wrong. Please try again.',
     },
   };
 
@@ -1321,6 +1324,7 @@ class AppLocalizations {
       _t('foremanWorkflowAddEmployeeTitle');
   String get foremanWorkflowAddEmployeeDescription =>
       _t('foremanWorkflowAddEmployeeDescription');
+  String get genericErrorMessage => _t('genericErrorMessage');
   String foremanGettingStartedProgress(int completed, int total) =>
       '$completed / $total';
   String foremanGettingStartedNext(String stepTitle) =>

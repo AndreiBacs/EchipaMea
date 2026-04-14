@@ -61,8 +61,9 @@ void main() {
           .read(foremanWorkflowProgressProvider.notifier)
           .markComplete(ForemanWorkflowStep.addClient);
 
-      final state = container.read(foremanWorkflowProgressProvider).value!;
-      expect(state.completedSteps, {ForemanWorkflowStep.addClient});
+      final state = container.read(foremanWorkflowProgressProvider).value;
+      expect(state, isNotNull);
+      expect(state?.completedSteps, {ForemanWorkflowStep.addClient});
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getStringList('foreman_workflow_completed_steps'), [
