@@ -43,9 +43,9 @@ class _InstructionEditRow {
     required String text,
     List<String>? photoPaths,
     List<String>? audioPaths,
-  })  : textController = TextEditingController(text: text),
-        photoPaths = List<String>.from(photoPaths ?? []),
-        audioPaths = List<String>.from(audioPaths ?? []);
+  }) : textController = TextEditingController(text: text),
+       photoPaths = List<String>.from(photoPaths ?? []),
+       audioPaths = List<String>.from(audioPaths ?? []);
 
   final String id;
   final TextEditingController textController;
@@ -77,7 +77,8 @@ class PhaseWorkInstructionsEditor extends StatefulWidget {
       PhaseWorkInstructionsEditorState();
 }
 
-class PhaseWorkInstructionsEditorState extends State<PhaseWorkInstructionsEditor> {
+class PhaseWorkInstructionsEditorState
+    extends State<PhaseWorkInstructionsEditor> {
   static const _maxPhotosPerRow = 8;
   static const _maxAudioPerRow = 5;
 
@@ -118,7 +119,7 @@ class PhaseWorkInstructionsEditorState extends State<PhaseWorkInstructionsEditor
 
   List<_InstructionEditRow> _rowsFromInitial(List<PhaseWorkInstruction> items) {
     if (items.isEmpty) {
-      return [_InstructionEditRow(id: _newId(), text: '')];
+      return [];
     }
     return [
       for (final i in items)
@@ -214,9 +215,9 @@ class PhaseWorkInstructionsEditorState extends State<PhaseWorkInstructionsEditor
     try {
       if (!await _recorder.hasPermission()) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.workerReportMicPermission)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.workerReportMicPermission)));
         return;
       }
       final dir = await getTemporaryDirectory();
@@ -317,8 +318,7 @@ class PhaseWorkInstructionsEditorState extends State<PhaseWorkInstructionsEditor
         const SizedBox(height: 12),
         ...List.generate(_rows.length, (i) {
           final row = _rows[i];
-          final recordingHere =
-              _recording && _recordingRowIndex == i;
+          final recordingHere = _recording && _recordingRowIndex == i;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Card(
@@ -365,7 +365,10 @@ class PhaseWorkInstructionsEditorState extends State<PhaseWorkInstructionsEditor
                         onPressed: row.photoPaths.length >= _maxPhotosPerRow
                             ? null
                             : () => _pickPhotosForRow(i),
-                        icon: const Icon(Icons.photo_library_outlined, size: 18),
+                        icon: const Icon(
+                          Icons.photo_library_outlined,
+                          size: 18,
+                        ),
                         label: Text(l10n.phaseInstructionAddPhotos),
                       ),
                     if (row.photoPaths.isNotEmpty) ...[
@@ -396,7 +399,8 @@ class PhaseWorkInstructionsEditorState extends State<PhaseWorkInstructionsEditor
                                       icon: Icon(
                                         Icons.close,
                                         size: 16,
-                                        color: theme.colorScheme.onErrorContainer,
+                                        color:
+                                            theme.colorScheme.onErrorContainer,
                                       ),
                                       onPressed: () => _removePhoto(i, pi),
                                     ),

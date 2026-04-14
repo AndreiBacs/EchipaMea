@@ -256,10 +256,49 @@ class AppLocalizations {
       'clientsWithActiveJobs': 'Clienti cu lucrari active',
       'whoDoesWhat': 'Cine ce face',
       'whoWorksOnWhatProject': 'Cine lucreaza pe ce proiect',
+      'dashboardTodayWorkerSequence': 'Secventa de lucru de azi',
+      'dashboardNoSequencePlannedToday':
+          'Nicio secventa planificata pentru azi',
+      'dashboardPlan': 'Planifica',
+      'dashboardMapSectionTitle': 'Harta',
+      'dashboardOpenFullProjectPlanning': 'Deschide planificarea completa',
+      'dashboardFinishedProjectsTitle': 'Proiecte finalizate',
+      'dashboardFinishedProjectsSubtitle': 'Finalizate in perioada selectata',
+      'dashboardPeriodThisMonth': 'Luna aceasta',
+      'dashboardPeriodLastMonth': 'Luna trecuta',
+      'dashboardPeriodCustom': 'Perioada custom',
+      'dashboardSelectCustomPeriod': 'Alege perioada',
+      'dashboardFinishedProjectsNoCustomRange':
+          'Nicio perioada custom selectata',
       'projectLabel': 'Proiect',
       'mapOverviewTitle': 'Harta proiecte si angajati',
       'mapLegendProjects': 'Proiecte in progres',
       'mapLegendWorkers': 'Pozitii angajati',
+      'plannerMembersByPhase': 'Membri pe faza',
+      'plannerWorkSequenceForDay': 'Secventa de lucru pentru',
+      'plannerChangeDay': 'Schimba ziua',
+      'plannerNoWorkersAssignedToPhasesYet':
+          'Nu exista muncitori alocati fazelor inca.',
+      'plannerManual': 'Manual',
+      'plannerAuto': 'Auto',
+      'plannerManualHint': 'Ordine personalizata aplicata pentru aceasta zi.',
+      'plannerAutoHint': 'Generata automat din datele fazelor si alocari.',
+      'plannerNoPhaseForDayWindow':
+          'Nicio faza nu se incadreaza in intervalul acestei zile pentru muncitor.',
+      'plannerNoSavedCustomOrder':
+          'Nu exista ordine personalizata salvata. Foloseste sugestia automata.',
+      'plannerUseAutoSuggestion': 'Foloseste sugestia automata',
+      'plannerMoveLastToFirst': 'Muta ultima pe primul loc',
+      'plannerResetToAuto': 'Reseteaza la auto',
+      'plannerSortAz': 'Sorteaza A-Z',
+      'plannerMoveDown': 'Muta in jos',
+      'plannerMoveUp': 'Muta in sus',
+      'plannerDragToReorderHint': 'Trage pentru a reordona fazele.',
+      'plannerFromPrefix': 'De la',
+      'plannerToPrefix': 'Pana la',
+      'phaseDateValidationEndAfterStart':
+          'Data de final trebuie sa fie dupa data de inceput.',
+      'phaseAssignedCount': 'Alocati',
       'setupFlowTitle': 'Bun venit',
       'setupWelcomeHeadline': 'Coordoneaza-ti echipa',
       'setupWelcomeBody':
@@ -589,10 +628,49 @@ class AppLocalizations {
       'clientsWithActiveJobs': 'Aktiv munkaval rendelkezo ugyfelek',
       'whoDoesWhat': 'Ki mit csinal',
       'whoWorksOnWhatProject': 'Ki melyik projekten dolgozik',
+      'dashboardTodayWorkerSequence': 'Mai munkasorrend',
+      'dashboardNoSequencePlannedToday': 'Mara nincs tervezett sorrend',
+      'dashboardPlan': 'Tervezes',
+      'dashboardMapSectionTitle': 'Terkep',
+      'dashboardOpenFullProjectPlanning': 'Teljes tervezes megnyitasa',
+      'dashboardFinishedProjectsTitle': 'Lezart projektek',
+      'dashboardFinishedProjectsSubtitle': 'Lezarva a kivalasztott idoszakban',
+      'dashboardPeriodThisMonth': 'Ez a honap',
+      'dashboardPeriodLastMonth': 'Elozo honap',
+      'dashboardPeriodCustom': 'Egyedi idoszak',
+      'dashboardSelectCustomPeriod': 'Idoszak valasztasa',
+      'dashboardFinishedProjectsNoCustomRange':
+          'Nincs egyedi idoszak kivalasztva',
       'projectLabel': 'Projekt',
       'mapOverviewTitle': 'Projekt es munkas terkep',
       'mapLegendProjects': 'Folyamatban levo projektek',
       'mapLegendWorkers': 'Munkas poziciok',
+      'plannerMembersByPhase': 'Tagok fazisonkent',
+      'plannerWorkSequenceForDay': 'Munkasorrend erre a napra',
+      'plannerChangeDay': 'Nap modositas',
+      'plannerNoWorkersAssignedToPhasesYet':
+          'Meg nincsenek fazisokhoz rendelt munkasok.',
+      'plannerManual': 'Kezileg',
+      'plannerAuto': 'Auto',
+      'plannerManualHint': 'Egyedi sorrend alkalmazva erre a napra.',
+      'plannerAutoHint':
+          'Automatikusan generalva fazisdatumok es hozzarendeles alapjan.',
+      'plannerNoPhaseForDayWindow':
+          'Erre a napra nincs a munkashoz tartozo ervenyes fazis.',
+      'plannerNoSavedCustomOrder':
+          'Nincs mentett egyedi sorrend. Hasznald az automatikus javaslatot.',
+      'plannerUseAutoSuggestion': 'Automatikus javaslat',
+      'plannerMoveLastToFirst': 'Utolso elore',
+      'plannerResetToAuto': 'Vissza automatikusra',
+      'plannerSortAz': 'Rendezes A-Z',
+      'plannerMoveDown': 'Lejjebb mozgat',
+      'plannerMoveUp': 'Feljebb mozgat',
+      'plannerDragToReorderHint': 'Huzd es dobd a fazisok sorrendjehez.',
+      'plannerFromPrefix': 'Tol',
+      'plannerToPrefix': 'Ig',
+      'phaseDateValidationEndAfterStart':
+          'A befejezes datuma kesobbi kell legyen, mint a kezdes.',
+      'phaseAssignedCount': 'Hozzarendelve',
       'setupFlowTitle': 'Udvozlunk',
       'setupWelcomeHeadline': 'Szervezd a csapatodat',
       'setupWelcomeBody':
@@ -918,10 +996,46 @@ class AppLocalizations {
       'clientsWithActiveJobs': 'Clients with active jobs',
       'whoDoesWhat': 'Who does what',
       'whoWorksOnWhatProject': 'Who works on what project',
+      'dashboardTodayWorkerSequence': 'Today\'s worker sequence',
+      'dashboardNoSequencePlannedToday': 'No sequence planned for today',
+      'dashboardPlan': 'Plan',
+      'dashboardMapSectionTitle': 'Map',
+      'dashboardOpenFullProjectPlanning': 'Open full project planning',
+      'dashboardFinishedProjectsTitle': 'Finished projects',
+      'dashboardFinishedProjectsSubtitle': 'Finished in selected period',
+      'dashboardPeriodThisMonth': 'This month',
+      'dashboardPeriodLastMonth': 'Last month',
+      'dashboardPeriodCustom': 'Custom period',
+      'dashboardSelectCustomPeriod': 'Select period',
+      'dashboardFinishedProjectsNoCustomRange': 'No custom period selected',
       'projectLabel': 'Project',
       'mapOverviewTitle': 'Projects and workers map',
       'mapLegendProjects': 'Projects in progress',
       'mapLegendWorkers': 'Worker positions',
+      'plannerMembersByPhase': 'Members by phase',
+      'plannerWorkSequenceForDay': 'Work sequence for',
+      'plannerChangeDay': 'Change day',
+      'plannerNoWorkersAssignedToPhasesYet':
+          'No workers assigned to phases yet.',
+      'plannerManual': 'Manual',
+      'plannerAuto': 'Auto',
+      'plannerManualHint': 'Custom order applied for this day.',
+      'plannerAutoHint': 'Auto-generated from phase dates and assignments.',
+      'plannerNoPhaseForDayWindow':
+          'No phase falls in this worker\'s date window for this day.',
+      'plannerNoSavedCustomOrder':
+          'No saved custom order. Use auto suggestion.',
+      'plannerUseAutoSuggestion': 'Use auto suggestion',
+      'plannerMoveLastToFirst': 'Move last to first',
+      'plannerResetToAuto': 'Reset to auto',
+      'plannerSortAz': 'Sort A-Z',
+      'plannerMoveDown': 'Move down',
+      'plannerMoveUp': 'Move up',
+      'plannerDragToReorderHint': 'Drag to reorder phases.',
+      'plannerFromPrefix': 'From',
+      'plannerToPrefix': 'To',
+      'phaseDateValidationEndAfterStart': 'End date must be after start date.',
+      'phaseAssignedCount': 'Assigned',
       'setupFlowTitle': 'Welcome',
       'setupWelcomeHeadline': 'Run your crew with confidence',
       'setupWelcomeBody':
@@ -1239,10 +1353,50 @@ class AppLocalizations {
   String get clientsWithActiveJobs => _t('clientsWithActiveJobs');
   String get whoDoesWhat => _t('whoDoesWhat');
   String get whoWorksOnWhatProject => _t('whoWorksOnWhatProject');
+  String get dashboardTodayWorkerSequence => _t('dashboardTodayWorkerSequence');
+  String get dashboardNoSequencePlannedToday =>
+      _t('dashboardNoSequencePlannedToday');
+  String get dashboardPlan => _t('dashboardPlan');
+  String get dashboardMapSectionTitle => _t('dashboardMapSectionTitle');
+  String get dashboardOpenFullProjectPlanning =>
+      _t('dashboardOpenFullProjectPlanning');
+  String get dashboardFinishedProjectsTitle =>
+      _t('dashboardFinishedProjectsTitle');
+  String get dashboardFinishedProjectsSubtitle =>
+      _t('dashboardFinishedProjectsSubtitle');
+  String get dashboardPeriodThisMonth => _t('dashboardPeriodThisMonth');
+  String get dashboardPeriodLastMonth => _t('dashboardPeriodLastMonth');
+  String get dashboardPeriodCustom => _t('dashboardPeriodCustom');
+  String get dashboardSelectCustomPeriod => _t('dashboardSelectCustomPeriod');
+  String get dashboardFinishedProjectsNoCustomRange =>
+      _t('dashboardFinishedProjectsNoCustomRange');
   String get projectLabel => _t('projectLabel');
   String get mapOverviewTitle => _t('mapOverviewTitle');
   String get mapLegendProjects => _t('mapLegendProjects');
   String get mapLegendWorkers => _t('mapLegendWorkers');
+  String get plannerMembersByPhase => _t('plannerMembersByPhase');
+  String get plannerWorkSequenceForDay => _t('plannerWorkSequenceForDay');
+  String get plannerChangeDay => _t('plannerChangeDay');
+  String get plannerNoWorkersAssignedToPhasesYet =>
+      _t('plannerNoWorkersAssignedToPhasesYet');
+  String get plannerManual => _t('plannerManual');
+  String get plannerAuto => _t('plannerAuto');
+  String get plannerManualHint => _t('plannerManualHint');
+  String get plannerAutoHint => _t('plannerAutoHint');
+  String get plannerNoPhaseForDayWindow => _t('plannerNoPhaseForDayWindow');
+  String get plannerNoSavedCustomOrder => _t('plannerNoSavedCustomOrder');
+  String get plannerUseAutoSuggestion => _t('plannerUseAutoSuggestion');
+  String get plannerMoveLastToFirst => _t('plannerMoveLastToFirst');
+  String get plannerResetToAuto => _t('plannerResetToAuto');
+  String get plannerSortAz => _t('plannerSortAz');
+  String get plannerMoveDown => _t('plannerMoveDown');
+  String get plannerMoveUp => _t('plannerMoveUp');
+  String get plannerDragToReorderHint => _t('plannerDragToReorderHint');
+  String get phaseDateValidationEndAfterStart =>
+      _t('phaseDateValidationEndAfterStart');
+  String get phaseAssignedCount => _t('phaseAssignedCount');
+  String plannerFromDate(String date) => '${_t('plannerFromPrefix')}: $date';
+  String plannerToDate(String date) => '${_t('plannerToPrefix')}: $date';
   String get setupFlowTitle => _t('setupFlowTitle');
   String get setupWelcomeHeadline => _t('setupWelcomeHeadline');
   String get setupWelcomeBody => _t('setupWelcomeBody');

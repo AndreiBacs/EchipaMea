@@ -38,6 +38,8 @@ class ProjectPhaseFormPage extends ConsumerStatefulWidget {
 class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
+  late DateTime _startDate;
+  late DateTime _endDate;
   var _selectedEmployeeIds = <String>{};
   late PhaseWorkInstructionsSnapshot _instructionsSnap;
 
@@ -46,14 +48,18 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
     super.initState();
     final phase = _findPhase(ref.read(projectsProvider));
     _nameController = TextEditingController(text: phase?.name ?? '');
-    _descriptionController =
-        TextEditingController(text: phase?.description ?? '');
-    _selectedEmployeeIds = {
-      if (phase != null) ...phase.assignedEmployeeIds,
-    };
+    _descriptionController = TextEditingController(
+      text: phase?.description ?? '',
+    );
+    final today = DateTime.now();
+    _startDate =
+        phase?.startDate ?? DateTime(today.year, today.month, today.day);
+    _endDate = phase?.endDate ?? DateTime(today.year, today.month, today.day);
+    _selectedEmployeeIds = {if (phase != null) ...phase.assignedEmployeeIds};
     _instructionsSnap = PhaseWorkInstructionsSnapshot(
       items: [
-        for (final w in phase?.workInstructions ?? const <PhaseWorkInstruction>[])
+        for (final w
+            in phase?.workInstructions ?? const <PhaseWorkInstruction>[])
           PhaseWorkInstruction(
             id: w.id,
             text: w.text,
@@ -129,8 +135,8 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
                       child: Text(
                         l10n.phaseEditDoneHint,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   TextField(
@@ -150,6 +156,49 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  _DateRangeFields(
+                    startDate: _startDate,
+                    endDate: _endDate,
+                    readOnly: isDone,
+                    onPickStart: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _startDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked == null || !mounted) return;
+                      setState(() {
+                        _startDate = DateTime(
+                          picked.year,
+                          picked.month,
+                          picked.day,
+                        );
+                        if (_endDate.isBefore(_startDate)) {
+                          _endDate = _startDate;
+                        }
+                      });
+                    },
+                    onPickEnd: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _endDate.isBefore(_startDate)
+                            ? _startDate
+                            : _endDate,
+                        firstDate: _startDate,
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked == null || !mounted) return;
+                      setState(() {
+                        _endDate = DateTime(
+                          picked.year,
+                          picked.month,
+                          picked.day,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
                   PhaseWorkInstructionsEditor(
                     key: ValueKey(
                       'phase_instr_${widget.phaseId ?? widget.projectId}',
@@ -157,13 +206,19 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
                     l10n: l10n,
                     readOnly: isDone,
                     initialItems: _instructionsSnap.items,
-                    onChanged: (s) =>
-                        setState(() => _instructionsSnap = s),
+                    onChanged: (s) => setState(() => _instructionsSnap = s),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     l10n.assignEmployees,
                     style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.phaseAssignedCount}: ${_selectedEmployeeIds.length} / ${team.length}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ...team.map(
@@ -215,27 +270,88 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
   void _save(BuildContext context, AppLocalizations l10n) {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
+    if (_endDate.isBefore(_startDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.phaseDateValidationEndAfterStart)),
+      );
+      return;
+    }
     final description = _descriptionController.text.trim();
     final ids = _selectedEmployeeIds.toList();
 
     if (widget.isNew) {
-      ref.read(projectsProvider.notifier).addPhase(
+      ref
+          .read(projectsProvider.notifier)
+          .addPhase(
             projectId: widget.projectId,
             name: name,
+            startDate: _startDate,
+            endDate: _endDate,
             assignedEmployeeIds: ids,
             description: description,
             workInstructions: _instructionsSnap.forPersistence(),
           );
     } else {
-      ref.read(projectsProvider.notifier).updatePhase(
+      ref
+          .read(projectsProvider.notifier)
+          .updatePhase(
             projectId: widget.projectId,
             phaseId: widget.phaseId!,
             name: name,
+            startDate: _startDate,
+            endDate: _endDate,
             assignedEmployeeIds: ids,
             description: description,
             workInstructions: _instructionsSnap.forPersistence(),
           );
     }
     context.pop();
+  }
+}
+
+class _DateRangeFields extends StatelessWidget {
+  const _DateRangeFields({
+    required this.startDate,
+    required this.endDate,
+    required this.readOnly,
+    required this.onPickStart,
+    required this.onPickEnd,
+  });
+
+  final DateTime startDate;
+  final DateTime endDate;
+  final bool readOnly;
+  final VoidCallback onPickStart;
+  final VoidCallback onPickEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final l10n = context.l10n;
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: readOnly ? null : onPickStart,
+            icon: const Icon(Icons.event),
+            label: Text(
+              l10n.plannerFromDate(localizations.formatMediumDate(startDate)),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: readOnly ? null : onPickEnd,
+            icon: const Icon(Icons.event_available),
+            label: Text(
+              l10n.plannerToDate(localizations.formatMediumDate(endDate)),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

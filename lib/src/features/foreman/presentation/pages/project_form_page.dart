@@ -39,7 +39,6 @@ class ProjectFormPage extends ConsumerStatefulWidget {
 class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     with SingleTickerProviderStateMixin {
   late final TextEditingController _nameController;
-  late final TextEditingController _workersController;
   late final TextEditingController _addressLine1Controller;
   late final TextEditingController _cityController;
   late final TextEditingController _stateController;
@@ -50,6 +49,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
 
   /// Draft phases while creating a project (saved with [addProject]).
   List<ProjectPhase> _draftPhases = [];
+  late DateTime _selectedPlanningDay;
 
   late final TabController _tabController;
 
@@ -60,9 +60,6 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
         ? null
         : ref.read(projectsProvider.notifier).findById(widget.projectId!);
     _nameController = TextEditingController(text: existing?.name ?? '');
-    _workersController = TextEditingController(
-      text: existing?.workers.join(', ') ?? '',
-    );
     _addressLine1Controller = TextEditingController(
       text: existing?.addressLine1 ?? '',
     );
@@ -72,12 +69,18 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     _selectedStatus = existing?.status ?? ProjectStatus.planned;
     _selectedClientId = existing?.clientId ?? widget.initialClientId;
     _useClientAddress = existing?.useClientAddress ?? true;
+    final today = DateTime.now();
+    _selectedPlanningDay = DateTime(today.year, today.month, today.day);
     if (_useClientAddress) {
       _syncAddressFromClient();
     }
 
     final tabIndex = widget.initialTabIndex.clamp(0, 1);
-    _tabController = TabController(length: 2, vsync: this, initialIndex: tabIndex);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: tabIndex,
+    );
     _tabController.addListener(_onTabControllerTick);
   }
 
@@ -102,7 +105,6 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     _tabController.removeListener(_onTabControllerTick);
     _tabController.dispose();
     _nameController.dispose();
-    _workersController.dispose();
     _addressLine1Controller.dispose();
     _cityController.dispose();
     _stateController.dispose();
@@ -140,13 +142,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildDetailsTab(
-            context,
-            l10n,
-            clients,
-            isEdit,
-            lockClientSelection,
-          ),
+          _buildDetailsTab(context, l10n, clients, isEdit, lockClientSelection),
           _buildPhasesTab(context, l10n, isEdit),
         ],
       ),
@@ -161,8 +157,9 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     bool lockClientSelection,
   ) {
     // Normalize: if the stored clientId is no longer in the list, treat as unselected.
-    final validClientId =
-        clients.any((c) => c.id == _selectedClientId) ? _selectedClientId : null;
+    final validClientId = clients.any((c) => c.id == _selectedClientId)
+        ? _selectedClientId
+        : null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -184,7 +181,9 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                 children: [
                   TextField(
                     controller: _nameController,
-                    decoration: InputDecoration(labelText: l10n.projectNameLabel),
+                    decoration: InputDecoration(
+                      labelText: l10n.projectNameLabel,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
@@ -222,7 +221,9 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                   TextField(
                     controller: _addressLine1Controller,
                     enabled: !_useClientAddress,
-                    decoration: InputDecoration(labelText: l10n.projectAddressLabel),
+                    decoration: InputDecoration(
+                      labelText: l10n.projectAddressLabel,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -258,13 +259,6 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                       setState(() => _selectedStatus = value);
                     },
                     decoration: InputDecoration(labelText: l10n.statusLabel),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _workersController,
-                    decoration: InputDecoration(
-                      labelText: l10n.workersCommaSeparatedLabel,
-                    ),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -319,71 +313,116 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
             alignment: Alignment.topCenter,
             child: SizedBox(
               width: formWidth,
-              child: _DraftPhasesList(
-                phases: _draftPhases,
-                l10n: l10n,
-                onEdit: (phase) =>
-                    _showDraftPhaseDialog(context, l10n, team, existing: phase),
-                onRemove: (phaseId) {
-                  setState(() {
-                    _draftPhases = [
-                      for (final p in _draftPhases)
-                        if (p.id != phaseId) p,
-                    ];
-                  });
-                },
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                children: [
+                  _DraftPhasesList(
+                    phases: _draftPhases,
+                    l10n: l10n,
+                    onEdit: (phase) => _showDraftPhaseDialog(
+                      context,
+                      l10n,
+                      team,
+                      existing: phase,
+                    ),
+                    onRemove: (phaseId) {
+                      setState(() {
+                        _draftPhases = [
+                          for (final p in _draftPhases)
+                            if (p.id != phaseId) p,
+                        ];
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _MembersByPhaseCard(
+                    phases: _draftPhases,
+                    employeesById: {
+                      for (final employee in team) employee.id: employee.name,
+                    },
+                  ),
+                ],
               ),
             ),
           );
         }
 
         final projectId = widget.projectId!;
-        final project = ref.watch(
-          projectsProvider.select((list) {
-            for (final p in list) {
-              if (p.id == projectId) return p;
-            }
-            return null;
-          }),
-        );
+        final projects = ref.watch(projectsProvider);
+        Project? project;
+        for (final p in projects) {
+          if (p.id == projectId) {
+            project = p;
+            break;
+          }
+        }
 
         if (project == null) {
           return Center(child: Text(l10n.workerProjectNotFound));
         }
+        final resolvedProject = project;
 
         return Align(
           alignment: Alignment.topCenter,
           child: SizedBox(
             width: formWidth,
-            child: _ProjectPhasesList(
-              project: project,
-              l10n: l10n,
-              onEdit: (phase) => context.push(
-                    ProjectPhaseFormPage.pathEdit(project.id, phase.id),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+              children: [
+                _ProjectPhasesList(
+                  project: resolvedProject,
+                  l10n: l10n,
+                  onEdit: (phase) => context.push(
+                    ProjectPhaseFormPage.pathEdit(resolvedProject.id, phase.id),
                   ),
-              onRemove: (phase) {
-                if (phase.status != PhaseStatus.notStarted) return;
-                ref.read(projectsProvider.notifier).removePhase(
-                      projectId: project.id,
-                      phaseId: phase.id,
-                    );
-              },
-              onApprove: (phase) {
-                ref.read(projectsProvider.notifier).reviewPhase(
-                      projectId: project.id,
-                      phaseId: phase.id,
-                      approved: true,
-                      foremanId: 'foreman_local',
-                    );
-              },
-              onReject: (phase) {
-                ref.read(projectsProvider.notifier).reviewPhase(
-                      projectId: project.id,
-                      phaseId: phase.id,
-                      approved: false,
-                      foremanId: 'foreman_local',
-                    );
-              },
+                  onRemove: (phase) {
+                    if (phase.status != PhaseStatus.notStarted) return;
+                    ref
+                        .read(projectsProvider.notifier)
+                        .removePhase(
+                          projectId: resolvedProject.id,
+                          phaseId: phase.id,
+                        );
+                  },
+                  onApprove: (phase) {
+                    ref
+                        .read(projectsProvider.notifier)
+                        .reviewPhase(
+                          projectId: resolvedProject.id,
+                          phaseId: phase.id,
+                          approved: true,
+                          foremanId: 'foreman_local',
+                        );
+                  },
+                  onReject: (phase) {
+                    ref
+                        .read(projectsProvider.notifier)
+                        .reviewPhase(
+                          projectId: resolvedProject.id,
+                          phaseId: phase.id,
+                          approved: false,
+                          foremanId: 'foreman_local',
+                        );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _MembersByPhaseCard(
+                  phases: resolvedProject.phases,
+                  employeesById: {
+                    for (final employee in team) employee.id: employee.name,
+                  },
+                ),
+                const SizedBox(height: 12),
+                _DailySequencePlannerCard(
+                  selectedDay: _selectedPlanningDay,
+                  onPickDay: (pickedDay) {
+                    setState(() => _selectedPlanningDay = pickedDay);
+                  },
+                  project: resolvedProject,
+                  team: team,
+                  notifier: ref.read(projectsProvider.notifier),
+                ),
+              ],
             ),
           ),
         );
@@ -406,10 +445,16 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     final selectedEmployeeIds = <String>{
       if (existing != null) ...existing.assignedEmployeeIds,
     };
+    final today = DateTime.now();
+    var startDate =
+        existing?.startDate ?? DateTime(today.year, today.month, today.day);
+    var endDate =
+        existing?.endDate ?? DateTime(today.year, today.month, today.day);
 
     var draftInstructions = PhaseWorkInstructionsSnapshot(
       items: [
-        for (final w in existing?.workInstructions ?? const <PhaseWorkInstruction>[])
+        for (final w
+            in existing?.workInstructions ?? const <PhaseWorkInstruction>[])
           PhaseWorkInstruction(
             id: w.id,
             text: w.text,
@@ -433,7 +478,9 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: InputDecoration(labelText: l10n.phaseNameLabel),
+                      decoration: InputDecoration(
+                        labelText: l10n.phaseNameLabel,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -444,6 +491,48 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                         labelText: l10n.phaseDescriptionLabel,
                         border: const OutlineInputBorder(),
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    _InlineDateRangePicker(
+                      startDate: startDate,
+                      endDate: endDate,
+                      onPickStart: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: startDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked == null) return;
+                        setLocalState(() {
+                          startDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                          );
+                          if (endDate.isBefore(startDate)) {
+                            endDate = startDate;
+                          }
+                        });
+                      },
+                      onPickEnd: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: endDate.isBefore(startDate)
+                              ? startDate
+                              : endDate,
+                          firstDate: startDate,
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked == null) return;
+                        setLocalState(() {
+                          endDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                          );
+                        });
+                      },
                     ),
                     const SizedBox(height: 12),
                     Text(l10n.assignEmployees),
@@ -490,6 +579,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                     if (name.isEmpty) return;
                     final ids = selectedEmployeeIds.toList();
                     final description = descriptionController.text.trim();
+                    if (endDate.isBefore(startDate)) return;
 
                     setState(() {
                       if (isEditMode) {
@@ -498,9 +588,12 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                             if (p.id == existing.id)
                               p.copyWith(
                                 name: name,
+                                startDate: startDate,
+                                endDate: endDate,
                                 description: description,
                                 assignedEmployeeIds: ids,
-                                workInstructions: draftInstructions.forPersistence(),
+                                workInstructions: draftInstructions
+                                    .forPersistence(),
                               )
                             else
                               p,
@@ -509,11 +602,13 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                         _draftPhases = [
                           ..._draftPhases,
                           ProjectPhase(
-                            id:
-                                'draft_${DateTime.now().millisecondsSinceEpoch}',
+                            id: 'draft_${DateTime.now().millisecondsSinceEpoch}',
                             name: name,
+                            startDate: startDate,
+                            endDate: endDate,
                             description: description,
-                            workInstructions: draftInstructions.forPersistence(),
+                            workInstructions: draftInstructions
+                                .forPersistence(),
                             assignedEmployeeIds: ids,
                             status: PhaseStatus.notStarted,
                           ),
@@ -545,11 +640,6 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
   void _save(BuildContext context, {required bool isEdit}) {
     final name = _nameController.text.trim();
     final clientId = _selectedClientId?.trim() ?? '';
-    final workers = _workersController.text
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
     if (name.isEmpty || clientId.isEmpty) return;
 
     final addressLine1 = _addressLine1Controller.text.trim();
@@ -564,40 +654,47 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     }
 
     final team = ref.read(teamProvider);
-    final assignedEmployeeIds = _resolveWorkerEmployeeIds(workers, team);
+    final phases = isEdit
+        ? ref
+                  .read(projectsProvider.notifier)
+                  .findById(widget.projectId!)
+                  ?.phases ??
+              const <ProjectPhase>[]
+        : List<ProjectPhase>.from(_draftPhases);
+    final assignment = _deriveProjectAssignmentsFromPhases(phases, team);
 
     if (isEdit) {
-      ref.read(projectsProvider.notifier).updateProject(
+      ref
+          .read(projectsProvider.notifier)
+          .updateProject(
             id: widget.projectId!,
             name: name,
             clientId: clientId,
             status: _selectedStatus,
-            workers: workers,
-            assignedEmployeeIds: assignedEmployeeIds,
+            workers: assignment.workers,
+            assignedEmployeeIds: assignment.assignedEmployeeIds,
             useClientAddress: _useClientAddress,
             addressLine1: addressLine1,
             city: city,
             stateProvince: stateProvince,
             zipCode: zipCode,
-            phases: ref
-                    .read(projectsProvider.notifier)
-                    .findById(widget.projectId!)
-                    ?.phases ??
-                const [],
+            phases: phases,
           );
     } else {
-      ref.read(projectsProvider.notifier).addProject(
+      ref
+          .read(projectsProvider.notifier)
+          .addProject(
             name: name,
             clientId: clientId,
             status: _selectedStatus,
-            workers: workers,
-            assignedEmployeeIds: assignedEmployeeIds,
+            workers: assignment.workers,
+            assignedEmployeeIds: assignment.assignedEmployeeIds,
             useClientAddress: _useClientAddress,
             addressLine1: addressLine1,
             city: city,
             stateProvince: stateProvince,
             zipCode: zipCode,
-            phases: List<ProjectPhase>.from(_draftPhases),
+            phases: phases,
           );
     }
 
@@ -621,22 +718,27 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     _zipCodeController.text = client.zipCode;
   }
 
-  /// Maps comma-separated worker names to roster employee IDs when names match.
-  static List<String> _resolveWorkerEmployeeIds(
-    List<String> workerNames,
+  /// Derives project-level worker summary from phase-level assignment.
+  static ({List<String> workers, List<String> assignedEmployeeIds})
+  _deriveProjectAssignmentsFromPhases(
+    List<ProjectPhase> phases,
     List<Employee> team,
   ) {
-    final ids = <String>[];
-    for (final w in workerNames) {
-      final n = w.trim().toLowerCase();
-      for (final e in team) {
-        if (e.name.trim().toLowerCase() == n) {
-          ids.add(e.id);
-          break;
+    final namesById = {for (final employee in team) employee.id: employee.name};
+    final idSet = <String>{};
+    for (final phase in phases) {
+      for (final id in phase.assignedEmployeeIds) {
+        if (id.trim().isNotEmpty) {
+          idSet.add(id);
         }
       }
     }
-    return ids;
+    final ids = idSet.toList()..sort();
+    final workers = <String>[
+      for (final id in ids)
+        if (namesById.containsKey(id)) namesById[id]!,
+    ];
+    return (workers: workers, assignedEmployeeIds: ids);
   }
 
   String _statusLabel(BuildContext context, ProjectStatus status) {
@@ -664,15 +766,14 @@ class _DraftPhasesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+    return Column(
       children: [
         if (phases.isEmpty) ...[
           Text(
             l10n.noPhasesYet,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -742,84 +843,496 @@ class _ProjectPhasesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+    return Column(
       children: [
         if (project.phases.isEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(l10n.noPhasesYet),
           ),
-        ...project.phases.map(
-          (phase) {
-            final card = Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
+        ...project.phases.map((phase) {
+          final card = Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              title: Text(phase.name),
+              subtitle: _phaseListSubtitle(context, l10n, phase),
+              trailing: phase.status == PhaseStatus.pendingReview
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.red),
+                          tooltip: l10n.reject,
+                          onPressed: () => onReject(phase),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.check, color: Colors.green),
+                          tooltip: l10n.approve,
+                          onPressed: () => onApprove(phase),
+                        ),
+                      ],
+                    )
+                  : phase.status == PhaseStatus.done
+                  ? IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: l10n.editPhase,
+                      onPressed: () => onEdit(phase),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: l10n.editPhase,
+                          onPressed: () => onEdit(phase),
+                        ),
+                        if (phase.status == PhaseStatus.notStarted)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: l10n.removePhase,
+                            onPressed: () => onRemove(phase),
+                          ),
+                      ],
+                    ),
+            ),
+          );
+          if (phase.status == PhaseStatus.pendingReview) {
+            return card;
+          }
+          return Dismissible(
+            key: ValueKey('project_phase_${phase.id}'),
+            direction: DismissDirection.horizontal,
+            confirmDismiss: (direction) async {
+              onEdit(phase);
+              return false;
+            },
+            background: _SwipeActionBackground(
+              alignment: Alignment.centerLeft,
+              icon: Icons.edit_outlined,
+              label: l10n.quickEdit,
+            ),
+            secondaryBackground: _SwipeActionBackground(
+              alignment: Alignment.centerRight,
+              icon: Icons.edit_outlined,
+              label: l10n.quickEdit,
+            ),
+            child: card,
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _MembersByPhaseCard extends StatelessWidget {
+  const _MembersByPhaseCard({
+    required this.phases,
+    required this.employeesById,
+  });
+
+  final List<ProjectPhase> phases;
+  final Map<String, String> employeesById;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.plannerMembersByPhase,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            if (phases.isEmpty)
+              Text(
+                context.l10n.noPhasesYet,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            for (final phase in phases) ...[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
                 title: Text(phase.name),
-                subtitle: _phaseListSubtitle(context, l10n, phase),
-                trailing: phase.status == PhaseStatus.pendingReview
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.red),
-                            tooltip: l10n.reject,
-                            onPressed: () => onReject(phase),
+                subtitle: Text(
+                  '${localizations.formatMediumDate(phase.startDate)} - ${localizations.formatMediumDate(phase.endDate)}\n'
+                  '${phase.assignedEmployeeIds.map((id) => employeesById[id] ?? id).join(', ')}',
+                ),
+              ),
+              const Divider(height: 1),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DailySequencePlannerCard extends StatelessWidget {
+  const _DailySequencePlannerCard({
+    required this.selectedDay,
+    required this.onPickDay,
+    required this.project,
+    required this.team,
+    required this.notifier,
+  });
+
+  final DateTime selectedDay;
+  final ValueChanged<DateTime> onPickDay;
+  final Project project;
+  final List<Employee> team;
+  final ProjectsNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final workers = [
+      for (final worker in team)
+        if (project.phases.any(
+          (p) => p.assignedEmployeeIds.contains(worker.id),
+        ))
+          worker,
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${context.l10n.plannerWorkSequenceForDay} ${localizations.formatMediumDate(selectedDay)}',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDay,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked == null) return;
+                    onPickDay(DateTime(picked.year, picked.month, picked.day));
+                  },
+                  icon: const Icon(Icons.calendar_month),
+                  label: Text(context.l10n.plannerChangeDay),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (workers.isEmpty)
+              Text(context.l10n.plannerNoWorkersAssignedToPhasesYet),
+            for (final worker in workers)
+              _WorkerDaySequenceRow(
+                worker: worker,
+                project: project,
+                day: selectedDay,
+                notifier: notifier,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkerDaySequenceRow extends StatelessWidget {
+  const _WorkerDaySequenceRow({
+    required this.worker,
+    required this.project,
+    required this.day,
+    required this.notifier,
+  });
+
+  final Employee worker;
+  final Project project;
+  final DateTime day;
+  final ProjectsNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final sequence = notifier.sequenceForDay(
+      projectId: project.id,
+      workerId: worker.id,
+      day: day,
+    );
+    final suggested = notifier.suggestedSequenceForDay(
+      projectId: project.id,
+      workerId: worker.id,
+      day: day,
+    );
+    final labelsById = {for (final p in project.phases) p.id: p.name};
+    final orderedIds = [
+      for (final id in sequence.orderedPhaseIds)
+        if (labelsById.containsKey(id)) id,
+    ];
+    final orderedLabels = [
+      for (final id in sequence.orderedPhaseIds)
+        if (labelsById.containsKey(id)) labelsById[id]!,
+    ];
+    final suggestedCount = suggested.orderedPhaseIds
+        .where(labelsById.containsKey)
+        .length;
+    void saveOrder(List<String> ids) {
+      notifier.saveDailySequence(
+        projectId: project.id,
+        workerId: worker.id,
+        day: day,
+        orderedPhaseIds: ids,
+      );
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    worker.name,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                Chip(
+                  label: Text(
+                    sequence.isManual ? l10n.plannerManual : l10n.plannerAuto,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              sequence.isManual ? l10n.plannerManualHint : l10n.plannerAutoHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (orderedLabels.isEmpty)
+              Text(
+                suggestedCount == 0
+                    ? l10n.plannerNoPhaseForDayWindow
+                    : l10n.plannerNoSavedCustomOrder,
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.plannerDragToReorderHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ReorderableListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    buildDefaultDragHandles: false,
+                    itemCount: orderedIds.length,
+                    onReorder: (oldIndex, newIndex) {
+                      final ids = [...orderedIds];
+                      if (newIndex > oldIndex) {
+                        newIndex -= 1;
+                      }
+                      final moved = ids.removeAt(oldIndex);
+                      ids.insert(newIndex, moved);
+                      saveOrder(ids);
+                    },
+                    itemBuilder: (context, index) {
+                      final phaseId = orderedIds[index];
+                      return Card(
+                        key: ValueKey('phase_seq_${worker.id}_$phaseId'),
+                        margin: const EdgeInsets.only(bottom: 6),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            radius: 14,
+                            child: Text('${index + 1}'),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.check, color: Colors.green),
-                            tooltip: l10n.approve,
-                            onPressed: () => onApprove(phase),
-                          ),
-                        ],
-                      )
-                    : phase.status == PhaseStatus.done
-                        ? IconButton(
-                            icon: const Icon(Icons.edit_outlined),
-                            tooltip: l10n.editPhase,
-                            onPressed: () => onEdit(phase),
-                          )
-                        : Row(
+                          title: Text(labelsById[phaseId] ?? phaseId),
+                          trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit_outlined),
-                                tooltip: l10n.editPhase,
-                                onPressed: () => onEdit(phase),
+                                tooltip: l10n.plannerMoveUp,
+                                onPressed: index == 0
+                                    ? null
+                                    : () {
+                                        final ids = [...orderedIds];
+                                        final moved = ids.removeAt(index);
+                                        ids.insert(index - 1, moved);
+                                        saveOrder(ids);
+                                      },
+                                icon: const Icon(Icons.arrow_upward),
                               ),
-                              if (phase.status == PhaseStatus.notStarted)
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline),
-                                  tooltip: l10n.removePhase,
-                                  onPressed: () => onRemove(phase),
-                                ),
+                              IconButton(
+                                tooltip: l10n.plannerMoveDown,
+                                onPressed: index == orderedIds.length - 1
+                                    ? null
+                                    : () {
+                                        final ids = [...orderedIds];
+                                        final moved = ids.removeAt(index);
+                                        ids.insert(index + 1, moved);
+                                        saveOrder(ids);
+                                      },
+                                icon: const Icon(Icons.arrow_downward),
+                              ),
+                              ReorderableDragStartListener(
+                                index: index,
+                                child: const Icon(Icons.drag_indicator),
+                              ),
                             ],
                           ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-            );
-            if (phase.status == PhaseStatus.pendingReview) {
-              return card;
-            }
-            return Dismissible(
-              key: ValueKey('project_phase_${phase.id}'),
-              direction: DismissDirection.horizontal,
-              confirmDismiss: (direction) async {
-                onEdit(phase);
-                return false;
+            const SizedBox(height: 6),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 430;
+                if (compact) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FilledButton.tonalIcon(
+                        onPressed: suggestedCount == 0
+                            ? null
+                            : () {
+                                saveOrder(suggested.orderedPhaseIds);
+                              },
+                        icon: const Icon(Icons.auto_awesome),
+                        label: Text(l10n.plannerUseAutoSuggestion),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: orderedIds.length < 2
+                            ? null
+                            : () {
+                                final ids = [...orderedIds];
+                                final moved = ids.removeLast();
+                                ids.insert(0, moved);
+                                saveOrder(ids);
+                              },
+                        icon: const Icon(Icons.swap_vert),
+                        label: Text(l10n.plannerMoveLastToFirst),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: sequence.isManual
+                            ? () {
+                                notifier.resetDailySequence(
+                                  projectId: project.id,
+                                  workerId: worker.id,
+                                  day: day,
+                                );
+                              }
+                            : null,
+                        icon: const Icon(Icons.refresh),
+                        label: Text(l10n.plannerResetToAuto),
+                      ),
+                    ],
+                  );
+                }
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: suggestedCount == 0
+                          ? null
+                          : () {
+                              saveOrder(suggested.orderedPhaseIds);
+                            },
+                      icon: const Icon(Icons.auto_awesome),
+                      label: Text(l10n.plannerUseAutoSuggestion),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: orderedIds.length < 2
+                          ? null
+                          : () {
+                              final ids = [...orderedIds];
+                              final moved = ids.removeLast();
+                              ids.insert(0, moved);
+                              saveOrder(ids);
+                            },
+                      icon: const Icon(Icons.swap_vert),
+                      label: Text(l10n.plannerMoveLastToFirst),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: sequence.isManual
+                          ? () {
+                              notifier.resetDailySequence(
+                                projectId: project.id,
+                                workerId: worker.id,
+                                day: day,
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.refresh),
+                      label: Text(l10n.plannerResetToAuto),
+                    ),
+                  ],
+                );
               },
-              background: _SwipeActionBackground(
-                alignment: Alignment.centerLeft,
-                icon: Icons.edit_outlined,
-                label: l10n.quickEdit,
-              ),
-              secondaryBackground: _SwipeActionBackground(
-                alignment: Alignment.centerRight,
-                icon: Icons.edit_outlined,
-                label: l10n.quickEdit,
-              ),
-              child: card,
-            );
-          },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineDateRangePicker extends StatelessWidget {
+  const _InlineDateRangePicker({
+    required this.startDate,
+    required this.endDate,
+    required this.onPickStart,
+    required this.onPickEnd,
+  });
+
+  final DateTime startDate;
+  final DateTime endDate;
+  final VoidCallback onPickStart;
+  final VoidCallback onPickEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final l10n = context.l10n;
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: onPickStart,
+            child: Text(
+              l10n.plannerFromDate(localizations.formatMediumDate(startDate)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: onPickEnd,
+            child: Text(
+              l10n.plannerToDate(localizations.formatMediumDate(endDate)),
+            ),
+          ),
         ),
       ],
     );
@@ -879,13 +1392,17 @@ Widget _phaseListSubtitle(
   ProjectPhase phase,
 ) {
   final desc = phase.description.trim();
+  final localizations = MaterialLocalizations.of(context);
+  final windowLabel =
+      '${localizations.formatMediumDate(phase.startDate)} - ${localizations.formatMediumDate(phase.endDate)}';
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     mainAxisSize: MainAxisSize.min,
     children: [
       Text(
         '${l10n.statusLabel}: ${_phaseStatusLabel(l10n, phase.status)}'
-        ' | ${l10n.employeesTitle}: ${phase.assignedEmployeeIds.length}',
+        ' | ${l10n.employeesTitle}: ${phase.assignedEmployeeIds.length}\n'
+        '$windowLabel',
       ),
       if (desc.isNotEmpty)
         Padding(
@@ -895,8 +1412,8 @@ Widget _phaseListSubtitle(
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
     ],

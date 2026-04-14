@@ -6,10 +6,10 @@ Mobile app for small contractor teams, built with Flutter.
 
 - Supports two roles: Foreman and Worker
 - Foreman area includes:
-  - Dashboard (employees, active projects, assignment visibility)
+  - Dashboard (employees, active projects, assignment visibility, "Today's worker sequence" overview with swipe-to-plan rows, a "Finished projects" KPI card with period filters: this month/last month/custom range, and a bottom embedded map section)
   - Getting started checklist for first-time foreman workflows (add client, create project, configure a phase, add employee), with local progress persisted via SharedPreferences and a detailed checklist screen at `/foreman/getting-started`
   - Map (active projects in progress and worker positions in one live overview)
-  - Projects (list, add, edit, status, assigned workers, and required client assignment). List rows support horizontal swipe for quick actions (for example edit vs open the Phases tab on an existing project). On a project’s **Phases** tab, swipe a phase row horizontally to open the same edit flow as the edit icon (draft phases use the quick dialog; saved projects use the full-screen phase form). Each **phase** can include **work instructions** for assigned workers: an ordered list of steps, where **each step** can have its own reference photos (gallery) and **voice memos** (same recording approach as the worker report flow). Attachments are stored as local paths in the in-memory demo until a backend stores binaries.
+  - Projects (list, add, edit, status, and required client assignment). List rows support horizontal swipe for quick actions (for example edit vs open the Phases tab on an existing project). On a project’s **Phases** tab, swipe a phase row horizontally to open the same edit flow as the edit icon (draft phases use the quick dialog; saved projects use the full-screen phase form). Each phase has a required date window (`From`/`To`) and assigned members, plus a local "Work sequence for day" planner that auto-suggests per-worker phase order from date windows and supports drag-and-drop/manual reordering and reset-to-auto for a selected day. The project-level worker summary is derived automatically from phase assignments (no separate manual workers input). Each **phase** can include **work instructions** for assigned workers: an ordered list of steps, where **each step** can have its own reference photos (gallery) and **voice memos** (same recording approach as the worker report flow). Attachments are stored as local paths in the in-memory demo until a backend stores binaries.
   - Team (list, add, edit, contact data: phone/email, trade role chosen from a predefined list in a dropdown, employee QR login generation)
   - Clients (list, add, edit, contact data: phone/email/split address fields/person of contact, plus client type/status/preferred contact method/notes and allocated projects per client, including a dedicated client-projects list page with direct "Add project" for that client)
   - Profile (change app language and theme mode: Follow system/Light/Dark, edit personal data, manage foreman company data: name/address/IBAN/CUI/VAT/trade register number, and logout)
@@ -30,6 +30,17 @@ Mobile app for small contractor teams, built with Flutter.
   - Runtime language switch from the app
 - Legal:
   - Terms and Conditions page
+
+## Foreman planning flow
+
+1. Create or edit a project and open the **Phases** tab.
+2. Add phases with required `From`/`To` dates and assign team members per phase.
+3. Use **Work sequence for day** to pick a day and organize each worker's phase order (auto suggestion or manual drag/reorder).
+4. Save phase/project updates; project-level worker summary is derived automatically from phase assignments.
+5. Open **Dashboard** to review:
+  - **Today's worker sequence** (including swipe-to-plan shortcut)
+  - **Finished projects** card with period filter (`This month`, `Last month`, `Custom`)
+  - Map section for project and worker location context
 
 ## Tech stack
 
