@@ -59,6 +59,8 @@ final class WorkerReportSubmittedEvent extends WorkerForemanEvent {
     required super.at,
     required this.projectId,
     required this.projectName,
+    required this.phaseId,
+    required this.phaseName,
     required this.employeeId,
     required this.employeeName,
     required this.description,
@@ -68,6 +70,8 @@ final class WorkerReportSubmittedEvent extends WorkerForemanEvent {
 
   final String projectId;
   final String projectName;
+  final String phaseId;
+  final String phaseName;
   final String employeeId;
   final String employeeName;
   final String description;

@@ -319,6 +319,7 @@ class AppLocalizations {
       'workerNextUp': 'Urmatoarea lucrare',
       'workerUpcomingWork': 'In continuare',
       'workerViewDetails': 'Vezi detalii',
+      'workerSubmitForReview': 'Trimite pentru verificare',
       'workerProjectDetails': 'Detalii lucrare',
       'workerProjectNotFound':
           'Lucrarea nu a fost gasita sau nu este alocata tie.',
@@ -338,11 +339,16 @@ class AppLocalizations {
       'workerReportPhotosHint':
           'Adauga pana la 8 poze (optional). Treci mai departe daca nu ai.',
       'workerReportAddPhotos': 'Adauga poze',
+      'workerReportCapturePhoto': 'Fa o poza',
+      'workerReportViewPhoto': 'Apasa pentru marire',
       'workerReportMemoStep': 'Nota vocala',
       'workerReportMemoHint': 'Inregistreaza un scurt mesaj vocal (optional).',
       'workerReportStartRecording': 'Incepe inregistrarea',
       'workerReportStopRecording': 'Opreste inregistrarea',
       'workerReportRecordingSaved': 'Memo salvat',
+      'workerReportPlayMemo': 'Reda memo',
+      'workerReportStopPlayback': 'Opreste redarea',
+      'workerReportRemoveMemo': 'Elimina memo',
       'workerReportRecordingUnavailable':
           'Inregistrarea nu este disponibila pe acest dispozitiv.',
       'workerReportDescriptionStep': 'Descriere si trimitere',
@@ -691,6 +697,7 @@ class AppLocalizations {
       'workerNextUp': 'Kovetkezo munka',
       'workerUpcomingWork': 'Kesobb',
       'workerViewDetails': 'Reszletek',
+      'workerSubmitForReview': 'Bekuldes ellenorzesre',
       'workerProjectDetails': 'Munka reszletei',
       'workerProjectNotFound':
           'A projekt nem talalhato vagy nincs hozzad rendelve.',
@@ -710,11 +717,16 @@ class AppLocalizations {
       'workerReportPhotosHint':
           'Legfeljebb 8 kepet adhatsz hozza (opcionalis). Folytathatod ugy is, ha nincs.',
       'workerReportAddPhotos': 'Kepek hozzadasa',
+      'workerReportCapturePhoto': 'Foto keszitese',
+      'workerReportViewPhoto': 'Koppints a nagyitashoz',
       'workerReportMemoStep': 'Hangjegyzet',
       'workerReportMemoHint': 'Rovid hangos uzenet (opcionalis).',
       'workerReportStartRecording': 'Felvetel inditasa',
       'workerReportStopRecording': 'Felvetel leallitasa',
       'workerReportRecordingSaved': 'Hangjegyzet elmentve',
+      'workerReportPlayMemo': 'Hangjegyzet lejatszasa',
+      'workerReportStopPlayback': 'Lejatszas leallitasa',
+      'workerReportRemoveMemo': 'Hangjegyzet torlese',
       'workerReportRecordingUnavailable':
           'A felvetel nem elerheto ezen az eszkozon.',
       'workerReportDescriptionStep': 'Leiras es kuldes',
@@ -1056,6 +1068,7 @@ class AppLocalizations {
       'workerNextUp': 'Next up',
       'workerUpcomingWork': 'Coming up',
       'workerViewDetails': 'View details',
+      'workerSubmitForReview': 'Submit for review',
       'workerProjectDetails': 'Job details',
       'workerProjectNotFound':
           'This job was not found or is not assigned to you.',
@@ -1074,11 +1087,16 @@ class AppLocalizations {
       'workerReportPhotosHint':
           'Add up to 8 photos (optional). You can skip if you have none.',
       'workerReportAddPhotos': 'Add photos',
+      'workerReportCapturePhoto': 'Take photo',
+      'workerReportViewPhoto': 'Tap to enlarge',
       'workerReportMemoStep': 'Voice memo',
       'workerReportMemoHint': 'Record a short voice note (optional).',
       'workerReportStartRecording': 'Start recording',
       'workerReportStopRecording': 'Stop recording',
       'workerReportRecordingSaved': 'Memo saved',
+      'workerReportPlayMemo': 'Play memo',
+      'workerReportStopPlayback': 'Stop playback',
+      'workerReportRemoveMemo': 'Remove memo',
       'workerReportRecordingUnavailable':
           'Recording is not available on this device.',
       'workerReportDescriptionStep': 'Description and submit',
@@ -1413,6 +1431,7 @@ class AppLocalizations {
   String get workerNextUp => _t('workerNextUp');
   String get workerUpcomingWork => _t('workerUpcomingWork');
   String get workerViewDetails => _t('workerViewDetails');
+  String get workerSubmitForReview => _t('workerSubmitForReview');
   String get workerProjectDetails => _t('workerProjectDetails');
   String get workerProjectNotFound => _t('workerProjectNotFound');
   String get workerCoordinatesHint => _t('workerCoordinatesHint');
@@ -1428,11 +1447,16 @@ class AppLocalizations {
   String get workerReportPhotosStep => _t('workerReportPhotosStep');
   String get workerReportPhotosHint => _t('workerReportPhotosHint');
   String get workerReportAddPhotos => _t('workerReportAddPhotos');
+  String get workerReportCapturePhoto => _t('workerReportCapturePhoto');
+  String get workerReportViewPhoto => _t('workerReportViewPhoto');
   String get workerReportMemoStep => _t('workerReportMemoStep');
   String get workerReportMemoHint => _t('workerReportMemoHint');
   String get workerReportStartRecording => _t('workerReportStartRecording');
   String get workerReportStopRecording => _t('workerReportStopRecording');
   String get workerReportRecordingSaved => _t('workerReportRecordingSaved');
+  String get workerReportPlayMemo => _t('workerReportPlayMemo');
+  String get workerReportStopPlayback => _t('workerReportStopPlayback');
+  String get workerReportRemoveMemo => _t('workerReportRemoveMemo');
   String get workerReportRecordingUnavailable =>
       _t('workerReportRecordingUnavailable');
   String get workerReportDescriptionStep => _t('workerReportDescriptionStep');
