@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../application/foreman_workflow_progress_controller.dart';
+import '../../domain/entities/foreman_workflow_step.dart';
+import 'client_form_page.dart';
+import 'employee_form_page.dart';
+import 'foreman_getting_started_page.dart';
+import 'foreman_shell_page.dart';
+import 'project_form_page.dart';
+import 'project_phase_form_page.dart';
+import '../providers/projects_controller.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     const employees = [
       _EmployeeAssignment(
@@ -51,6 +62,8 @@ class DashboardPage extends StatelessWidget {
       ),
     ];
 
+    final workflowState = ref.watch(foremanWorkflowProgressProvider);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -64,6 +77,26 @@ class DashboardPage extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(
                 horizontalMargin + 16,
                 16,
+                horizontalMargin + 16,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: _GettingStartedCard(
+                  state: workflowState,
+                  onContinue: (step) => _openStep(context, ref, step),
+                  onViewAll: () => context.push(ForemanGettingStartedPage.path),
+                  onDismiss: () {
+                    ref
+                        .read(foremanWorkflowProgressProvider.notifier)
+                        .dismissCard();
+                  },
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin + 16,
+                12,
                 horizontalMargin + 16,
                 0,
               ),
@@ -108,7 +141,10 @@ class DashboardPage extends StatelessWidget {
               sliver: SliverToBoxAdapter(
                 child: Text(
                   l10n.whoDoesWhat,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -147,7 +183,10 @@ class DashboardPage extends StatelessWidget {
               sliver: SliverToBoxAdapter(
                 child: Text(
                   l10n.whoWorksOnWhatProject,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -189,6 +228,37 @@ class DashboardPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  void _openStep(
+    BuildContext context,
+    WidgetRef ref,
+    ForemanWorkflowStep step,
+  ) {
+    switch (step) {
+      case ForemanWorkflowStep.addClient:
+        context.push(ClientFormPage.createPath);
+      case ForemanWorkflowStep.createProject:
+        context.push(ProjectFormPage.createPath);
+      case ForemanWorkflowStep.configurePhase:
+        final projects = ref.read(projectsProvider);
+        if (projects.isEmpty) {
+          context.go(ForemanShellPage.projectsPath);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.foremanGettingStartedPhaseHint),
+            ),
+          );
+          return;
+        }
+        final path = ProjectPhaseFormPage.newPath.replaceFirst(
+          ':projectId',
+          projects.first.id,
+        );
+        context.push(path);
+      case ForemanWorkflowStep.addEmployee:
+        context.push(EmployeeFormPage.createPath);
+    }
   }
 }
 
@@ -242,4 +312,97 @@ class _ProjectAllocation {
 
   final String projectName;
   final List<String> workers;
+}
+
+class _GettingStartedCard extends StatelessWidget {
+  const _GettingStartedCard({
+    required this.state,
+    required this.onContinue,
+    required this.onViewAll,
+    required this.onDismiss,
+  });
+
+  final AsyncValue<ForemanWorkflowProgressState> state;
+  final ValueChanged<ForemanWorkflowStep> onContinue;
+  final VoidCallback onViewAll;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return state.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (workflow) {
+        if (workflow.cardDismissed || workflow.allStepsCompleted) {
+          return const SizedBox.shrink();
+        }
+        final nextStep = ForemanWorkflowStep.values.firstWhere(
+          (step) => !workflow.completedSteps.contains(step),
+          orElse: () => ForemanWorkflowStep.addClient,
+        );
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.foremanGettingStartedTitle,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.foremanGettingStartedProgress(
+                    workflow.completedCount,
+                    ForemanWorkflowStep.values.length,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(
+                  value:
+                      workflow.completedCount /
+                      ForemanWorkflowStep.values.length,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  l10n.foremanGettingStartedNext(_stepLabel(nextStep, l10n)),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton(
+                      onPressed: () => onContinue(nextStep),
+                      child: Text(l10n.foremanGettingStartedContinue),
+                    ),
+                    OutlinedButton(
+                      onPressed: onViewAll,
+                      child: Text(l10n.foremanGettingStartedViewAll),
+                    ),
+                    TextButton(
+                      onPressed: onDismiss,
+                      child: Text(l10n.foremanGettingStartedDismiss),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _stepLabel(ForemanWorkflowStep step, AppLocalizations l10n) {
+    return switch (step) {
+      ForemanWorkflowStep.addClient => l10n.foremanWorkflowAddClientTitle,
+      ForemanWorkflowStep.createProject =>
+        l10n.foremanWorkflowCreateProjectTitle,
+      ForemanWorkflowStep.configurePhase =>
+        l10n.foremanWorkflowConfigurePhaseTitle,
+      ForemanWorkflowStep.addEmployee => l10n.foremanWorkflowAddEmployeeTitle,
+    };
+  }
 }

@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../application/foreman_workflow_progress_controller.dart';
+import '../../domain/entities/foreman_workflow_step.dart';
 import '../../domain/entities/client.dart';
 export '../../domain/entities/client.dart';
 
@@ -97,6 +102,11 @@ class ClientsNotifier extends Notifier<List<Client>> {
         contactPerson: contactPerson,
       ),
     ];
+    unawaited(
+      ref
+          .read(foremanWorkflowProgressProvider.notifier)
+          .markComplete(ForemanWorkflowStep.addClient),
+    );
   }
 
   void updateClient({
@@ -145,4 +155,3 @@ class ClientsNotifier extends Notifier<List<Client>> {
     return null;
   }
 }
-

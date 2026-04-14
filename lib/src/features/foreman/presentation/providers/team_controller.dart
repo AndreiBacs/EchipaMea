@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/entities/worker_role.dart';
+import '../../application/foreman_workflow_progress_controller.dart';
+import '../../domain/entities/foreman_workflow_step.dart';
 import '../../domain/entities/employee.dart';
 export '../../domain/entities/employee.dart';
 
@@ -79,6 +83,11 @@ class TeamNotifier extends Notifier<List<Employee>> {
         longitude: longitude,
       ),
     ];
+    unawaited(
+      ref
+          .read(foremanWorkflowProgressProvider.notifier)
+          .markComplete(ForemanWorkflowStep.addEmployee),
+    );
   }
 
   void updateEmployee({
@@ -119,4 +128,3 @@ class TeamNotifier extends Notifier<List<Employee>> {
     return null;
   }
 }
-

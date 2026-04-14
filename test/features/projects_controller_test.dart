@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:echipa_mea/src/features/foreman/presentation/providers/projects_controller.dart';
 
@@ -7,12 +8,15 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     container = ProviderContainer();
     addTearDown(container.dispose);
   });
 
   test('addProject adds project with address fields', () {
-    container.read(projectsProvider.notifier).addProject(
+    container
+        .read(projectsProvider.notifier)
+        .addProject(
           name: 'New Project',
           clientId: 'c1',
           status: ProjectStatus.planned,

@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../application/foreman_workflow_progress_controller.dart';
+import '../../domain/entities/foreman_workflow_step.dart';
 import '../../domain/entities/project.dart';
 export '../../domain/entities/project.dart';
 
@@ -137,6 +142,13 @@ class ProjectsNotifier extends Notifier<List<Project>> {
         phases: phases,
       ),
     ];
+    final workflowNotifier = ref.read(foremanWorkflowProgressProvider.notifier);
+    unawaited(workflowNotifier.markComplete(ForemanWorkflowStep.createProject));
+    if (phases.isNotEmpty) {
+      unawaited(
+        workflowNotifier.markComplete(ForemanWorkflowStep.configurePhase),
+      );
+    }
   }
 
   void updateProject({
@@ -202,7 +214,8 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     String description = '',
     List<PhaseWorkInstruction> workInstructions = const [],
   }) {
-    final phaseId = '${projectId}_phase_${DateTime.now().millisecondsSinceEpoch}';
+    final phaseId =
+        '${projectId}_phase_${DateTime.now().millisecondsSinceEpoch}';
     final newPhase = ProjectPhase(
       id: phaseId,
       name: name,
@@ -215,18 +228,17 @@ class ProjectsNotifier extends Notifier<List<Project>> {
       for (final project in state)
         if (project.id == projectId)
           project.copyWith(
-            phases: [
-              ...project.phases,
-              newPhase,
-            ],
-            status: projectStatusFromPhases([
-              ...project.phases,
-              newPhase,
-            ]),
+            phases: [...project.phases, newPhase],
+            status: projectStatusFromPhases([...project.phases, newPhase]),
           )
         else
           project,
     ];
+    unawaited(
+      ref
+          .read(foremanWorkflowProgressProvider.notifier)
+          .markComplete(ForemanWorkflowStep.configurePhase),
+    );
   }
 
   void submitPhaseForReview({
@@ -253,8 +265,9 @@ class ProjectsNotifier extends Notifier<List<Project>> {
                       submittedByEmployeeIds: [
                         ...phase.submittedByEmployeeIds,
                         if (normalizedEmployeeId.isNotEmpty &&
-                            !phase.submittedByEmployeeIds
-                                .contains(normalizedEmployeeId))
+                            !phase.submittedByEmployeeIds.contains(
+                              normalizedEmployeeId,
+                            ))
                           normalizedEmployeeId,
                       ],
                     );
@@ -307,10 +320,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     ];
   }
 
-  void removePhase({
-    required String projectId,
-    required String phaseId,
-  }) {
+  void removePhase({required String projectId, required String phaseId}) {
     state = [
       for (final project in state)
         if (project.id == projectId)
@@ -344,7 +354,9 @@ class ProjectsNotifier extends Notifier<List<Project>> {
               for (final phase in project.phases)
                 if (phase.id == phaseId)
                   phase.copyWith(
-                    status: approved ? PhaseStatus.done : PhaseStatus.inProgress,
+                    status: approved
+                        ? PhaseStatus.done
+                        : PhaseStatus.inProgress,
                     reviewedAt: DateTime.now(),
                     reviewedByForemanId: foremanId,
                     reviewNotes: reviewNotes,
@@ -362,4 +374,3 @@ class ProjectsNotifier extends Notifier<List<Project>> {
     ];
   }
 }
-
