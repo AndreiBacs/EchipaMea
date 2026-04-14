@@ -332,26 +332,13 @@ class _ProjectWeatherRow extends ConsumerWidget {
 }
 
 _WorkerWeatherTexts _weatherTextsForLocale(BuildContext context) {
-  return switch (Localizations.localeOf(context).languageCode) {
-    'ro' => const _WorkerWeatherTexts(
-      loading: 'Se incarca vremea',
-      wind: 'Vant',
-      unavailable: 'Vreme indisponibila',
-      locationMissing: 'Coordonate lipsa pentru vreme',
-    ),
-    'hu' => const _WorkerWeatherTexts(
-      loading: 'Idojaras betoltese',
-      wind: 'Szel',
-      unavailable: 'Idojaras nem elerheto',
-      locationMissing: 'Nincs coordinata pentru vreme',
-    ),
-    _ => const _WorkerWeatherTexts(
-      loading: 'Loading weather',
-      wind: 'Wind',
-      unavailable: 'Weather unavailable',
-      locationMissing: 'No coordinates for weather',
-    ),
-  };
+  final l10n = AppLocalizations.of(context)!;
+  return _WorkerWeatherTexts(
+    loading: l10n.workerWeatherLoading,
+    wind: l10n.workerWeatherWind,
+    unavailable: l10n.workerWeatherUnavailable,
+    locationMissing: l10n.workerWeatherLocationMissing,
+  );
 }
 
 class _WorkerWeatherTexts {

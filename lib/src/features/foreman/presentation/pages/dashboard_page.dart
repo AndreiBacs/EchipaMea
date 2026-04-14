@@ -30,6 +30,44 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       _FinishedProjectsPeriod.thisMonth;
   DateTimeRange? _customRange;
 
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final initial =
+        _customRange ??
+        DateTimeRange(
+          start: DateTime(now.year, now.month, 1),
+          end: now,
+        );
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: initial,
+    );
+    if (!mounted) return;
+    if (picked == null) {
+      if (_customRange == null) {
+        setState(() => _finishedProjectsPeriod = _FinishedProjectsPeriod.thisMonth);
+      }
+      return;
+    }
+    setState(() {
+      _customRange = DateTimeRange(
+        start: DateTime(
+          picked.start.year,
+          picked.start.month,
+          picked.start.day,
+        ),
+        end: DateTime(
+          picked.end.year,
+          picked.end.month,
+          picked.end.day,
+        ),
+      );
+      _finishedProjectsPeriod = _FinishedProjectsPeriod.custom;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -161,38 +199,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   customRange: _customRange,
                   onPeriodChanged: (period) {
                     setState(() => _finishedProjectsPeriod = period);
+                    if (period == _FinishedProjectsPeriod.custom &&
+                        _customRange == null) {
+                      _pickCustomRange();
+                    }
                   },
-                  onPickCustomRange: () async {
-                    final now = DateTime.now();
-                    final initial =
-                        _customRange ??
-                        DateTimeRange(
-                          start: DateTime(now.year, now.month, 1),
-                          end: now,
-                        );
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                      initialDateRange: initial,
-                    );
-                    if (picked == null || !mounted) return;
-                    setState(() {
-                      _customRange = DateTimeRange(
-                        start: DateTime(
-                          picked.start.year,
-                          picked.start.month,
-                          picked.start.day,
-                        ),
-                        end: DateTime(
-                          picked.end.year,
-                          picked.end.month,
-                          picked.end.day,
-                        ),
-                      );
-                      _finishedProjectsPeriod = _FinishedProjectsPeriod.custom;
-                    });
-                  },
+                  onPickCustomRange: _pickCustomRange,
                 ),
               ),
             ),

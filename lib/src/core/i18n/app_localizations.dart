@@ -333,6 +333,10 @@ class AppLocalizations {
       'workerArrivalSent': 'Seful de echipa a fost anuntat ca ai ajuns.',
       'workerLocationMissing':
           'Nu exista coordonate pentru acest proiect; navigatia nu poate fi deschisa.',
+      'workerWeatherLoading': 'Se incarca vremea',
+      'workerWeatherWind': 'Vant',
+      'workerWeatherUnavailable': 'Vreme indisponibila',
+      'workerWeatherLocationMissing': 'Coordonate lipsa pentru vreme',
       'workerCompleteWork': 'Finalizeaza lucrarea',
       'workerReportTitle': 'Raport de lucru',
       'workerReportPhotosStep': 'Poze de pe santier',
@@ -711,6 +715,10 @@ class AppLocalizations {
       'workerArrivalSent': 'A munkavezeto ertesult az erkezesrol.',
       'workerLocationMissing':
           'Ehhez a projekthez nincsenek koordinatak; a navigacio nem nyithato meg.',
+      'workerWeatherLoading': 'Idojaras betoltese',
+      'workerWeatherWind': 'Szel',
+      'workerWeatherUnavailable': 'Idojaras nem elerheto',
+      'workerWeatherLocationMissing': 'Nincs koordinata az idojarashoz',
       'workerCompleteWork': 'Munka befejezese',
       'workerReportTitle': 'Munkajelentes',
       'workerReportPhotosStep': 'Helyszini fenykepek',
@@ -1081,6 +1089,10 @@ class AppLocalizations {
       'workerArrivalSent': 'Your foreman is notified that you arrived.',
       'workerLocationMissing':
           'This project has no coordinates; navigation cannot be opened.',
+      'workerWeatherLoading': 'Loading weather',
+      'workerWeatherWind': 'Wind',
+      'workerWeatherUnavailable': 'Weather unavailable',
+      'workerWeatherLocationMissing': 'No coordinates for weather',
       'workerCompleteWork': 'Finish this job',
       'workerReportTitle': 'Work report',
       'workerReportPhotosStep': 'Site photos',
@@ -1443,6 +1455,10 @@ class AppLocalizations {
   String get workerArrivalSent => _t('workerArrivalSent');
   String get workerLocationMissing => _t('workerLocationMissing');
   String get workerCompleteWork => _t('workerCompleteWork');
+  String get workerWeatherLoading => _t('workerWeatherLoading');
+  String get workerWeatherWind => _t('workerWeatherWind');
+  String get workerWeatherUnavailable => _t('workerWeatherUnavailable');
+  String get workerWeatherLocationMissing => _t('workerWeatherLocationMissing');
   String get workerReportTitle => _t('workerReportTitle');
   String get workerReportPhotosStep => _t('workerReportPhotosStep');
   String get workerReportPhotosHint => _t('workerReportPhotosHint');

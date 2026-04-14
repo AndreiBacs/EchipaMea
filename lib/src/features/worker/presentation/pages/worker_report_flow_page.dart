@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
@@ -167,7 +168,13 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                   l10n: l10n,
                   controller: _descriptionController,
                   isSubmitting: _submitting,
-                  onSubmit: () => _submit(context, project, phase, session),
+                  onSubmit: () {
+                    final selectedPhase = phase;
+                    if (selectedPhase == null) {
+                      return;
+                    }
+                    _submit(context, project, selectedPhase, session);
+                  },
                 ),
               ],
             ),

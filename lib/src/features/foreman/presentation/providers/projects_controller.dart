@@ -389,7 +389,7 @@ class ProjectsNotifier extends Notifier<List<Project>> {
 
   void removePhase({required String projectId, required String phaseId}) {
     final prefixesToRemove = <String>[];
-    for (final entry in _dailySequences.entries) {
+    for (final entry in _dailySequences.entries.toList()) {
       if (entry.value.projectId != projectId) continue;
       if (entry.value.orderedPhaseIds.contains(phaseId)) {
         final filteredIds = [
