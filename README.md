@@ -7,6 +7,7 @@ Mobile app for small contractor teams, built with Flutter.
 - Supports two roles: Foreman and Worker
 - Foreman area includes:
   - Dashboard (employees, active projects, assignment visibility)
+  - Getting started checklist for first-time foreman workflows (add client, create project, configure a phase, add employee), with local progress persisted via SharedPreferences and a detailed checklist screen at `/foreman/getting-started`
   - Map (active projects in progress and worker positions in one live overview)
   - Projects (list, add, edit, status, assigned workers, and required client assignment). List rows support horizontal swipe for quick actions (for example edit vs open the Phases tab on an existing project). On a project’s **Phases** tab, swipe a phase row horizontally to open the same edit flow as the edit icon (draft phases use the quick dialog; saved projects use the full-screen phase form). Each **phase** can include **work instructions** for assigned workers: an ordered list of steps, where **each step** can have its own reference photos (gallery) and **voice memos** (same recording approach as the worker report flow). Attachments are stored as local paths in the in-memory demo until a backend stores binaries.
   - Team (list, add, edit, contact data: phone/email, trade role chosen from a predefined list in a dropdown, employee QR login generation)

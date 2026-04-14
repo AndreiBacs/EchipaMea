@@ -323,6 +323,29 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Raport de la muncitor trimis',
       'foremanNotificationWorkerReportBodyFallback':
           'A fost incarcat un raport nou.',
+      'foremanGettingStartedTitle': 'Primii pasi',
+      'foremanGettingStartedDescription':
+          'Invata fluxul principal pentru configurarea activitatii echipei.',
+      'foremanGettingStartedContinue': 'Continua',
+      'foremanGettingStartedViewAll': 'Vezi toti pasii',
+      'foremanGettingStartedDismiss': 'Ascunde cardul',
+      'foremanGettingStartedGo': 'Deschide',
+      'foremanGettingStartedShowCardAgain': 'Afiseaza din nou cardul',
+      'foremanGettingStartedPhaseHint':
+          'Creeaza sau deschide un proiect, apoi adauga o faza.',
+      'foremanWorkflowAddClientTitle': 'Adauga client',
+      'foremanWorkflowAddClientDescription':
+          'Inregistreaza primul client cu datele de contact.',
+      'foremanWorkflowCreateProjectTitle': 'Creeaza proiect',
+      'foremanWorkflowCreateProjectDescription':
+          'Porneste un proiect nou si leaga-l de un client.',
+      'foremanWorkflowConfigurePhaseTitle': 'Configureaza faza',
+      'foremanWorkflowConfigurePhaseDescription':
+          'Adauga o faza de lucru cu descriere si alocari.',
+      'foremanWorkflowAddEmployeeTitle': 'Adauga angajat',
+      'foremanWorkflowAddEmployeeDescription':
+          'Completeaza echipa cu un angajat nou.',
+      'genericErrorMessage': 'A aparut o eroare. Te rugam sa incerci din nou.',
     },
     'hu': {
       'appTitle': 'EchipaMea',
@@ -631,6 +654,29 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Munkas jelentes erkezett',
       'foremanNotificationWorkerReportBodyFallback':
           'Uj jelentes lett feltoltve.',
+      'foremanGettingStartedTitle': 'Elso lepesek',
+      'foremanGettingStartedDescription':
+          'Tanuld meg a fo folyamatot a csapatmunka beallitasaert.',
+      'foremanGettingStartedContinue': 'Folytatas',
+      'foremanGettingStartedViewAll': 'Minden lepes megtekintese',
+      'foremanGettingStartedDismiss': 'Kartya elrejtese',
+      'foremanGettingStartedGo': 'Megnyitas',
+      'foremanGettingStartedShowCardAgain': 'Kartya ujramegjelenitese',
+      'foremanGettingStartedPhaseHint':
+          'Hozz letre vagy nyiss meg egy projektet, majd adj hozza fazist.',
+      'foremanWorkflowAddClientTitle': 'Ugyfel hozzaadasa',
+      'foremanWorkflowAddClientDescription':
+          'Rogzitsd az elso ugyfelet az elerhetosegeivel.',
+      'foremanWorkflowCreateProjectTitle': 'Projekt letrehozasa',
+      'foremanWorkflowCreateProjectDescription':
+          'Indits uj projektet, es kapcsold ugyfelhez.',
+      'foremanWorkflowConfigurePhaseTitle': 'Fazis beallitasa',
+      'foremanWorkflowConfigurePhaseDescription':
+          'Adj hozza munkafazist leirassal es hozzarendelessel.',
+      'foremanWorkflowAddEmployeeTitle': 'Dolgozo hozzaadasa',
+      'foremanWorkflowAddEmployeeDescription':
+          'Bovitsd a csapatot egy uj dolgozoval.',
+      'genericErrorMessage': 'Hiba tortent. Kerjuk, probald ujra.',
     },
     'en': {
       'appTitle': 'EchipaMea',
@@ -937,6 +983,29 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Worker report submitted',
       'foremanNotificationWorkerReportBodyFallback':
           'A new report was uploaded.',
+      'foremanGettingStartedTitle': 'Getting started',
+      'foremanGettingStartedDescription':
+          'Learn the core workflow to set up your team operations.',
+      'foremanGettingStartedContinue': 'Continue',
+      'foremanGettingStartedViewAll': 'View all steps',
+      'foremanGettingStartedDismiss': 'Dismiss card',
+      'foremanGettingStartedGo': 'Open',
+      'foremanGettingStartedShowCardAgain': 'Show card again',
+      'foremanGettingStartedPhaseHint':
+          'Create or open a project first, then add a phase.',
+      'foremanWorkflowAddClientTitle': 'Add a client',
+      'foremanWorkflowAddClientDescription':
+          'Create your first client with contact details.',
+      'foremanWorkflowCreateProjectTitle': 'Create a project',
+      'foremanWorkflowCreateProjectDescription':
+          'Start a new project and link it to a client.',
+      'foremanWorkflowConfigurePhaseTitle': 'Configure a phase',
+      'foremanWorkflowConfigurePhaseDescription':
+          'Add a work phase with details and assignees.',
+      'foremanWorkflowAddEmployeeTitle': 'Add an employee',
+      'foremanWorkflowAddEmployeeDescription':
+          'Grow your crew by adding a new employee.',
+      'genericErrorMessage': 'Something went wrong. Please try again.',
     },
   };
 
@@ -1102,8 +1171,7 @@ class AppLocalizations {
   String get phaseInstructionPhotosForStep =>
       _t('phaseInstructionPhotosForStep');
   String get phaseInstructionAddPhotos => _t('phaseInstructionAddPhotos');
-  String get phaseInstructionAudioForStep =>
-      _t('phaseInstructionAudioForStep');
+  String get phaseInstructionAudioForStep => _t('phaseInstructionAudioForStep');
   String get phaseInstructionAddVoiceNote => _t('phaseInstructionAddVoiceNote');
   String get phaseInstructionRemovePhoto => _t('phaseInstructionRemovePhoto');
   String get phaseInstructionRemoveAudio => _t('phaseInstructionRemoveAudio');
@@ -1228,6 +1296,39 @@ class AppLocalizations {
       _t('foremanNotificationWorkerReportTitle');
   String get foremanNotificationWorkerReportBodyFallback =>
       _t('foremanNotificationWorkerReportBodyFallback');
+  String get foremanGettingStartedTitle => _t('foremanGettingStartedTitle');
+  String get foremanGettingStartedDescription =>
+      _t('foremanGettingStartedDescription');
+  String get foremanGettingStartedContinue =>
+      _t('foremanGettingStartedContinue');
+  String get foremanGettingStartedViewAll => _t('foremanGettingStartedViewAll');
+  String get foremanGettingStartedDismiss => _t('foremanGettingStartedDismiss');
+  String get foremanGettingStartedGo => _t('foremanGettingStartedGo');
+  String get foremanGettingStartedShowCardAgain =>
+      _t('foremanGettingStartedShowCardAgain');
+  String get foremanGettingStartedPhaseHint =>
+      _t('foremanGettingStartedPhaseHint');
+  String get foremanWorkflowAddClientTitle =>
+      _t('foremanWorkflowAddClientTitle');
+  String get foremanWorkflowAddClientDescription =>
+      _t('foremanWorkflowAddClientDescription');
+  String get foremanWorkflowCreateProjectTitle =>
+      _t('foremanWorkflowCreateProjectTitle');
+  String get foremanWorkflowCreateProjectDescription =>
+      _t('foremanWorkflowCreateProjectDescription');
+  String get foremanWorkflowConfigurePhaseTitle =>
+      _t('foremanWorkflowConfigurePhaseTitle');
+  String get foremanWorkflowConfigurePhaseDescription =>
+      _t('foremanWorkflowConfigurePhaseDescription');
+  String get foremanWorkflowAddEmployeeTitle =>
+      _t('foremanWorkflowAddEmployeeTitle');
+  String get foremanWorkflowAddEmployeeDescription =>
+      _t('foremanWorkflowAddEmployeeDescription');
+  String get genericErrorMessage => _t('genericErrorMessage');
+  String foremanGettingStartedProgress(int completed, int total) =>
+      '$completed / $total';
+  String foremanGettingStartedNext(String stepTitle) =>
+      '$continueLabel: $stepTitle';
 }
 
 class _AppLocalizationsDelegate

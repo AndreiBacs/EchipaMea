@@ -11,6 +11,7 @@ import '../../features/foreman/presentation/pages/client_form_page.dart';
 import '../../features/foreman/presentation/pages/client_projects_page.dart';
 import '../../features/foreman/presentation/pages/employee_form_page.dart';
 import '../../features/foreman/presentation/pages/foreman_shell_page.dart';
+import '../../features/foreman/presentation/pages/foreman_getting_started_page.dart';
 import '../../features/foreman/presentation/pages/project_form_page.dart';
 import '../../features/foreman/presentation/pages/project_phase_form_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
@@ -24,10 +25,7 @@ NoTransitionPage<void> _noTransitionPage({
   required GoRouterState state,
   required Widget child,
 }) {
-  return NoTransitionPage<void>(
-    key: state.pageKey,
-    child: child,
-  );
+  return NoTransitionPage<void>(key: state.pageKey, child: child);
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -73,9 +71,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return LoginPage.routePath;
       }
 
-      if (isWorkerAppRoute &&
-          !isWorkerConnectRoute &&
-          workerSession == null) {
+      if (isWorkerAppRoute && !isWorkerConnectRoute && workerSession == null) {
         return LoginPage.routePath;
       }
 
@@ -127,27 +123,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: ForemanShellPage.mapPath,
-        name: 'foreman_map',
-        pageBuilder: (context, state) => _noTransitionPage(
-          state: state,
-          child: const ForemanShellPage(currentTab: ForemanTab.map),
-        ),
-      ),
-      GoRoute(
         path: ForemanShellPage.projectsPath,
         name: 'foreman_projects',
         pageBuilder: (context, state) => _noTransitionPage(
           state: state,
           child: const ForemanShellPage(currentTab: ForemanTab.projects),
-        ),
-      ),
-      GoRoute(
-        path: ForemanShellPage.teamPath,
-        name: 'foreman_team',
-        pageBuilder: (context, state) => _noTransitionPage(
-          state: state,
-          child: const ForemanShellPage(currentTab: ForemanTab.team),
         ),
       ),
       GoRoute(
@@ -159,12 +139,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: ForemanShellPage.teamPath,
+        name: 'foreman_team',
+        pageBuilder: (context, state) => _noTransitionPage(
+          state: state,
+          child: const ForemanShellPage(currentTab: ForemanTab.team),
+        ),
+      ),
+      GoRoute(
         path: ForemanShellPage.profilePath,
         name: 'foreman_profile',
         pageBuilder: (context, state) => _noTransitionPage(
           state: state,
           child: const ForemanShellPage(currentTab: ForemanTab.profile),
         ),
+      ),
+      GoRoute(
+        path: ForemanGettingStartedPage.path,
+        name: 'foreman_getting_started',
+        builder: (context, state) => const ForemanGettingStartedPage(),
       ),
       GoRoute(
         path: ClientFormPage.createPath,
@@ -222,10 +215,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final projectId = state.pathParameters['projectId']!;
           final phaseId = state.pathParameters['phaseId']!;
-          return ProjectPhaseFormPage(
-            projectId: projectId,
-            phaseId: phaseId,
-          );
+          return ProjectPhaseFormPage(projectId: projectId, phaseId: phaseId);
         },
       ),
       GoRoute(

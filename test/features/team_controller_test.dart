@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:echipa_mea/src/core/domain/entities/worker_role.dart';
 import 'package:echipa_mea/src/features/foreman/presentation/providers/team_controller.dart';
@@ -8,6 +9,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     container = ProviderContainer();
     addTearDown(container.dispose);
   });
@@ -35,7 +37,9 @@ void main() {
 
   group('TeamNotifier.addEmployee', () {
     test('increases employee count by one', () {
-      container.read(teamProvider.notifier).addEmployee(
+      container
+          .read(teamProvider.notifier)
+          .addEmployee(
             name: 'New Worker',
             role: WorkerRole.carpenter,
             email: 'new@example.com',
@@ -48,7 +52,9 @@ void main() {
     });
 
     test('added employee is appended to the end', () {
-      container.read(teamProvider.notifier).addEmployee(
+      container
+          .read(teamProvider.notifier)
+          .addEmployee(
             name: 'Last Employee',
             role: WorkerRole.helper,
             email: 'last@example.com',
@@ -61,7 +67,9 @@ void main() {
     });
 
     test('added employee has all fields set correctly', () {
-      container.read(teamProvider.notifier).addEmployee(
+      container
+          .read(teamProvider.notifier)
+          .addEmployee(
             name: 'Full Fields',
             role: WorkerRole.welder,
             email: 'ff@example.com',
@@ -85,7 +93,9 @@ void main() {
     });
 
     test('added employee without coordinates has null lat/long', () {
-      container.read(teamProvider.notifier).addEmployee(
+      container
+          .read(teamProvider.notifier)
+          .addEmployee(
             name: 'No Coords',
             role: WorkerRole.painter,
             email: 'nc@example.com',
@@ -100,7 +110,9 @@ void main() {
     });
 
     test('generated ids are unique for successive adds', () {
-      container.read(teamProvider.notifier).addEmployee(
+      container
+          .read(teamProvider.notifier)
+          .addEmployee(
             name: 'A',
             role: WorkerRole.mason,
             email: 'a@a.com',
@@ -109,7 +121,9 @@ void main() {
             workEndHour: 16,
             workingDays: {1},
           );
-      container.read(teamProvider.notifier).addEmployee(
+      container
+          .read(teamProvider.notifier)
+          .addEmployee(
             name: 'B',
             role: WorkerRole.mason,
             email: 'b@b.com',
@@ -126,7 +140,9 @@ void main() {
 
   group('TeamNotifier.updateEmployee', () {
     test('updates name for existing employee', () {
-      container.read(teamProvider.notifier).updateEmployee(
+      container
+          .read(teamProvider.notifier)
+          .updateEmployee(
             id: 'e1',
             name: 'Updated Name',
             role: WorkerRole.electrician,
@@ -143,7 +159,9 @@ void main() {
     });
 
     test('updates role for existing employee', () {
-      container.read(teamProvider.notifier).updateEmployee(
+      container
+          .read(teamProvider.notifier)
+          .updateEmployee(
             id: 'e2',
             name: 'Mihai S.',
             role: WorkerRole.electrician,
@@ -160,7 +178,9 @@ void main() {
     });
 
     test('updates working hours for existing employee', () {
-      container.read(teamProvider.notifier).updateEmployee(
+      container
+          .read(teamProvider.notifier)
+          .updateEmployee(
             id: 'e1',
             name: 'Andrei D.',
             role: WorkerRole.electrician,
@@ -178,7 +198,9 @@ void main() {
     });
 
     test('updates working days for existing employee', () {
-      container.read(teamProvider.notifier).updateEmployee(
+      container
+          .read(teamProvider.notifier)
+          .updateEmployee(
             id: 'e1',
             name: 'Andrei D.',
             role: WorkerRole.electrician,
@@ -196,7 +218,9 @@ void main() {
 
     test('does not change total count on update', () {
       final before = container.read(teamProvider).length;
-      container.read(teamProvider.notifier).updateEmployee(
+      container
+          .read(teamProvider.notifier)
+          .updateEmployee(
             id: 'e1',
             name: 'X',
             role: WorkerRole.helper,
@@ -210,7 +234,9 @@ void main() {
     });
 
     test('does not affect other employees when updating one', () {
-      container.read(teamProvider.notifier).updateEmployee(
+      container
+          .read(teamProvider.notifier)
+          .updateEmployee(
             id: 'e1',
             name: 'Changed',
             role: WorkerRole.helper,
@@ -225,9 +251,10 @@ void main() {
     });
 
     test('unknown id does not change state', () {
-      final before =
-          container.read(teamProvider).map((e) => e.name).toList();
-      container.read(teamProvider.notifier).updateEmployee(
+      final before = container.read(teamProvider).map((e) => e.name).toList();
+      container
+          .read(teamProvider.notifier)
+          .updateEmployee(
             id: 'nonexistent',
             name: 'Ghost',
             role: WorkerRole.helper,

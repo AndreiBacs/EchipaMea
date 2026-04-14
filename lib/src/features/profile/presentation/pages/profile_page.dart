@@ -9,6 +9,7 @@ import '../../../../core/profile/profile_controller.dart';
 import '../../../../core/theme/theme_mode_controller.dart';
 import '../../../../core/ui/app_international_phone_field.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import '../../../foreman/presentation/pages/foreman_getting_started_page.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -151,6 +152,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                       if (mode == null) return;
                       ref.read(themeModeProvider.notifier).setThemeMode(mode);
                     },
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.auto_awesome),
+                    title: Text(l10n.foremanGettingStartedTitle),
+                    subtitle: Text(l10n.foremanGettingStartedDescription),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(ForemanGettingStartedPage.path),
                   ),
                   const SizedBox(height: 24),
                   TabBar(

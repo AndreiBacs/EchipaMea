@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:echipa_mea/src/features/foreman/presentation/providers/clients_controller.dart';
 
@@ -7,6 +8,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     container = ProviderContainer();
     addTearDown(container.dispose);
   });
@@ -40,7 +42,9 @@ void main() {
 
   group('ClientsNotifier.addClient', () {
     test('increases client count by one', () {
-      container.read(clientsProvider.notifier).addClient(
+      container
+          .read(clientsProvider.notifier)
+          .addClient(
             name: 'New Corp',
             activeProjects: 2,
             type: ClientType.company,
@@ -59,7 +63,9 @@ void main() {
     });
 
     test('added client is appended to the end', () {
-      container.read(clientsProvider.notifier).addClient(
+      container
+          .read(clientsProvider.notifier)
+          .addClient(
             name: 'Appended Corp',
             activeProjects: 0,
             type: ClientType.company,
@@ -79,7 +85,9 @@ void main() {
     });
 
     test('added client has all fields set correctly', () {
-      container.read(clientsProvider.notifier).addClient(
+      container
+          .read(clientsProvider.notifier)
+          .addClient(
             name: 'Field Test',
             activeProjects: 5,
             type: ClientType.individual,
@@ -111,7 +119,9 @@ void main() {
     });
 
     test('generated id is unique for successive adds', () {
-      container.read(clientsProvider.notifier).addClient(
+      container
+          .read(clientsProvider.notifier)
+          .addClient(
             name: 'A',
             activeProjects: 0,
             type: ClientType.individual,
@@ -126,7 +136,9 @@ void main() {
             zipCode: '1',
             contactPerson: 'A',
           );
-      container.read(clientsProvider.notifier).addClient(
+      container
+          .read(clientsProvider.notifier)
+          .addClient(
             name: 'B',
             activeProjects: 0,
             type: ClientType.company,
@@ -149,7 +161,9 @@ void main() {
 
   group('ClientsNotifier.updateClient', () {
     test('updates name for existing client', () {
-      container.read(clientsProvider.notifier).updateClient(
+      container
+          .read(clientsProvider.notifier)
+          .updateClient(
             id: 'c1',
             name: 'Updated Name',
             activeProjects: 2,
@@ -172,7 +186,9 @@ void main() {
     });
 
     test('updates activeProjects for existing client', () {
-      container.read(clientsProvider.notifier).updateClient(
+      container
+          .read(clientsProvider.notifier)
+          .updateClient(
             id: 'c2',
             name: 'SC BuildFast SRL',
             activeProjects: 10,
@@ -196,7 +212,9 @@ void main() {
 
     test('does not change total count on update', () {
       final before = container.read(clientsProvider).length;
-      container.read(clientsProvider.notifier).updateClient(
+      container
+          .read(clientsProvider.notifier)
+          .updateClient(
             id: 'c1',
             name: 'X',
             activeProjects: 0,
@@ -216,7 +234,9 @@ void main() {
     });
 
     test('does not affect other clients when updating one', () {
-      container.read(clientsProvider.notifier).updateClient(
+      container
+          .read(clientsProvider.notifier)
+          .updateClient(
             id: 'c1',
             name: 'Changed',
             activeProjects: 0,
@@ -239,8 +259,13 @@ void main() {
     });
 
     test('unknown id does not change state', () {
-      final before = container.read(clientsProvider).map((c) => c.name).toList();
-      container.read(clientsProvider.notifier).updateClient(
+      final before = container
+          .read(clientsProvider)
+          .map((c) => c.name)
+          .toList();
+      container
+          .read(clientsProvider.notifier)
+          .updateClient(
             id: 'nonexistent',
             name: 'Ghost',
             activeProjects: 0,
@@ -269,8 +294,9 @@ void main() {
     });
 
     test('returns null for unknown id', () {
-      final client =
-          container.read(clientsProvider.notifier).findById('unknown');
+      final client = container
+          .read(clientsProvider.notifier)
+          .findById('unknown');
       expect(client, isNull);
     });
 
