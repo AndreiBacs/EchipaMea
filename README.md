@@ -113,7 +113,6 @@ Reference schemas/responses live in `docs/backend-openapi-draft.yaml` under:
 - `components.responses.Forbidden`
 - `components.responses.NotFound`
 - `components.responses.InternalServerError`
-
 ## Worker flow diagram (QA)
 
 ```mermaid
