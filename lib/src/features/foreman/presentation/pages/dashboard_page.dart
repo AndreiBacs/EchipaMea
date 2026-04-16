@@ -29,7 +29,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   _FinishedProjectsPeriod _finishedProjectsPeriod =
       _FinishedProjectsPeriod.thisMonth;
   DateTimeRange? _customRange;
-
   Future<void> _pickCustomRange() async {
     final now = DateTime.now();
     final initial =
@@ -67,7 +66,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       _finishedProjectsPeriod = _FinishedProjectsPeriod.custom;
     });
   }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;

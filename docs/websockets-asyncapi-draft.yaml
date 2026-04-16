@@ -1,0 +1,139 @@
+asyncapi: 3.0.0
+info:
+  title: EchipaMea WebSocket Contracts (Draft)
+  version: 0.1.0
+  description: |
+    Draft websocket schema extracted from frontend expectations.
+    This is a BE handoff artifact for realtime contracts.
+
+servers:
+  production:
+    host: api.echipamea.example.com
+    protocol: wss
+    description: Example production websocket host
+
+channels:
+  workerTelemetry:
+    address: /ws/worker-telemetry
+    description: Worker sends periodic location telemetry.
+    messages:
+      workerLocation:
+        $ref: '#/components/messages/WorkerLocationMessage'
+
+  foremanNotifications:
+    address: /ws/foreman-notifications
+    description: Backend pushes worker report notifications to foreman clients.
+    messages:
+      workerReportSubmitted:
+        $ref: '#/components/messages/WorkerReportSubmittedMessage'
+
+operations:
+  sendWorkerLocation:
+    action: send
+    channel:
+      $ref: '#/channels/workerTelemetry'
+    summary: Worker publishes location payload.
+    messages:
+      - $ref: '#/channels/workerTelemetry/messages/workerLocation'
+
+  receiveWorkerReportSubmitted:
+    action: receive
+    channel:
+      $ref: '#/channels/foremanNotifications'
+    summary: Foreman client receives report-submitted notification.
+    messages:
+      - $ref: '#/channels/foremanNotifications/messages/workerReportSubmitted'
+
+components:
+  messages:
+    WorkerLocationMessage:
+      name: WorkerLocationMessage
+      title: Worker Location Event
+      summary: Telemetry update from a worker device.
+      payload:
+        $ref: '#/components/schemas/WorkerLocationPayload'
+
+    WorkerReportSubmittedMessage:
+      name: WorkerReportSubmittedMessage
+      title: Worker Report Submitted Event
+      summary: Notification event published when worker report upload succeeds.
+      payload:
+        $ref: '#/components/schemas/WorkerReportSubmittedPayload'
+
+  schemas:
+    WorkerLocationPayload:
+      type: object
+      required:
+        - type
+        - employeeId
+        - employeeName
+        - latitude
+        - longitude
+        - accuracyMeters
+        - capturedAt
+      properties:
+        type:
+          type: string
+          const: worker_location
+        employeeId:
+          type: string
+          description: Internal employee identifier.
+        employeeName:
+          type: string
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        accuracyMeters:
+          type: number
+          minimum: 0
+        capturedAt:
+          type: string
+          format: date-time
+          description: UTC ISO-8601 timestamp.
+
+    WorkerReportSubmittedPayload:
+      type: object
+      required:
+        - type
+        - projectId
+        - projectName
+        - phaseId
+        - phaseName
+        - employeeId
+        - employeeName
+        - description
+        - photoCount
+        - hasVoiceMemo
+        - submittedAt
+      properties:
+        type:
+          type: string
+          const: worker_report_submitted
+        projectId:
+          type: string
+        projectName:
+          type: string
+        phaseId:
+          type: string
+        phaseName:
+          type: string
+        employeeId:
+          type: string
+        employeeName:
+          type: string
+        description:
+          type: string
+        photoCount:
+          type: integer
+          minimum: 0
+        hasVoiceMemo:
+          type: boolean
+        submittedAt:
+          type: string
+          format: date-time
+          description: UTC ISO-8601 timestamp.

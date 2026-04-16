@@ -1,0 +1,1174 @@
+openapi: 3.1.0
+info:
+  title: EchipaMea Backend API (Draft)
+  version: 0.1.0
+  description: |
+    Draft contract extracted from the Flutter frontend. This spec is intended as
+    a BE handoff baseline and includes currently wired integrations and proposed
+    endpoints that replace in-memory state.
+externalDocs:
+  description: Realtime websocket contracts (source of truth)
+  url: ./websockets-asyncapi-draft.yaml
+
+servers:
+  - url: https://api.echipamea.example.com
+    description: Example production API host
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Clients
+  - name: Employees
+  - name: Projects
+  - name: Phases
+  - name: Sequences
+  - name: Notifications
+  - name: Worker Reports
+  - name: Realtime
+
+paths:
+  /foreman/login:
+    post:
+      tags: [Auth]
+      summary: Foreman login
+      description: Matches current FE call at AUTH_API_BASE_URL + /foreman/login.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /worker/reports:
+    post:
+      tags: [Worker Reports]
+      summary: Submit worker phase report
+      description: Matches current multipart upload from mobile worker flow.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkerReportSubmitRequest'
+      responses:
+        '200':
+          description: Report stored
+        '201':
+          description: Report stored
+        '204':
+          description: Report stored (no body)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /clients:
+    get:
+      tags: [Clients]
+      summary: List clients
+      responses:
+        '200':
+          description: Clients list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Clients]
+      summary: Create client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /clients/{clientId}:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+    get:
+      tags: [Clients]
+      summary: Get client
+      responses:
+        '200':
+          description: Client found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [Clients]
+      summary: Update client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientUpdateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /employees:
+    get:
+      tags: [Employees]
+      summary: List employees
+      responses:
+        '200':
+          description: Employee list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employee'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Employees]
+      summary: Create employee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /employees/{employeeId}:
+    parameters:
+      - $ref: '#/components/parameters/EmployeeId'
+    get:
+      tags: [Employees]
+      summary: Get employee
+      responses:
+        '200':
+          description: Employee found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [Employees]
+      summary: Update employee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /projects:
+    get:
+      tags: [Projects]
+      summary: List projects
+      responses:
+        '200':
+          description: Projects list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Projects]
+      summary: Create project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [Projects]
+      summary: Get project
+      responses:
+        '200':
+          description: Project found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags: [Projects]
+      summary: Update project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /projects/{projectId}/done:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      tags: [Projects]
+      summary: Mark project as done
+      responses:
+        '200':
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /projects/{projectId}/phases:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      tags: [Phases]
+      summary: Add phase to project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectPhaseCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPhase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /projects/{projectId}/phases/{phaseId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/PhaseId'
+    patch:
+      tags: [Phases]
+      summary: Update phase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectPhaseUpdateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPhase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Phases]
+      summary: Remove phase
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /projects/{projectId}/phases/{phaseId}/submit:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/PhaseId'
+    post:
+      tags: [Phases]
+      summary: Submit phase for foreman review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhaseSubmitRequest'
+      responses:
+        '200':
+          description: Phase moved to pending review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPhase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /projects/{projectId}/phases/{phaseId}/review:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/PhaseId'
+    post:
+      tags: [Phases]
+      summary: Foreman phase review decision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhaseReviewRequest'
+      responses:
+        '200':
+          description: Phase review stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPhase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /projects/{projectId}/workers/{workerId}/sequence:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/WorkerId'
+    get:
+      tags: [Sequences]
+      summary: Get daily sequence for worker
+      parameters:
+        - name: day
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Sequence for given day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyWorkerSequence'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [Sequences]
+      summary: Save manual daily sequence for worker
+      parameters:
+        - name: day
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveSequenceRequest'
+      responses:
+        '200':
+          description: Sequence updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyWorkerSequence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Sequences]
+      summary: Reset manual sequence (fallback to suggested)
+      parameters:
+        - name: day
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '204':
+          description: Reset complete
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /foreman/notifications:
+    get:
+      tags: [Notifications]
+      summary: List foreman notifications
+      responses:
+        '200':
+          description: Notification feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForemanNotificationsState'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /foreman/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark all foreman notifications as read
+      responses:
+        '204':
+          description: Updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ClientId:
+      name: clientId
+      in: path
+      required: true
+      schema: { type: string }
+    EmployeeId:
+      name: employeeId
+      in: path
+      required: true
+      schema: { type: string }
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string }
+    PhaseId:
+      name: phaseId
+      in: path
+      required: true
+      schema: { type: string }
+    WorkerId:
+      name: workerId
+      in: path
+      required: true
+      schema: { type: string }
+
+  schemas:
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        field: { type: string, nullable: true }
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+        traceId:
+          type: string
+          description: Correlation ID for logs/tracing.
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1 }
+
+    LoginResponse:
+      type: object
+      description: FE accepts either `token` or `accessToken`.
+      properties:
+        token: { type: string }
+        accessToken: { type: string }
+      anyOf:
+        - required: [token]
+        - required: [accessToken]
+
+    Client:
+      type: object
+      required:
+        - id
+        - name
+        - activeProjects
+        - type
+        - status
+        - preferredContactMethod
+        - notes
+        - email
+        - phone
+        - addressLine1
+        - city
+        - state
+        - zipCode
+        - contactPerson
+      properties:
+        id: { type: string }
+        name: { type: string }
+        activeProjects: { type: integer, minimum: 0 }
+        type: { $ref: '#/components/schemas/ClientType' }
+        status: { $ref: '#/components/schemas/ClientStatus' }
+        preferredContactMethod:
+          $ref: '#/components/schemas/ClientContactMethod'
+        notes: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        addressLine1: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipCode: { type: string }
+        contactPerson: { type: string }
+
+    ClientCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ClientBase'
+    ClientUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ClientBase'
+
+    ClientBase:
+      type: object
+      required:
+        - name
+        - activeProjects
+        - type
+        - status
+        - preferredContactMethod
+        - notes
+        - email
+        - phone
+        - addressLine1
+        - city
+        - state
+        - zipCode
+        - contactPerson
+      properties:
+        name: { type: string }
+        activeProjects: { type: integer, minimum: 0 }
+        type: { $ref: '#/components/schemas/ClientType' }
+        status: { $ref: '#/components/schemas/ClientStatus' }
+        preferredContactMethod:
+          $ref: '#/components/schemas/ClientContactMethod'
+        notes: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        addressLine1: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipCode: { type: string }
+        contactPerson: { type: string }
+
+    Employee:
+      type: object
+      required:
+        - id
+        - name
+        - role
+        - email
+        - phone
+        - workStartHour
+        - workEndHour
+        - workingDays
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { $ref: '#/components/schemas/WorkerRole' }
+        email: { type: string, format: email }
+        phone: { type: string }
+        workStartHour: { type: integer, minimum: 0, maximum: 23 }
+        workEndHour: { type: integer, minimum: 0, maximum: 23 }
+        workingDays:
+          type: array
+          items: { type: integer, minimum: 1, maximum: 7 }
+          uniqueItems: true
+        latitude: { type: number }
+        longitude: { type: number }
+
+    EmployeeCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/EmployeeBase'
+    EmployeeUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/EmployeeBase'
+    EmployeeBase:
+      type: object
+      required:
+        - name
+        - role
+        - email
+        - phone
+        - workStartHour
+        - workEndHour
+        - workingDays
+      properties:
+        name: { type: string }
+        role: { $ref: '#/components/schemas/WorkerRole' }
+        email: { type: string, format: email }
+        phone: { type: string }
+        workStartHour: { type: integer, minimum: 0, maximum: 23 }
+        workEndHour: { type: integer, minimum: 0, maximum: 23 }
+        workingDays:
+          type: array
+          items: { type: integer, minimum: 1, maximum: 7 }
+          uniqueItems: true
+        latitude: { type: number }
+        longitude: { type: number }
+
+    Project:
+      type: object
+      required:
+        - id
+        - name
+        - clientId
+        - status
+        - workers
+        - assignedEmployeeIds
+        - useClientAddress
+        - addressLine1
+        - city
+        - state
+        - zipCode
+        - phases
+      properties:
+        id: { type: string }
+        name: { type: string }
+        clientId: { type: string }
+        status: { $ref: '#/components/schemas/ProjectStatus' }
+        workers:
+          type: array
+          items: { type: string }
+        assignedEmployeeIds:
+          type: array
+          items: { type: string }
+        useClientAddress: { type: boolean }
+        addressLine1: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipCode: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectPhase'
+
+    ProjectCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ProjectBase'
+    ProjectUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ProjectBase'
+    ProjectBase:
+      type: object
+      required:
+        - name
+        - clientId
+        - status
+        - workers
+        - assignedEmployeeIds
+        - useClientAddress
+        - addressLine1
+        - city
+        - state
+        - zipCode
+      properties:
+        name: { type: string }
+        clientId: { type: string }
+        status: { $ref: '#/components/schemas/ProjectStatus' }
+        workers:
+          type: array
+          items: { type: string }
+        assignedEmployeeIds:
+          type: array
+          items: { type: string }
+        useClientAddress: { type: boolean }
+        addressLine1: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipCode: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectPhase'
+
+    ProjectPhase:
+      type: object
+      required:
+        - id
+        - name
+        - startDate
+        - endDate
+        - description
+        - assignedEmployeeIds
+        - status
+        - submittedByEmployeeIds
+        - workInstructions
+      properties:
+        id: { type: string }
+        name: { type: string }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        description: { type: string }
+        assignedEmployeeIds:
+          type: array
+          items: { type: string }
+        status: { $ref: '#/components/schemas/PhaseStatus' }
+        submittedAt: { type: string, format: date-time, nullable: true }
+        submittedByEmployeeIds:
+          type: array
+          items: { type: string }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        reviewedByForemanId: { type: string, nullable: true }
+        reviewNotes: { type: string, nullable: true }
+        workInstructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhaseWorkInstruction'
+
+    ProjectPhaseCreateRequest:
+      type: object
+      required:
+        - name
+        - startDate
+        - endDate
+        - assignedEmployeeIds
+      properties:
+        name: { type: string }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        description: { type: string, default: '' }
+        assignedEmployeeIds:
+          type: array
+          items: { type: string }
+        workInstructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhaseWorkInstruction'
+
+    ProjectPhaseUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ProjectPhaseCreateRequest'
+
+    PhaseWorkInstruction:
+      type: object
+      required: [id, text, photoPaths, audioPaths]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        photoPaths:
+          type: array
+          items: { type: string }
+        audioPaths:
+          type: array
+          items: { type: string }
+
+    PhaseSubmitRequest:
+      type: object
+      required: [employeeId]
+      properties:
+        employeeId: { type: string }
+
+    PhaseReviewRequest:
+      type: object
+      required: [approved, foremanId]
+      properties:
+        approved: { type: boolean }
+        foremanId: { type: string }
+        reviewNotes: { type: string }
+
+    DailyWorkerSequence:
+      type: object
+      required: [projectId, dayKey, workerId, orderedPhaseIds, isManual]
+      properties:
+        projectId: { type: string }
+        dayKey:
+          type: string
+          description: yyyy-mm-dd
+        workerId: { type: string }
+        orderedPhaseIds:
+          type: array
+          items: { type: string }
+        isManual: { type: boolean }
+
+    SaveSequenceRequest:
+      type: object
+      required: [orderedPhaseIds]
+      properties:
+        orderedPhaseIds:
+          type: array
+          items: { type: string }
+
+    ForemanNotificationItem:
+      type: object
+      required: [title, subtitle, receivedAt]
+      properties:
+        title: { type: string }
+        subtitle: { type: string }
+        receivedAt: { type: string, format: date-time }
+
+    ForemanNotificationsState:
+      type: object
+      required: [items, unreadCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForemanNotificationItem'
+        unreadCount: { type: integer, minimum: 0 }
+
+    WorkerReportSubmitRequest:
+      type: object
+      required:
+        - projectId
+        - projectName
+        - phaseId
+        - phaseName
+        - employeeId
+        - employeeName
+        - description
+        - submittedAt
+      properties:
+        projectId: { type: string }
+        projectName: { type: string }
+        phaseId: { type: string }
+        phaseName: { type: string }
+        employeeId: { type: string }
+        employeeName: { type: string }
+        description: { type: string }
+        submittedAt: { type: string, format: date-time }
+        "photos[]":
+          type: array
+          description: Repeat this multipart file part for every photo.
+          items:
+            type: string
+            format: binary
+        voiceMemo:
+          type: string
+          format: binary
+        "photoNames[index]":
+          type: string
+          description: |
+            Indexed form field for each photo name, e.g. photoNames[0], photoNames[1].
+
+    WorkerLocationMessage:
+      type: object
+      required:
+        - type
+        - employeeId
+        - employeeName
+        - latitude
+        - longitude
+        - accuracyMeters
+        - capturedAt
+      properties:
+        type: { type: string, const: worker_location }
+        employeeId: { type: string }
+        employeeName: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        accuracyMeters: { type: number }
+        capturedAt: { type: string, format: date-time }
+
+    WorkerReportSubmittedMessage:
+      type: object
+      required:
+        - type
+        - projectId
+        - projectName
+        - phaseId
+        - phaseName
+        - employeeId
+        - employeeName
+        - description
+        - photoCount
+        - hasVoiceMemo
+        - submittedAt
+      properties:
+        type: { type: string, const: worker_report_submitted }
+        projectId: { type: string }
+        projectName: { type: string }
+        phaseId: { type: string }
+        phaseName: { type: string }
+        employeeId: { type: string }
+        employeeName: { type: string }
+        description: { type: string }
+        photoCount: { type: integer, minimum: 0 }
+        hasVoiceMemo: { type: boolean }
+        submittedAt: { type: string, format: date-time }
+
+    ProjectStatus:
+      type: string
+      enum: [planned, inProgress, done]
+    PhaseStatus:
+      type: string
+      enum: [notStarted, inProgress, pendingReview, done]
+    ClientType:
+      type: string
+      enum: [individual, company, publicInstitution]
+    ClientStatus:
+      type: string
+      enum: [active, inactive, blocked]
+    ClientContactMethod:
+      type: string
+      enum: [phone, email, whatsApp]
+    WorkerRole:
+      type: string
+      enum:
+        - electrician
+        - plumber
+        - generalWorker
+        - carpenter
+        - welder
+        - helper
+        - painter
+        - mason
+        - hvacTechnician
+  responses:
+    BadRequest:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Authenticated, but operation is not permitted.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
