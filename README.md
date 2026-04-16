@@ -77,6 +77,43 @@ Behavior:
 - Outside working hours, the app does not send telemetry and closes the WebSocket connection.
 - When a worker report upload succeeds, the app opens a short-lived websocket, waits until the socket is **ready**, sends one `worker_report_submitted` JSON payload, then **closes the sink** (awaited) so the frame can flush before teardown—still best-effort if the server or network drops the connection.
 
+## Backend contract docs
+
+Use these docs for BE implementation handoff:
+
+- `docs/backend-openapi-draft.yaml`: REST/HTTP contract draft (auth, reports, clients, employees, projects, phases, sequences, notification endpoints) plus shared schemas/enums.
+- `docs/websockets-asyncapi-draft.yaml`: dedicated realtime/WebSocket contract draft with channels, operations, and payload schemas for worker telemetry and foreman notification events.
+
+Recommended workflow:
+
+1. Start with `docs/backend-openapi-draft.yaml` for CRUD and upload endpoints.
+2. Implement realtime channels from `docs/websockets-asyncapi-draft.yaml`.
+3. Keep message payload fields (`worker_location`, `worker_report_submitted`) identical across both specs and runtime events.
+
+## API standards (draft)
+
+Use these conventions when implementing backend endpoints from the contract docs:
+
+- **Auth:** all REST endpoints require bearer token auth by default.
+- **Public endpoint:** `POST /foreman/login` is intentionally public (no bearer token required).
+- **Auth scheme:** send `Authorization: Bearer <token>` header.
+- **Standard error envelope:** non-2xx responses should use:
+  - `error.code` (machine-readable string)
+  - `error.message` (human-readable message)
+  - optional `error.field` (input field tied to validation error)
+  - optional `traceId` (for cross-service debugging)
+- **Common status mapping:** `400` validation, `401` unauthenticated, `403` unauthorized, `404` not found, `500` unexpected server error.
+
+Reference schemas/responses live in `docs/backend-openapi-draft.yaml` under:
+
+- `components.schemas.ErrorDetail`
+- `components.schemas.ErrorResponse`
+- `components.responses.BadRequest`
+- `components.responses.Unauthorized`
+- `components.responses.Forbidden`
+- `components.responses.NotFound`
+- `components.responses.InternalServerError`
+
 ## Worker flow diagram (QA)
 
 ```mermaid
