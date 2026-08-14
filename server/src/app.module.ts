@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
+import { EmployeesModule } from './employees/employees.module';
+import { PhasesModule } from './phases/phases.module';
+import { ProjectsModule } from './projects/projects.module';
 import { ClientsModule } from './clients/clients.module';
 import { AppConfigModule } from './common/config/config.module';
 import { RequestContextModule } from './common/context/request-context.module';
@@ -21,6 +24,9 @@ import { StorageModule } from './media/storage/storage.module';
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
     AuthModule,
     ClientsModule,
+    EmployeesModule,
+    ProjectsModule,
+    PhasesModule,
     HealthModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],

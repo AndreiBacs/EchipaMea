@@ -3,7 +3,13 @@ import type { Prisma } from '@prisma/client';
 import { AppException } from '../common/errors/app-exception';
 import { ErrorCode } from '../common/errors/error-codes';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { buildPage, decodeCursor, encodeCursor, type Paged } from '../common/dto/page.dto';
+import {
+  buildPage,
+  cursorFilter,
+  encodeCursor,
+  parseDateSortKey,
+  type Paged,
+} from '../common/dto/page.dto';
 import { deriveFromPhases } from '../projects/project-status.service';
 import type {
   ClientCreateRequest,
@@ -40,26 +46,13 @@ export class ClientsService {
     const sortField = descending ? query.sort.slice(1) : query.sort;
     const direction: Prisma.SortOrder = descending ? 'desc' : 'asc';
 
-    if (query.cursor) {
-      const { sortKey, id } = decodeCursor(query.cursor);
-      const boundary =
-        sortField === 'createdAt' ? { createdAt: new Date(sortKey) } : { name: sortKey };
-      const comparator = descending ? 'lt' : 'gt';
-      // Compound boundary: rows strictly past the sort key, plus rows with the
-      // same key but a later id. Without the id tie-break, duplicate names
-      // would repeat or skip across pages.
-      where.OR = [
-        sortField === 'createdAt'
-          ? { createdAt: { [comparator]: boundary.createdAt } }
-          : { name: { [comparator]: boundary.name } },
-        {
-          ...(sortField === 'createdAt'
-            ? { createdAt: boundary.createdAt }
-            : { name: boundary.name }),
-          id: { [comparator]: id },
-        },
-      ];
-    }
+    const resume = cursorFilter({
+      sortField,
+      descending,
+      cursor: query.cursor,
+      parseSortKey: sortField === 'createdAt' ? parseDateSortKey : undefined,
+    });
+    if (resume) where.OR = resume;
 
     const rows = await this.prisma.client.findMany({
       where,
