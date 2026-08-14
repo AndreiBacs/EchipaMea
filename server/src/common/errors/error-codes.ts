@@ -1,0 +1,53 @@
+/**
+ * Machine-readable error codes carried in `error.code`.
+ *
+ * These are part of the public contract: the Flutter client branches on them
+ * (notably TOKEN_EXPIRED, which drives the single-flight refresh). Add codes
+ * freely; never repurpose an existing one.
+ */
+export const ErrorCode = {
+  // Generic
+  VALIDATION_FAILED: 'VALIDATION_FAILED',
+  NOT_FOUND: 'NOT_FOUND',
+  CONFLICT: 'CONFLICT',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  RATE_LIMITED: 'RATE_LIMITED',
+  PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
+  UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
+
+  // Auth
+  UNAUTHENTICATED: 'UNAUTHENTICATED',
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  TOKEN_INVALID: 'TOKEN_INVALID',
+  TOKEN_REUSED: 'TOKEN_REUSED',
+  FORBIDDEN: 'FORBIDDEN',
+  CROSS_TENANT: 'CROSS_TENANT',
+  ACCOUNT_DISABLED: 'ACCOUNT_DISABLED',
+
+  // Worker QR login
+  TICKET_NOT_FOUND: 'TICKET_NOT_FOUND',
+  TICKET_EXPIRED: 'TICKET_EXPIRED',
+  TICKET_ALREADY_REDEEMED: 'TICKET_ALREADY_REDEEMED',
+  TICKET_MALFORMED: 'TICKET_MALFORMED',
+
+  // Domain
+  PHASE_INVALID_TRANSITION: 'PHASE_INVALID_TRANSITION',
+  CLIENT_HAS_PROJECTS: 'CLIENT_HAS_PROJECTS',
+  MEDIA_IN_USE: 'MEDIA_IN_USE',
+  SEQUENCE_PHASE_MISMATCH: 'SEQUENCE_PHASE_MISMATCH',
+  DUPLICATE_REPORT: 'DUPLICATE_REPORT',
+
+  // Realtime
+  SEND_NOT_ALLOWED: 'SEND_NOT_ALLOWED',
+  UNKNOWN_MESSAGE_TYPE: 'UNKNOWN_MESSAGE_TYPE',
+} as const;
+
+export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+/** Application-defined WebSocket close codes (the 4000-4999 range is ours). */
+export const WsCloseCode = {
+  UNAUTHENTICATED: 4401,
+  FORBIDDEN: 4403,
+  GOING_AWAY: 1001,
+} as const;

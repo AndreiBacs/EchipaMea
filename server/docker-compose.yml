@@ -1,0 +1,104 @@
+name: echipamea
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: echipamea
+      POSTGRES_PASSWORD: echipamea
+      POSTGRES_DB: echipamea
+    ports:
+      - '5432:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U echipamea -d echipamea']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Separate database for `npm run test:e2e`, so a test run never truncates dev data.
+  db-test:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: echipamea
+      POSTGRES_PASSWORD: echipamea
+      POSTGRES_DB: echipamea_test
+    ports:
+      - '5433:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U echipamea -d echipamea_test']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: echipamea
+      MINIO_ROOT_PASSWORD: echipamea123
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: creates the bucket MinIO does not create on its own.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 echipamea echipamea123 &&
+      mc mb --ignore-existing local/echipamea &&
+      echo 'bucket ready'
+      "
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: development
+      PORT: '3000'
+      DATABASE_URL: postgresql://echipamea:echipamea@db:5432/echipamea?schema=public
+      JWT_ALG: HS256
+      JWT_SECRET: dev-only-insecure-secret-change-me-0123456789
+      STORAGE_DRIVER: s3
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: echipamea
+      S3_ACCESS_KEY_ID: echipamea
+      S3_SECRET_ACCESS_KEY: echipamea123
+      S3_FORCE_PATH_STYLE: 'true'
+      SEED_DEMO: 'true'
+      CORS_ORIGINS: '*'
+    ports:
+      - '3000:3000'
+    command: >
+      /bin/sh -c "
+      npx prisma migrate deploy &&
+      node dist/main
+      "
+
+volumes:
+  db-data:
+  minio-data:

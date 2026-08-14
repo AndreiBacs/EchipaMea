@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Pinned explicitly: the base config also includes prisma/ and scripts/ for
+    // editor and ts-node support, which would otherwise raise the inferred
+    // common root to the project directory and emit dist/src/main.js.
+    "rootDir": "./src",
+    // Kept inside dist so `deleteOutDir` removes it too. Left at the project
+    // root it survives a clean, and tsc then skips re-emitting "unchanged"
+    // files into the now-empty dist -- a build that succeeds but is missing
+    // most of its modules.
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "test", "dist", "scripts", "prisma", "**/*spec.ts"]
+}
