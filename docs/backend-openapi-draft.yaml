@@ -81,6 +81,304 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Notifications addressed to the signed-in foreman
+      description: |
+        Newest first, cursor-paginated. Rows are stored one per recipient, not one
+        per event: a company with three foremen gets three rows, and one of them
+        opening the app must not clear the badge on the other two phones.
+
+        `unreadCount` is the total for this recipient, not the count in the page,
+        so the badge needs no second request.
+
+        Items carry no `title` or `subtitle`. The app renders those from `kind`
+        and `payload` through AppLocalizations in ro/hu/en — a server-rendered
+        sentence would arrive in one language and stay in it.
+      parameters:
+        - name: unreadOnly
+          in: query
+          required: false
+          schema: { type: boolean }
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [workerReportSubmitted, phaseApproved, phaseRejected, workerArrived]
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+        - name: withTotal
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedNotifications'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Unread count for the badge
+      responses:
+        '200':
+          description: Count
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [unreadCount]
+                properties:
+                  unreadCount: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark every notification read for this foreman
+      responses:
+        '200':
+          description: Marked
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated, unreadCount]
+                properties:
+                  updated: { type: integer }
+                  unreadCount: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      summary: Mark one notification read
+      description: Idempotent — an already-read row keeps its original `readAt`.
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/{notificationId}/unread:
+    post:
+      tags: [Notifications]
+      summary: Mark one notification back to unread
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /telemetry/locations:
+    get:
+      tags: [Telemetry]
+      summary: Location trail for a time window
+      description: |
+        Foreman-only. A worker may write its own position and must never read
+        anyone else's — location history is the most sensitive data here.
+
+        Defaults to the last 24 hours rather than scanning the whole retention
+        period. Newest first by `capturedAt`.
+      parameters:
+        - name: employeeId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 1000, default: 500 }
+      responses:
+        '200':
+          description: Trail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationTrail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /telemetry/latest:
+    get:
+      tags: [Telemetry]
+      summary: Where each employee was last seen
+      description: |
+        One row per employee, freshest first.
+
+        Ordered by `receivedAt`, not `capturedAt`. `capturedAt` is the device's
+        own wall clock, so a phone with a wrong clock would otherwise pin itself
+        to the top of this list forever and make every genuinely newer fix look
+        older. Both timestamps are returned, plus `clockSkewSeconds`, so a bad
+        device clock is visible rather than silently corrected.
+      responses:
+        '200':
+          description: Latest positions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LatestLocations'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /arrivals:
+    get:
+      tags: [Telemetry]
+      summary: Worker arrivals on site
+      parameters:
+        - name: projectId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: employeeId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: day
+          in: query
+          required: false
+          schema: { type: string, example: '2026-08-16' }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 500, default: 200 }
+      responses:
+        '200':
+          description: Arrivals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Arrivals'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /company:
+    get:
+      tags: [Company]
+      summary: The signed-in foreman's company
+      description: |
+        Replaces the company half of the SharedPreferences profile blob in
+        `profile_controller.dart`. That blob mixed fields belonging to the person
+        with fields belonging to the company; these are two resources here.
+
+        Note this is now a shared record — two foremen see and edit the same one,
+        which the on-device version could not do.
+      responses:
+        '200':
+          description: Company
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Company]
+      summary: Update company details
+      description: Genuinely partial — omitted fields are left alone, not blanked.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyUpdateRequest'
+      responses:
+        '200':
+          description: Company
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/profile:
+    get:
+      tags: [Company]
+      summary: The signed-in foreman's own profile
+      description: |
+        The settings-screen view: name, phone, job title. `GET /auth/me` answers a
+        different question — who this token is, for routing and guards.
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForemanProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Company]
+      summary: Update your own name, phone or job title
+      description: Role, email and tenant are not editable here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForemanProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /worker/me:
     get:
       tags: [Worker]
@@ -834,6 +1132,11 @@ components:
       in: path
       required: true
       schema: { type: string }
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema: { type: string }
     WorkerId:
       name: workerId
       in: path
@@ -841,6 +1144,198 @@ components:
       schema: { type: string }
 
   schemas:
+    Notification:
+      type: object
+      required: [id, kind, payload, occurredAt, createdAt]
+      properties:
+        id: { type: string }
+        kind:
+          type: string
+          enum: [workerReportSubmitted, phaseApproved, phaseRejected, workerArrived]
+        payload:
+          type: object
+          additionalProperties: true
+          description: |
+            Kind-specific snapshot fields — projectName, phaseName, employeeName,
+            photoCount, hasVoiceMemo. Taken when the event happened, so a later
+            rename does not rewrite history.
+        projectId: { type: string, nullable: true }
+        phaseId: { type: string, nullable: true }
+        employeeId: { type: string, nullable: true }
+        reportId: { type: string, nullable: true }
+        occurredAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        readAt: { type: string, format: date-time, nullable: true }
+
+    PagedNotifications:
+      type: object
+      required: [items, page, unreadCount]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Notification' }
+        page:
+          type: object
+          properties:
+            limit: { type: integer }
+            nextCursor: { type: string }
+            total: { type: integer }
+        unreadCount:
+          type: integer
+          description: Total unread for this recipient, not the count within the page.
+
+    # Distinct from LocationSample, which is the *write* shape a worker posts.
+    # A read carries the employee and the server's receipt time; a write carries
+    # neither, because both are the server's to decide.
+    TelemetrySample:
+      type: object
+      required: [employeeId, employeeName, latitude, longitude, accuracyMeters, capturedAt, receivedAt]
+      properties:
+        employeeId: { type: string }
+        employeeName:
+          type: string
+          description: Name at the time of the fix, not the current one.
+        latitude: { type: number }
+        longitude: { type: number }
+        accuracyMeters: { type: number }
+        capturedAt:
+          type: string
+          format: date-time
+          description: The device's send-time wall clock, not the GPS fix time.
+        receivedAt: { type: string, format: date-time }
+
+    LocationTrail:
+      type: object
+      required: [items, page, from, to]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TelemetrySample' }
+        page:
+          type: object
+          properties:
+            limit: { type: integer }
+            total: { type: integer }
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+
+    LatestLocation:
+      type: object
+      required:
+        [employeeId, employeeName, latitude, longitude, accuracyMeters, capturedAt, receivedAt, ageSeconds, clockSkewSeconds]
+      properties:
+        employeeId: { type: string }
+        employeeName: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        accuracyMeters: { type: number }
+        capturedAt:
+          type: string
+          format: date-time
+          description: The device's own clock. Untrusted — see clockSkewSeconds.
+        receivedAt:
+          type: string
+          format: date-time
+          description: Server-assigned, and what "last seen" is ordered by.
+        ageSeconds:
+          type: integer
+          description: |
+            Seconds since the server received the fix. Large values are normal —
+            the app samples every 30 minutes and only inside working hours.
+        clockSkewSeconds:
+          type: integer
+          description: |
+            capturedAt minus receivedAt. Near zero for a healthy device; a large
+            magnitude means the phone's clock is wrong.
+
+    LatestLocations:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/LatestLocation' }
+
+    Arrival:
+      type: object
+      required: [id, projectId, employeeId, arrivedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        projectName: { type: string }
+        employeeId: { type: string }
+        employeeName: { type: string }
+        arrivedAt: { type: string, format: date-time }
+
+    Arrivals:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Arrival' }
+        page:
+          type: object
+          properties:
+            limit: { type: integer }
+            total: { type: integer }
+
+    Company:
+      type: object
+      required: [id, name, addressLine1, city, state, zipCode, addressLine, iban, cui, vatNumber, regCom]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        addressLine1: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipCode: { type: string }
+        addressLine:
+          type: string
+          description: |
+            Derived: the address parts joined for display. The app currently stores
+            the address as one free-text field, so this is what it binds to until
+            that form is split.
+        iban: { type: string }
+        cui: { type: string, description: Romanian fiscal code (CUI). }
+        vatNumber: { type: string }
+        regCom: { type: string, description: Romanian trade register number. }
+
+    CompanyUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string }
+        addressLine1: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipCode: { type: string }
+        iban: { type: string }
+        cui: { type: string }
+        vatNumber: { type: string }
+        regCom: { type: string }
+
+    ForemanProfile:
+      type: object
+      required: [userId, email, role, fullName, phone, jobTitle, companyId, companyName]
+      properties:
+        userId: { type: string }
+        email: { type: string }
+        role: { type: string, enum: [foreman, admin] }
+        fullName: { type: string }
+        phone: { type: string }
+        jobTitle: { type: string }
+        companyId: { type: string }
+        companyName: { type: string }
+
+    ProfileUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        fullName: { type: string }
+        phone: { type: string }
+        jobTitle: { type: string }
+
     WorkerProfile:
       type: object
       required:

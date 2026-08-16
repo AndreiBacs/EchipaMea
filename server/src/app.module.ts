@@ -12,6 +12,9 @@ import { ReportsModule } from './reports/reports.module';
 import { SequencesModule } from './sequences/sequences.module';
 import { WorkerModule } from './worker/worker.module';
 import { ClientsModule } from './clients/clients.module';
+import { CompanyModule } from './company/company.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { TelemetryModule } from './telemetry/telemetry.module';
 import { AppConfigModule } from './common/config/config.module';
 import { RequestContextModule } from './common/context/request-context.module';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
@@ -39,6 +42,9 @@ import { StorageModule } from './media/storage/storage.module';
     ReportsModule,
     RealtimeModule,
     WorkerModule,
+    NotificationsModule,
+    TelemetryModule,
+    CompanyModule,
     HealthModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
