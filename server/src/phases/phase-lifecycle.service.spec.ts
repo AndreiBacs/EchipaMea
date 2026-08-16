@@ -2,10 +2,8 @@ import type { PhaseStatus } from '@prisma/client';
 import { AppException } from '../common/errors/app-exception';
 import { PhaseLifecycleService, type PhaseAction } from './phase-lifecycle.service';
 
-const strict = () =>
-  new PhaseLifecycleService({ phaseTransitionsLenient: false } as never);
-const lenient = () =>
-  new PhaseLifecycleService({ phaseTransitionsLenient: true } as never);
+const strict = () => new PhaseLifecycleService({ phaseTransitionsLenient: false } as never);
+const lenient = () => new PhaseLifecycleService({ phaseTransitionsLenient: true } as never);
 
 describe('PhaseLifecycleService (strict)', () => {
   const service = strict();

@@ -47,12 +47,18 @@ export class AuthService {
     // latency cannot be used to enumerate registered emails.
     if (!user) {
       await this.passwords.wasteTime(password);
-      throw AppException.unauthenticated('Invalid email or password.', ErrorCode.INVALID_CREDENTIALS);
+      throw AppException.unauthenticated(
+        'Invalid email or password.',
+        ErrorCode.INVALID_CREDENTIALS,
+      );
     }
 
     const valid = await this.passwords.verify(user.passwordHash, password);
     if (!valid) {
-      throw AppException.unauthenticated('Invalid email or password.', ErrorCode.INVALID_CREDENTIALS);
+      throw AppException.unauthenticated(
+        'Invalid email or password.',
+        ErrorCode.INVALID_CREDENTIALS,
+      );
     }
 
     // Deliberately checked after password verification: reporting "disabled"
@@ -183,25 +189,16 @@ export class AuthService {
       };
     }
 
-    if (principal.kind === 'employee') {
-      const employee = await this.prisma.employee.findFirst({
-        where: { id: principal.employeeId, companyId: principal.companyId },
-        select: { name: true, email: true },
-      });
-      return {
-        role: 'worker',
-        companyId: principal.companyId,
-        employeeId: principal.employeeId,
-        email: employee?.email || undefined,
-        displayName: employee?.name ?? 'Worker',
-      };
-    }
-
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: principal.employeeId, companyId: principal.companyId },
+      select: { name: true, email: true },
+    });
     return {
       role: 'worker',
       companyId: principal.companyId,
       employeeId: principal.employeeId,
-      displayName: 'Anonymous worker',
+      email: employee?.email || undefined,
+      displayName: employee?.name ?? 'Worker',
     };
   }
 }

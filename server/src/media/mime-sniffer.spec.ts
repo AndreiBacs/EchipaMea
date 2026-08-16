@@ -1,13 +1,7 @@
 import { sniffMime } from './mime-sniffer';
 
 /** Builds a header-only buffer; sniffing only ever reads the first bytes. */
-const bytes = (...values: number[]) => Buffer.from([...values, ...new Array(16).fill(0)]);
-const withAscii = (prefix: number[], at8: string) => {
-  const buf = Buffer.alloc(32);
-  Buffer.from(prefix).copy(buf, 0);
-  buf.write(at8, 8, 'latin1');
-  return buf;
-};
+const bytes = (...values: number[]) => Buffer.from([...values, ...new Array<number>(16).fill(0)]);
 
 describe('sniffMime', () => {
   it('detects JPEG', () => {

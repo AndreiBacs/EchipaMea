@@ -77,13 +77,14 @@ export class WorkerReportsService {
     const { fields } = input;
     const companyId = principal.companyId;
 
-    // A worker token is authoritative about who is submitting. Only anonymous
-    // legacy traffic falls back to the body, which it cannot prove.
+    // The token is authoritative about who is submitting. `fields.employeeId`
+    // arrives on the wire because the app sends it, and is ignored: a device
+    // does not get to say whose work this was.
     const employeeId =
       principal.kind === 'employee' ? principal.employeeId : fields.employeeId.trim();
     if (!employeeId) {
       throw AppException.badRequest(
-        'employeeId is required when submitting without a worker token.',
+        'A worker session is required to submit a report.',
         'employeeId',
       );
     }

@@ -1,6 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { IncomingMessage } from 'node:http';
-import { AppConfig } from '../common/config/configuration';
 import { AppException } from '../common/errors/app-exception';
 import type { Principal } from '../common/auth/principal';
 import { PrincipalResolverService } from '../auth/principal-resolver.service';
@@ -10,27 +9,24 @@ import { RealtimeTicketService } from './realtime-ticket.service';
 /**
  * Decides who is on the other end of a WebSocket upgrade.
  *
- * Four routes, in descending order of preference:
+ * Two routes, and no third:
  *
- *   1. `?ticket=` -- single-use, 60s. The intended path, and the only one that
- *      works from Flutter web, where headers cannot be set on a WebSocket.
- *   2. `Authorization: Bearer` -- available to native clients and to tests.
- *   3. `?token=` -- the access token in the query string. Gated behind
- *      REALTIME_ACCESS_TOKEN_IN_QUERY because it leaks into access logs; it
- *      exists so the client can be rewired before the ticket flow ships.
- *   4. Anonymous -- gated behind REALTIME_ALLOW_ANONYMOUS. The current app sends
- *      no credentials at all, so without this the migration would have to land
- *      on both sides in the same release.
+ *   1. `?ticket=` -- single-use, 60s, from `POST /realtime/tickets`. The normal
+ *      path, and the only one available to Flutter web, where Dart cannot set
+ *      headers on a WebSocket.
+ *   2. `Authorization: Bearer` -- native clients and tests, which can.
+ *
+ * A raw access token in the query string used to be accepted behind a flag. It
+ * is not any more: query strings land in proxy and access logs, and a ticket
+ * costs one HTTP round trip to avoid that. Nor is there an anonymous route --
+ * every socket belongs to a company because the credential says so.
  */
 @Injectable()
 export class WsAuthService {
-  private readonly logger = new Logger(WsAuthService.name);
-
   constructor(
     private readonly tickets: RealtimeTicketService,
     private readonly tokens: TokenService,
     private readonly principals: PrincipalResolverService,
-    private readonly config: AppConfig,
   ) {}
 
   async authenticate(request: IncomingMessage): Promise<Principal> {
@@ -42,18 +38,10 @@ export class WsAuthService {
     const bearer = readBearer(request);
     if (bearer) return this.fromAccessToken(bearer);
 
-    const queryToken = query.get('token') ?? query.get('access_token');
-    if (queryToken) {
-      if (!this.config.realtimeAccessTokenInQuery) {
-        throw AppException.unauthenticated(
-          'Access tokens are not accepted in the query string. Use POST /realtime/tickets.',
-        );
-      }
-      return this.fromAccessToken(queryToken);
-    }
-
-    if (this.config.realtimeAllowAnonymous) {
-      return this.principals.anonymous();
+    if (query.get('token') ?? query.get('access_token')) {
+      throw AppException.unauthenticated(
+        'Access tokens are not accepted in the query string. Use POST /realtime/tickets.',
+      );
     }
 
     throw AppException.unauthenticated('This socket requires a realtime ticket.');

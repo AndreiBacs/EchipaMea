@@ -92,20 +92,8 @@ export class AppConfig {
   get realtimeHeartbeatIntervalMs(): number {
     return this.get('REALTIME_HEARTBEAT_INTERVAL_MS');
   }
-  get realtimeAccessTokenInQuery(): boolean {
-    return this.get('REALTIME_ACCESS_TOKEN_IN_QUERY');
-  }
 
   // --- Transition flags ----------------------------------------------------
-  get allowAnonymousWorkerReports(): boolean {
-    return this.get('ALLOW_ANONYMOUS_WORKER_REPORTS');
-  }
-  get realtimeAllowAnonymous(): boolean {
-    return this.get('REALTIME_ALLOW_ANONYMOUS');
-  }
-  get defaultCompanyId(): string | undefined {
-    return this.get('DEFAULT_COMPANY_ID');
-  }
   get phaseTransitionsLenient(): boolean {
     return this.get('PHASE_TRANSITIONS_LENIENT');
   }

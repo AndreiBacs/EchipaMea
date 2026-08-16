@@ -1,12 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import { AppConfig } from '../../common/config/configuration';
 import { RequestContextService } from '../../common/context/request-context.service';
-import {
-  ALLOW_ANONYMOUS_WORKER_KEY,
-  IS_PUBLIC_KEY,
-} from '../../common/decorators/public.decorator';
+import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator';
 import { AppException } from '../../common/errors/app-exception';
 import type { Principal } from '../../common/auth/principal';
 import { PrincipalResolverService } from '../principal-resolver.service';
@@ -17,12 +13,11 @@ interface AuthenticatedRequest extends Request {
 }
 
 /**
- * Global authentication.
+ * Global authentication, fail-closed.
  *
- * Fail-closed: a route is authenticated unless it carries `@Public()`. The one
- * softening is `@AllowAnonymousWorker()`, which -- only while the transition
- * flag is on -- lets the not-yet-rewired Flutter client upload reports without
- * a token, attributed to the default tenant.
+ * A route is authenticated unless it carries `@Public()`. There is no softening
+ * and no anonymous fallback: every request either presents a bearer token that
+ * names a company, or it is refused.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -31,7 +26,6 @@ export class JwtAuthGuard implements CanActivate {
     private readonly tokens: TokenService,
     private readonly principals: PrincipalResolverService,
     private readonly context: RequestContextService,
-    private readonly config: AppConfig,
   ) {}
 
   async canActivate(executionContext: ExecutionContext): Promise<boolean> {
@@ -45,19 +39,7 @@ export class JwtAuthGuard implements CanActivate {
 
     const request = executionContext.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = extractBearer(request);
-
-    if (!token) {
-      const allowsAnonymous = this.reflector.getAllAndOverride<boolean>(
-        ALLOW_ANONYMOUS_WORKER_KEY,
-        [executionContext.getHandler(), executionContext.getClass()],
-      );
-      if (allowsAnonymous && this.config.allowAnonymousWorkerReports) {
-        const principal = await this.principals.anonymous();
-        this.attach(request, principal);
-        return true;
-      }
-      throw AppException.unauthenticated('Missing bearer token.');
-    }
+    if (!token) throw AppException.unauthenticated('Missing bearer token.');
 
     const claims = this.tokens.verifyAccessToken(token);
     const principal = await this.principals.fromClaims(claims);

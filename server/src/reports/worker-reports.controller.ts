@@ -9,7 +9,6 @@ import {
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AllowAnonymousWorker } from '../common/decorators/public.decorator';
 import { CurrentPrincipal } from '../common/decorators/current-principal.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { toAppException } from '../common/pipes/zod-validation.pipe';
@@ -44,7 +43,6 @@ export class WorkerReportsController {
    * here keeps the wire contract explicit and inspectable.
    */
   @Roles('worker', 'foreman', 'admin')
-  @AllowAnonymousWorker()
   @Post()
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')

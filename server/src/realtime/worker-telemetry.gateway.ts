@@ -67,14 +67,10 @@ export class WorkerTelemetryGateway implements OnGatewayConnection, OnGatewayDis
     }
     const frame = parsed.data;
 
-    // A worker token settles who this is. The frame's `employeeId` is only
-    // consulted for anonymous legacy traffic, which cannot prove anything about
-    // itself -- the same rule the HTTP report upload follows.
-    const employeeId = principal.kind === 'employee' ? principal.employeeId : frame.employeeId;
-    if (!employeeId) {
-      return errorFrame(ErrorCode.VALIDATION_FAILED, 'employeeId is required.');
-    }
-    if (principal.kind === 'employee' && frame.employeeId && frame.employeeId !== employeeId) {
+    // The token settles who this is. The app still sends `employeeId` in the
+    // frame, but it is only ever compared against the token, never trusted.
+    const employeeId = principal.employeeId;
+    if (frame.employeeId && frame.employeeId !== employeeId) {
       this.logger.warn(
         `Employee ${employeeId} sent a location frame claiming ${frame.employeeId}; ` +
           'recording it against the token subject.',

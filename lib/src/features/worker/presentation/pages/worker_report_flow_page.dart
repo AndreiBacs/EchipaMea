@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
@@ -26,10 +25,8 @@ class WorkerReportFlowPage extends ConsumerStatefulWidget {
     required this.phaseId,
   });
 
-  static String pathFor({
-    required String projectId,
-    required String phaseId,
-  }) => '/worker/project/$projectId/phase/$phaseId/report';
+  static String pathFor({required String projectId, required String phaseId}) =>
+      '/worker/project/$projectId/phase/$phaseId/report';
 
   final String projectId;
   final String phaseId;
@@ -83,19 +80,25 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final project = ref.watch(projectsProvider.select((list) {
-      for (final p in list) {
-        if (p.id == widget.projectId) return p;
-      }
-      return null;
-    }));
+    final project = ref.watch(
+      projectsProvider.select((list) {
+        for (final p in list) {
+          if (p.id == widget.projectId) return p;
+        }
+        return null;
+      }),
+    );
     final session = ref.watch(sessionProvider);
     final assigned = ref.watch(workerAssignedProjectsProvider);
-    final phase = project?.phases.where((p) => p.id == widget.phaseId).firstOrNull;
-    final workerAssignedToPhase = session != null &&
+    final phase = project?.phases
+        .where((p) => p.id == widget.phaseId)
+        .firstOrNull;
+    final workerAssignedToPhase =
+        session != null &&
         phase != null &&
         phase.assignedEmployeeIds.contains(session.employeeId);
-    final ok = project != null &&
+    final ok =
+        project != null &&
         session != null &&
         assigned.any((p) => p.id == project.id) &&
         workerAssignedToPhase;
@@ -108,9 +111,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.workerReportTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.workerReportTitle)),
       body: Column(
         children: [
           Padding(
@@ -127,9 +128,9 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                       decoration: BoxDecoration(
                         color: active
                             ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -185,11 +186,11 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                     onPressed: _submitting
                         ? null
                         : () {
-                      _pageController.previousPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                      );
-                    },
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOut,
+                            );
+                          },
                     child: Text(l10n.setupBack),
                   ),
                 const Spacer(),
@@ -198,11 +199,11 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                     onPressed: _submitting
                         ? null
                         : () {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                      );
-                    },
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOut,
+                            );
+                          },
                     child: Text(l10n.setupNext),
                   ),
               ],
@@ -226,9 +227,9 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
       });
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.workerReportPhotoPickFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.workerReportPhotoPickFailed)));
     }
   }
 
@@ -247,9 +248,9 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
       });
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.workerReportPhotoPickFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.workerReportPhotoPickFailed)));
     }
   }
 
@@ -262,9 +263,9 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     try {
       if (!await _audioRecorder.hasPermission()) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.workerReportMicPermission)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.workerReportMicPermission)));
         return;
       }
       final dir = await getTemporaryDirectory();
@@ -390,9 +391,9 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     final l10n = context.l10n;
     final description = _descriptionController.text.trim();
     if (description.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.workerReportNeedDescription)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.workerReportNeedDescription)));
       return;
     }
     if (_submitting) return;
@@ -400,20 +401,25 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     setState(() => _submitting = true);
 
     try {
-      await ref.read(workerReportsApiProvider).submitReport(
-        projectId: project.id,
-        projectName: project.name,
-        phaseId: phase.id,
-        phaseName: phase.name,
-        employeeId: session.employeeId,
-        employeeName: session.employeeName,
-        description: description,
-        submittedAt: DateTime.now(),
-        photos: _photos,
-        memoPath: _memoPath,
-      );
+      await ref
+          .read(workerReportsApiProvider)
+          .submitReport(
+            projectId: project.id,
+            projectName: project.name,
+            phaseId: phase.id,
+            phaseName: phase.name,
+            employeeId: session.employeeId,
+            employeeName: session.employeeName,
+            description: description,
+            submittedAt: DateTime.now(),
+            photos: _photos,
+            accessToken: session.sessionToken,
+            memoPath: _memoPath,
+          );
 
-      ref.read(workerForemanInboxProvider.notifier).submitReport(
+      ref
+          .read(workerForemanInboxProvider.notifier)
+          .submitReport(
             WorkerReportSubmittedEvent(
               at: DateTime.now().toUtc(),
               projectId: project.id,
@@ -437,16 +443,14 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
       }
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.workerReportSubmitted)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.workerReportSubmitted)));
       context.go(WorkerShellPage.workPath);
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${l10n.workerReportSubmitFailed}: $error'),
-        ),
+        SnackBar(content: Text('${l10n.workerReportSubmitFailed}: $error')),
       );
     } finally {
       if (mounted) {
@@ -738,7 +742,9 @@ class _RecordingIndicatorState extends State<_RecordingIndicator>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.25),
+        color: Theme.of(
+          context,
+        ).colorScheme.errorContainer.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -841,7 +847,9 @@ class _DescriptionStep extends StatelessWidget {
                 )
               : const Icon(Icons.send),
           label: Text(
-            isSubmitting ? l10n.workerReportSubmitting : l10n.workerReportSubmit,
+            isSubmitting
+                ? l10n.workerReportSubmitting
+                : l10n.workerReportSubmit,
           ),
         ),
       ],

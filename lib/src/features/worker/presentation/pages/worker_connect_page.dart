@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../core/auth/session_controller.dart';
+import '../../../../core/auth/worker_login_api.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import 'worker_shell_page.dart';
@@ -21,6 +22,28 @@ class WorkerConnectPage extends ConsumerStatefulWidget {
 class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
   bool _handled = false;
   bool _invalidScanShown = false;
+  bool _redeeming = false;
+
+  /// Why the scan failed, in the worker's own language.
+  ///
+  /// A QR code is short-lived and single-use, so "expired" and "already used"
+  /// are the two things that will actually happen on site, and "invalid code"
+  /// would send someone hunting for the wrong problem.
+  String _messageFor(AppLocalizations l10n, WorkerLoginFailure failure) {
+    switch (failure) {
+      case WorkerLoginFailure.expired:
+        return l10n.workerQrExpired;
+      case WorkerLoginFailure.alreadyUsed:
+        return l10n.workerQrAlreadyUsed;
+      case WorkerLoginFailure.accountDisabled:
+        return l10n.workerAccountDisabled;
+      case WorkerLoginFailure.network:
+        return l10n.workerLoginNetworkError;
+      case WorkerLoginFailure.notFound:
+      case WorkerLoginFailure.malformed:
+        return l10n.workerInvalidQr;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,25 +76,47 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: MobileScanner(
-                  onDetect: (capture) {
-                    if (_handled) return;
+                  onDetect: (capture) async {
+                    // Redeeming is a network call now, so guard re-entry: the
+                    // scanner keeps firing while the request is in flight and
+                    // would otherwise burn the single-use ticket several times.
+                    if (_handled || _redeeming) return;
+
                     var ok = false;
                     var hadCandidate = false;
-                    for (final barcode in capture.barcodes) {
-                      final rawValue = barcode.rawValue;
-                      if (rawValue == null || rawValue.isEmpty) continue;
-                      hadCandidate = true;
-                      ok = ref
-                          .read(sessionProvider.notifier)
-                          .connectFromQrPayload(rawValue);
-                      if (ok) break;
+                    String? message;
+
+                    _redeeming = true;
+                    try {
+                      for (final barcode in capture.barcodes) {
+                        final rawValue = barcode.rawValue;
+                        if (rawValue == null || rawValue.isEmpty) continue;
+                        hadCandidate = true;
+                        try {
+                          ok = await ref
+                              .read(sessionProvider.notifier)
+                              .connectFromQrPayload(rawValue);
+                        } on WorkerLoginException catch (error) {
+                          message = _messageFor(l10n, error.failure);
+                        }
+                        if (ok) break;
+                      }
+                    } finally {
+                      _redeeming = false;
                     }
+
+                    // `context.mounted`, not `mounted`: the redeem is a network
+                    // round trip, and the worker may well have backed out of
+                    // the scanner before it returns.
+                    if (!context.mounted) return;
+
                     if (!ok) {
-                      if (hadCandidate && !_invalidScanShown) {
+                      if ((hadCandidate || message != null) &&
+                          !_invalidScanShown) {
                         _invalidScanShown = true;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(l10n.workerInvalidQr),
+                            content: Text(message ?? l10n.workerInvalidQr),
                           ),
                         );
                         Future<void>.delayed(const Duration(seconds: 2), () {
@@ -97,9 +142,7 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
                     if (_invalidScanShown || _handled) return;
                     _invalidScanShown = true;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.workerQrReadError),
-                      ),
+                      SnackBar(content: Text(l10n.workerQrReadError)),
                     );
                     Future<void>.delayed(const Duration(seconds: 2), () {
                       if (!mounted) return;
@@ -114,8 +157,12 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.verified_user),
-                  title: Text('${l10n.workerConnectedAs} ${session.employeeName}'),
-                  subtitle: Text('${l10n.employeeIdLabel}: ${session.employeeId}'),
+                  title: Text(
+                    '${l10n.workerConnectedAs} ${session.employeeName}',
+                  ),
+                  subtitle: Text(
+                    '${l10n.employeeIdLabel}: ${session.employeeId}',
+                  ),
                 ),
               ),
           ],

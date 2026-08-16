@@ -1,6 +1,14 @@
 /**
  * Who is making the current request.
  *
+ * Every principal belongs to exactly one company. There is no unauthenticated
+ * principal: a caller either proves who it is and which tenant it belongs to, or
+ * it is refused. An earlier revision carried an `AnonymousPrincipal` attributed
+ * to a configured default company, to keep the un-rewired Flutter client working
+ * during the migration -- it is gone, along with the flags that enabled it,
+ * because "traffic with no identity, filed under whichever tenant the config
+ * names" is not something a multi-tenant product should be able to express.
+ *
  * The app has two principal kinds with separate id spaces, so `sub` alone is
  * ambiguous -- `userId` and `employeeId` are always set explicitly instead.
  */
@@ -27,21 +35,7 @@ export interface WorkerPrincipal {
   sessionId: string;
 }
 
-/**
- * Unauthenticated traffic accepted only while the migration transition flags
- * are on. It carries no verified identity: everything it claims about itself
- * is taken at face value, and it is attributed to the default tenant.
- */
-export interface AnonymousPrincipal {
-  kind: 'anonymous';
-  role: 'worker';
-  userId?: undefined;
-  employeeId?: string;
-  companyId: string;
-  sessionId: string;
-}
-
-export type Principal = ForemanPrincipal | WorkerPrincipal | AnonymousPrincipal;
+export type Principal = ForemanPrincipal | WorkerPrincipal;
 
 export function isForeman(principal: Principal): principal is ForemanPrincipal {
   return principal.kind === 'user';
@@ -51,13 +45,7 @@ export function isWorker(principal: Principal): principal is WorkerPrincipal {
   return principal.kind === 'employee';
 }
 
-export function isAnonymous(principal: Principal): principal is AnonymousPrincipal {
-  return principal.kind === 'anonymous';
-}
-
 /** Human-readable actor id for logs and audit trails. */
 export function principalLabel(principal: Principal): string {
-  if (isForeman(principal)) return `user:${principal.userId}`;
-  if (isWorker(principal)) return `employee:${principal.employeeId}`;
-  return `anonymous:${principal.employeeId ?? 'unknown'}`;
+  return isForeman(principal) ? `user:${principal.userId}` : `employee:${principal.employeeId}`;
 }

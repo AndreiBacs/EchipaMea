@@ -1,5 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { AppConfig } from '../common/config/configuration';
+import { Injectable } from '@nestjs/common';
 import { AppException } from '../common/errors/app-exception';
 import { ErrorCode } from '../common/errors/error-codes';
 import { PrismaService } from '../common/prisma/prisma.service';
@@ -27,13 +26,11 @@ export interface SubjectRef {
  */
 @Injectable()
 export class PrincipalResolverService {
-  private readonly logger = new Logger(PrincipalResolverService.name);
   private readonly cache = new PrincipalCache();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokens: TokenService,
-    private readonly config: AppConfig,
   ) {}
 
   /**
@@ -121,37 +118,6 @@ export class PrincipalResolverService {
       companyId: subject.companyId,
       email: user.email,
       sessionId,
-    };
-  }
-
-  /**
-   * Tenant for unauthenticated legacy traffic. Explicit config wins; otherwise
-   * fall back to the only company that exists, which is the common case for a
-   * seeded dev or single-customer deployment.
-   */
-  async anonymous(): Promise<Principal> {
-    const configured = this.config.defaultCompanyId;
-    let companyId = configured;
-
-    if (!companyId) {
-      const companies = await this.prisma.company.findMany({ select: { id: true }, take: 2 });
-      if (companies.length === 1 && companies[0]) {
-        companyId = companies[0].id;
-      } else {
-        this.logger.error(
-          `Anonymous request rejected: DEFAULT_COMPANY_ID is unset and ${companies.length} companies exist.`,
-        );
-        throw AppException.unauthenticated(
-          'Anonymous access is not configured for a specific company.',
-        );
-      }
-    }
-
-    return {
-      kind: 'anonymous',
-      role: 'worker',
-      companyId,
-      sessionId: newSessionId(),
     };
   }
 }

@@ -69,10 +69,7 @@ export class ClientsService {
       rows,
       query.limit,
       (row) =>
-        encodeCursor(
-          sortField === 'createdAt' ? row.createdAt.toISOString() : row.name,
-          row.id,
-        ),
+        encodeCursor(sortField === 'createdAt' ? row.createdAt.toISOString() : row.name, row.id),
       total,
     );
 

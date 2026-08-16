@@ -43,17 +43,15 @@ export class WorkerService {
   // --- Identity ------------------------------------------------------------
 
   /**
-   * Every endpoint here is "about me", so an identity is non-negotiable.
+   * Every endpoint here is "about me", so a worker identity is non-negotiable.
    *
-   * The anonymous principal reaches this far only while the transition flags are
-   * on, and it cannot name an employee. These endpoints are new -- nothing in
-   * the shipped app calls them -- so there is no compatibility argument for
-   * letting it through, and it gets a clear 401 instead of a confusing empty
-   * list.
+   * A foreman token reaches this far -- it is authenticated and belongs to the
+   * company -- but has no employee to be "me", so it is refused rather than
+   * silently handed an empty list.
    */
   private employeeIdOf(principal: Principal): string {
-    if (principal.kind !== 'employee' || !principal.employeeId) {
-      throw AppException.unauthenticated(
+    if (principal.kind !== 'employee') {
+      throw AppException.forbidden(
         'This endpoint needs a worker session. Sign in by scanning a QR login code.',
       );
     }

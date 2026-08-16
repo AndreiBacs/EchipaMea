@@ -17,10 +17,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  CurrentForeman,
-  CurrentPrincipal,
-} from '../common/decorators/current-principal.decorator';
+import { CurrentForeman, CurrentPrincipal } from '../common/decorators/current-principal.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { zodBody } from '../common/pipes/zod-validation.pipe';
 import type { ForemanPrincipal, Principal } from '../common/auth/principal';
@@ -181,13 +178,7 @@ export class PhasesController {
     @Param('phaseId') phaseId: string,
     @Body(zodBody(phaseSubmitSchema)) body: PhaseSubmitRequest,
   ): Promise<ProjectPhaseDto> {
-    return this.phases.submit(
-      principal.companyId,
-      projectId,
-      phaseId,
-      principal,
-      body.employeeId,
-    );
+    return this.phases.submit(principal.companyId, projectId, phaseId, principal, body.employeeId);
   }
 
   @Post(':phaseId/review')

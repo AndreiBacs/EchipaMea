@@ -7,7 +7,11 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { sha256Hex, storageId } from '../common/util/ids';
 import type { Principal } from '../common/auth/principal';
 import { sniffMime } from './mime-sniffer';
-import { STORAGE_SERVICE, type StorageReadResult, type StorageService } from './storage/storage.interface';
+import {
+  STORAGE_SERVICE,
+  type StorageReadResult,
+  type StorageService,
+} from './storage/storage.interface';
 
 export interface UploadInput {
   buffer: Buffer;
@@ -174,9 +178,7 @@ export class MediaService {
     try {
       await this.storage.delete(asset.storageKey);
     } catch (error) {
-      this.logger.warn(
-        `Deleted media row ${mediaId} but its object remains: ${messageOf(error)}`,
-      );
+      this.logger.warn(`Deleted media row ${mediaId} but its object remains: ${messageOf(error)}`);
     }
   }
 

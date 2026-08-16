@@ -41,9 +41,7 @@ export class RolesGuard implements CanActivate {
     if (!principal) throw AppException.unauthenticated();
 
     if (!required.includes(principal.role)) {
-      throw AppException.forbidden(
-        `This operation requires one of: ${required.join(', ')}.`,
-      );
+      throw AppException.forbidden(`This operation requires one of: ${required.join(', ')}.`);
     }
 
     return true;

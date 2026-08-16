@@ -29,18 +29,12 @@ export const CurrentForeman = createParamDecorator(
   },
 );
 
-/**
- * Narrows to a worker principal.
- *
- * Accepts the anonymous principal too, because during the client-migration
- * window unauthenticated report uploads are attributed to the default tenant.
- * Callers must therefore treat `employeeId` as possibly absent.
- */
+/** Narrows to a worker principal; rejects a foreman token. */
 export const CurrentWorker = createParamDecorator(
-  (_data: unknown, context: ExecutionContext): WorkerPrincipal | Principal => {
+  (_data: unknown, context: ExecutionContext): WorkerPrincipal => {
     const request = context.switchToHttp().getRequest<RequestWithPrincipal>();
     const principal = request.principal;
-    if (!principal || (principal.kind !== 'employee' && principal.kind !== 'anonymous')) {
+    if (!principal || principal.kind !== 'employee') {
       throw AppException.forbidden('This operation requires a worker session.');
     }
     return principal;

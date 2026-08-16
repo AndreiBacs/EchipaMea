@@ -54,9 +54,6 @@ export class WorkerAuthController {
     @Body(zodBody(redeemTicketSchema)) body: RedeemTicketRequest,
     @Req() request: Request,
   ): Promise<WorkerSessionResponseDto> {
-    return this.tickets.redeem(
-      { ticketId: body.ticketId, payload: body.payload },
-      metaOf(request),
-    );
+    return this.tickets.redeem({ ticketId: body.ticketId, payload: body.payload }, metaOf(request));
   }
 }

@@ -49,7 +49,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const { status, body } = this.render(exception);
 
-    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (status >= 500) {
       this.logger.error(
         {
           err: serialiseError(exception),
@@ -60,9 +60,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `Unhandled ${status} on ${request.method} ${request.originalUrl}`,
       );
     } else {
-      this.logger.debug(
-        `${status} ${body.error.code} on ${request.method} ${request.originalUrl}`,
-      );
+      this.logger.debug(`${status} ${body.error.code} on ${request.method} ${request.originalUrl}`);
     }
 
     if (response.headersSent) return;
@@ -85,7 +83,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.BAD_REQUEST,
         body: envelope(
           ErrorCode.VALIDATION_FAILED,
-          issue ? `${issue.path.join('.') || 'body'}: ${issue.message}` : 'Request validation failed.',
+          issue
+            ? `${issue.path.join('.') || 'body'}: ${issue.message}`
+            : 'Request validation failed.',
           issue?.path.join('.') || undefined,
           traceId,
         ),
@@ -95,7 +95,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof ThrottlerException) {
       return {
         status: HttpStatus.TOO_MANY_REQUESTS,
-        body: envelope(ErrorCode.RATE_LIMITED, 'Too many requests. Try again shortly.', undefined, traceId),
+        body: envelope(
+          ErrorCode.RATE_LIMITED,
+          'Too many requests. Try again shortly.',
+          undefined,
+          traceId,
+        ),
       };
     }
 
@@ -162,28 +167,29 @@ function envelope(
   };
 }
 
-/** Best-effort mapping from a bare HTTP status to a stable code. */
+/**
+ * Best-effort mapping from a bare HTTP status to a stable code.
+ *
+ * Keyed by plain numbers rather than `HttpStatus` members: the input is a
+ * number that reached us from somewhere outside (a thrown `HttpException`, a
+ * library), so comparing it to enum members is exactly the unsound comparison
+ * the linter objects to. The numbers are the contract here.
+ */
+const STATUS_CODES: Record<number, ErrorCodeValue> = {
+  400: ErrorCode.VALIDATION_FAILED,
+  401: ErrorCode.UNAUTHENTICATED,
+  403: ErrorCode.FORBIDDEN,
+  404: ErrorCode.NOT_FOUND,
+  409: ErrorCode.CONFLICT,
+  413: ErrorCode.PAYLOAD_TOO_LARGE,
+  415: ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+  429: ErrorCode.RATE_LIMITED,
+};
+
 function statusToCode(status: number): ErrorCodeValue {
-  switch (status) {
-    case HttpStatus.BAD_REQUEST:
-      return ErrorCode.VALIDATION_FAILED;
-    case HttpStatus.UNAUTHORIZED:
-      return ErrorCode.UNAUTHENTICATED;
-    case HttpStatus.FORBIDDEN:
-      return ErrorCode.FORBIDDEN;
-    case HttpStatus.NOT_FOUND:
-      return ErrorCode.NOT_FOUND;
-    case HttpStatus.CONFLICT:
-      return ErrorCode.CONFLICT;
-    case HttpStatus.PAYLOAD_TOO_LARGE:
-      return ErrorCode.PAYLOAD_TOO_LARGE;
-    case HttpStatus.UNSUPPORTED_MEDIA_TYPE:
-      return ErrorCode.UNSUPPORTED_MEDIA_TYPE;
-    case HttpStatus.TOO_MANY_REQUESTS:
-      return ErrorCode.RATE_LIMITED;
-    default:
-      return status >= 500 ? ErrorCode.INTERNAL_ERROR : ErrorCode.VALIDATION_FAILED;
-  }
+  return (
+    STATUS_CODES[status] ?? (status >= 500 ? ErrorCode.INTERNAL_ERROR : ErrorCode.VALIDATION_FAILED)
+  );
 }
 
 function extractCode(payload: unknown, status: number): string {
@@ -213,11 +219,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isMulterLimitError(error: unknown): boolean {
-  return (
-    isRecord(error) &&
-    typeof error.code === 'string' &&
-    error.code.startsWith('LIMIT_')
-  );
+  return isRecord(error) && typeof error.code === 'string' && error.code.startsWith('LIMIT_');
 }
 
 function serialiseError(error: unknown): Record<string, unknown> {

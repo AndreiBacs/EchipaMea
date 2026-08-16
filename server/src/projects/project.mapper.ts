@@ -59,10 +59,7 @@ export interface MapperOptions {
   mediaBaseUrl: string;
 }
 
-export function toProjectDto(
-  project: ProjectWithRelations,
-  options: MapperOptions,
-): ProjectDto {
+export function toProjectDto(project: ProjectWithRelations, options: MapperOptions): ProjectDto {
   const phases = project.phases.map((phase) => toPhaseDto(phase, options));
 
   // Sorted by name so the derived list is stable across requests; the Flutter

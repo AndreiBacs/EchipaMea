@@ -70,6 +70,15 @@ class AppLocalizations {
       'workerScanHint':
           'Scaneaza codul QR din panoul sefului de echipa pentru conectare automata.',
       'workerInvalidQr': 'Acesta nu este un cod QR valid pentru autentificare.',
+      'workerQrExpired': 'Codul QR a expirat. Cere sefului de echipa unul nou.',
+      'workerQrRegenerate': 'Genereaza alt cod',
+      'workerQrExpiresIn': 'Expira in {remaining}',
+      'workerQrCreateFailed': 'Nu am putut genera codul. Incearca din nou.',
+      'workerQrAlreadyUsed': 'Codul QR a fost deja folosit. Cere unul nou.',
+      'workerAccountDisabled':
+          'Contul tau nu mai este activ. Contacteaza seful de echipa.',
+      'workerLoginNetworkError':
+          'Nu ne putem conecta la server. Verifica internetul si incearca din nou.',
       'workerConnected': 'Conectare reusita.',
       'workerQrReadError': 'Codul QR nu a putut fi citit. Incearca din nou.',
       'workerConnectedAs': 'Conectat ca',
@@ -451,6 +460,15 @@ class AppLocalizations {
       'workerScanHint':
           'A munkavezeto feluleterol szkenneld be a QR kodot az automatikus csatlakozashoz.',
       'workerInvalidQr': 'Ez nem ervenyes munkas bejelentkezo QR kod.',
+      'workerQrExpired': 'A QR kod lejart. Kerj a munkavezetotol ujat.',
+      'workerQrRegenerate': 'Uj kod generalasa',
+      'workerQrExpiresIn': 'Lejar: {remaining}',
+      'workerQrCreateFailed': 'Nem sikerult a kod letrehozasa. Probald ujra.',
+      'workerQrAlreadyUsed': 'Ezt a QR kodot mar felhasznaltak. Kerj ujat.',
+      'workerAccountDisabled':
+          'A fiokod mar nem aktiv. Szolj a munkavezetonek.',
+      'workerLoginNetworkError':
+          'Nem erjuk el a szervert. Ellenorizd az internetet es probald ujra.',
       'workerConnected': 'Sikeres csatlakozas.',
       'workerQrReadError': 'A QR kod nem olvashato. Probald ujra.',
       'workerConnectedAs': 'Csatlakozva mint',
@@ -830,6 +848,17 @@ class AppLocalizations {
       'workerScanHint':
           'Scan the QR code from foreman dashboard to connect automatically.',
       'workerInvalidQr': 'This is not a valid worker login QR code.',
+      'workerQrExpired':
+          'This QR code has expired. Ask your foreman for a new one.',
+      'workerQrRegenerate': 'Generate a new code',
+      'workerQrExpiresIn': 'Expires in {remaining}',
+      'workerQrCreateFailed': 'Could not create the code. Try again.',
+      'workerQrAlreadyUsed':
+          'This QR code has already been used. Ask for a new one.',
+      'workerAccountDisabled':
+          'Your account is no longer active. Contact your foreman.',
+      'workerLoginNetworkError':
+          'Cannot reach the server. Check your connection and try again.',
       'workerConnected': 'Connected successfully.',
       'workerQrReadError': 'Could not read QR. Try again.',
       'workerConnectedAs': 'Connected as',
@@ -1206,6 +1235,16 @@ class AppLocalizations {
   String get workerLoginTitle => _t('workerLoginTitle');
   String get workerScanHint => _t('workerScanHint');
   String get workerInvalidQr => _t('workerInvalidQr');
+  String get workerQrExpired => _t('workerQrExpired');
+  String get workerQrRegenerate => _t('workerQrRegenerate');
+  String get workerQrCreateFailed => _t('workerQrCreateFailed');
+
+  /// Countdown on the foreman's QR dialog, e.g. "Expires in 1:23".
+  String workerQrExpiresIn(String remaining) =>
+      _t('workerQrExpiresIn').replaceFirst('{remaining}', remaining);
+  String get workerQrAlreadyUsed => _t('workerQrAlreadyUsed');
+  String get workerAccountDisabled => _t('workerAccountDisabled');
+  String get workerLoginNetworkError => _t('workerLoginNetworkError');
   String get workerConnected => _t('workerConnected');
   String get workerQrReadError => _t('workerQrReadError');
   String get workerConnectedAs => _t('workerConnectedAs');

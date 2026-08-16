@@ -42,7 +42,8 @@ export class TokenService {
   // --- Access tokens -------------------------------------------------------
 
   signAccessToken(input: JwtClaimsInput): { token: string; expiresIn: number } {
-    const ttl = input.role === 'worker' ? this.config.workerAccessTtl : this.config.foremanAccessTtl;
+    const ttl =
+      input.role === 'worker' ? this.config.workerAccessTtl : this.config.foremanAccessTtl;
     // Normalised to seconds rather than passed through as "60m": jsonwebtoken's
     // string form is a narrower literal type than our config value.
     const expiresIn = ttlToSeconds(ttl);
@@ -83,7 +84,10 @@ export class TokenService {
     }
 
     if (!isJwtClaims(payload)) {
-      throw AppException.unauthenticated('Access token is missing required claims.', ErrorCode.TOKEN_INVALID);
+      throw AppException.unauthenticated(
+        'Access token is missing required claims.',
+        ErrorCode.TOKEN_INVALID,
+      );
     }
     return payload;
   }
@@ -192,7 +196,13 @@ export class TokenService {
 
   private subjectFrom(row: {
     companyId: string;
-    user: { id: string; email: string; role: string; isActive: boolean; deletedAt: Date | null } | null;
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      isActive: boolean;
+      deletedAt: Date | null;
+    } | null;
     employee: { id: string; isActive: boolean; deletedAt: Date | null } | null;
   }): RefreshSubject {
     if (row.user) {
@@ -209,7 +219,10 @@ export class TokenService {
 
     if (row.employee) {
       if (!row.employee.isActive || row.employee.deletedAt) {
-        throw AppException.forbidden('This worker is no longer active.', ErrorCode.ACCOUNT_DISABLED);
+        throw AppException.forbidden(
+          'This worker is no longer active.',
+          ErrorCode.ACCOUNT_DISABLED,
+        );
       }
       return { companyId: row.companyId, role: 'worker', employeeId: row.employee.id };
     }

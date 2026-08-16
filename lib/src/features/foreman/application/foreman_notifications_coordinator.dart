@@ -9,6 +9,7 @@ import '../../../core/auth/auth_session_controller.dart';
 import '../../../core/config/app_env.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/locale_controller.dart';
+import '../../../core/network/realtime_ticket_api.dart';
 import '../domain/entities/foreman_notification.dart';
 import '../presentation/providers/projects_controller.dart';
 
@@ -19,6 +20,8 @@ final foremanNotificationsProvider =
 
 class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
   WebSocketChannel? _channel;
+  bool _connecting = false;
+  final RealtimeTicketApi _tickets = RealtimeTicketApi();
 
   @override
   ForemanNotificationsState build() {
@@ -29,7 +32,7 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
         state = const ForemanNotificationsState.empty();
         return;
       }
-      _connect();
+      unawaited(_connect(session));
     }, fireImmediately: true);
     ref.onDispose(_disconnect);
     return const ForemanNotificationsState.empty();
@@ -39,14 +42,32 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
     state = state.copyWith(unreadCount: 0);
   }
 
-  void _connect() {
-    if (_channel != null) return;
+  /// Opens the feed, proving who we are first.
+  ///
+  /// This channel used to be opened with no credentials at all, which meant the
+  /// server had to admit anonymous readers to make it work -- and an anonymous
+  /// reader on a company's report feed is a stranger reading it. A ticket is
+  /// fetched with the stored foreman token and passed as `?ticket=`, because
+  /// Dart cannot set headers on a WebSocket from Flutter web.
+  ///
+  /// Without a ticket we simply do not connect. Failing closed costs a
+  /// notification badge; failing open costs the company's data.
+  Future<void> _connect(AuthSession session) async {
+    if (_channel != null || _connecting) return;
     final endpoint = AppEnv.foremanNotificationsWsUrl.trim();
     if (endpoint.isEmpty) return;
-    final uri = Uri.tryParse(endpoint);
-    if (uri == null || !(uri.scheme == 'ws' || uri.scheme == 'wss')) return;
 
+    _connecting = true;
     try {
+      final ticket = await _tickets.fetchTicket(accessToken: session.token);
+      if (ticket == null) return;
+
+      // The session may have ended while the ticket request was in flight.
+      if (ref.read(authSessionProvider).asData?.value == null) return;
+
+      final uri = socketUriWithTicket(endpoint, ticket);
+      if (uri == null) return;
+
       final channel = WebSocketChannel.connect(uri);
       _channel = channel;
       channel.stream.listen(
@@ -57,6 +78,8 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
       );
     } catch (_) {
       _disconnect();
+    } finally {
+      _connecting = false;
     }
   }
 
@@ -106,7 +129,9 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
         }
         if (targetPhaseId != null && targetPhaseId.isNotEmpty) {
           final employeeId = (data['employeeId'] as String?)?.trim() ?? '';
-          ref.read(projectsProvider.notifier).submitPhaseForReview(
+          ref
+              .read(projectsProvider.notifier)
+              .submitPhaseForReview(
                 projectId: projectId,
                 phaseId: targetPhaseId,
                 employeeId: employeeId,
@@ -118,7 +143,8 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
     final employeeName = (data['employeeName'] as String?)?.trim();
     final projectName = (data['projectName'] as String?)?.trim();
     final submittedAtRaw = data['submittedAt'] as String?;
-    final submittedAt = DateTime.tryParse(submittedAtRaw ?? '') ?? DateTime.now();
+    final submittedAt =
+        DateTime.tryParse(submittedAtRaw ?? '') ?? DateTime.now();
 
     final locale = ref.read(localeProvider) ?? const Locale('ro');
     final l10n = AppLocalizations(locale);
@@ -143,4 +169,3 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
     );
   }
 }
-

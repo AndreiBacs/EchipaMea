@@ -536,8 +536,9 @@ paths:
         web, and putting the access token in the query string would write it to
         every access log along the way.
 
-        Available to foreman, admin and worker sessions. Anonymous sessions
-        cannot mint tickets even while the transition flags are on.
+        Available to foreman, admin and worker sessions. There is no
+        unauthenticated route to a socket: the ticket is how a caller that
+        already proved who it is carries that proof onto a WebSocket.
 
         See docs/websockets-asyncapi-draft.yaml for the channel contracts.
       responses:

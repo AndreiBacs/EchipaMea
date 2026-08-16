@@ -36,11 +36,7 @@ export class PhasesService {
     return project.phases.map((phase) => toPhaseDto(phase, this.mapperOptions));
   }
 
-  async getById(
-    companyId: string,
-    projectId: string,
-    phaseId: string,
-  ): Promise<ProjectPhaseDto> {
+  async getById(companyId: string, projectId: string, phaseId: string): Promise<ProjectPhaseDto> {
     const project = await this.projects.findOrThrow(companyId, projectId);
     const phase = project.phases.find((p) => p.id === phaseId);
     if (!phase) throw AppException.notFound('Phase', phaseId);
@@ -377,7 +373,12 @@ export class PhasesService {
     companyId: string,
     projectId: string,
     phaseId: string,
-  ): Promise<{ id: string; status: Prisma.ProjectPhaseGetPayload<object>['status']; startDate: Date; endDate: Date }> {
+  ): Promise<{
+    id: string;
+    status: Prisma.ProjectPhaseGetPayload<object>['status'];
+    startDate: Date;
+    endDate: Date;
+  }> {
     const phase = await this.prisma.projectPhase.findFirst({
       where: { id: phaseId, projectId, companyId, deletedAt: null },
       select: { id: true, status: true, startDate: true, endDate: true },

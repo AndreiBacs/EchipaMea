@@ -30,7 +30,9 @@ export class AppException extends HttpException {
   }
 
   static badRequest(message: string, field?: string): AppException {
-    return new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, message, { field });
+    return new AppException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, message, {
+      field,
+    });
   }
 
   static unauthenticated(
@@ -68,19 +70,12 @@ export class AppException extends HttpException {
   }
 
   static payloadTooLarge(message: string): AppException {
-    return new AppException(
-      HttpStatus.PAYLOAD_TOO_LARGE,
-      ErrorCode.PAYLOAD_TOO_LARGE,
-      message,
-    );
+    return new AppException(HttpStatus.PAYLOAD_TOO_LARGE, ErrorCode.PAYLOAD_TOO_LARGE, message);
   }
 
   static internal(message = 'Unexpected server error.', cause?: unknown): AppException {
-    return new AppException(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      ErrorCode.INTERNAL_ERROR,
-      message,
-      { cause },
-    );
+    return new AppException(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_ERROR, message, {
+      cause,
+    });
   }
 }

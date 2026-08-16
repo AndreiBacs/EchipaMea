@@ -10,16 +10,16 @@ info:
     object discriminated by a top-level `type` field; `TypeFieldWsAdapter`
     dispatches on it.
 
-    Authentication happens during the upgrade, via one of:
+    Authentication happens during the upgrade, and there is no unauthenticated
+    route. Every socket belongs to a company because its credential says so:
       - `?ticket=` -- a single-use ticket from `POST /realtime/tickets`. The
-        intended path, and the only one available to Flutter web, where Dart
+        normal path, and the only one available to Flutter web, where Dart
         cannot set headers on a WebSocket.
-      - `Authorization: Bearer` -- native clients and tests.
-      - `?token=` -- the access token in the query string. Refused unless
-        `REALTIME_ACCESS_TOKEN_IN_QUERY` is on; it leaks into access logs.
-      - nothing at all -- accepted only while `REALTIME_ALLOW_ANONYMOUS` is on,
-        for the un-rewired Flutter client, and attributed to
-        `DEFAULT_COMPANY_ID`.
+      - `Authorization: Bearer` -- native clients and tests, which can.
+
+    A raw access token in the query string is refused: query strings land in
+    proxy and access logs, and a ticket costs one HTTP round trip to avoid that.
+    An unauthenticated handshake is closed with 4401.
 
     A failed handshake gets an `error` frame and then a close in the 4000 range.
     Once a connection is established the server never closes it over a bad
@@ -176,9 +176,9 @@ components:
         employeeId:
           type: string
           description: |
-            Ignored when the connection carries a worker token -- the token's
-            subject is authoritative, and a mismatch is logged. Only consulted
-            for anonymous legacy traffic, which cannot prove who it is.
+            Ignored. The token's subject is authoritative; this field is only
+            compared against it, and a mismatch is logged. The app still sends
+            it, so it stays in the contract as accepted-and-ignored.
         employeeName:
           type: string
         latitude:
@@ -225,7 +225,7 @@ components:
           default: ''
         employeeId:
           type: string
-          description: Required from an anonymous sender; taken from the token otherwise.
+          description: Ignored — taken from the token, like every other identity here.
         employeeName:
           type: string
           default: ''

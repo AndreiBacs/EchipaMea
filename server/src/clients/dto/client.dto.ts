@@ -53,7 +53,7 @@ export class ClientDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
   @ApiProperty({
-    description: 'Derived: count of this client\'s projects whose status is not `done`.',
+    description: "Derived: count of this client's projects whose status is not `done`.",
     readOnly: true,
   })
   activeProjects!: number;

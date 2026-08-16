@@ -14,11 +14,9 @@ export const dayQuerySchema = z.object({
 export type DayQuery = z.infer<typeof dayQuerySchema>;
 
 export const saveSequenceSchema = z.object({
-  orderedPhaseIds: z
-    .array(z.string().min(1))
-    .refine((ids) => new Set(ids).size === ids.length, {
-      message: 'orderedPhaseIds must not contain duplicates.',
-    }),
+  orderedPhaseIds: z.array(z.string().min(1)).refine((ids) => new Set(ids).size === ids.length, {
+    message: 'orderedPhaseIds must not contain duplicates.',
+  }),
 });
 export type SaveSequenceRequest = z.infer<typeof saveSequenceSchema>;
 

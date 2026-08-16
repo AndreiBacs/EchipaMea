@@ -42,10 +42,6 @@ export class RealtimeTicketService {
   ) {}
 
   async issue(principal: Principal): Promise<RealtimeTicketDto> {
-    if (principal.kind === 'anonymous') {
-      throw AppException.forbidden('Anonymous sessions cannot mint realtime tickets.');
-    }
-
     const ticket = generateSecret('rtt_');
     const ttlSeconds = this.config.realtimeTicketTtlSeconds;
     const expiresAt = new Date(Date.now() + ttlSeconds * 1000);

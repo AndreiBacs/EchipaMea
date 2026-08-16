@@ -46,7 +46,16 @@ export class AuthController {
       'Public. Returns the access token under both `token` and `accessToken`: the former ' +
       'for the current Flutter client, the latter as the forward-looking name.',
   })
-  @ApiBody({ schema: { type: 'object', required: ['email', 'password'], properties: { email: { type: 'string', format: 'email' }, password: { type: 'string', minLength: 1 } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['email', 'password'],
+      properties: {
+        email: { type: 'string', format: 'email' },
+        password: { type: 'string', minLength: 1 },
+      },
+    },
+  })
   @ApiOkResponse({ type: LoginResponseDto, description: 'Authenticated.' })
   login(
     @Body(zodBody(loginRequestSchema)) body: LoginRequest,

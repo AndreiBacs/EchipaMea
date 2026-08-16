@@ -61,12 +61,14 @@ export const envSchema = z
     // --- Realtime ----------------------------------------------------------
     REALTIME_TICKET_TTL_SECONDS: int(60),
     REALTIME_HEARTBEAT_INTERVAL_MS: int(30_000),
-    REALTIME_ACCESS_TOKEN_IN_QUERY: bool(true),
 
     // --- Transition flags --------------------------------------------------
-    ALLOW_ANONYMOUS_WORKER_REPORTS: bool(false),
-    REALTIME_ALLOW_ANONYMOUS: bool(false),
-    DEFAULT_COMPANY_ID: optionalString,
+    // ALLOW_ANONYMOUS_WORKER_REPORTS, REALTIME_ALLOW_ANONYMOUS,
+    // REALTIME_ACCESS_TOKEN_IN_QUERY and DEFAULT_COMPANY_ID used to live here.
+    // They are gone rather than defaulted off: every principal now belongs to a
+    // company because its token says so, and a flag that can reintroduce
+    // identity-free traffic into a multi-tenant product is not worth keeping
+    // around for convenience.
     I_ACCEPT_INSECURE_TRANSITION: bool(false),
     PHASE_TRANSITIONS_LENIENT: bool(false),
 
@@ -121,15 +123,9 @@ export const envSchema = z
       }
     }
 
-    const insecureFlags = (
-      [
-        'ALLOW_ANONYMOUS_WORKER_REPORTS',
-        'REALTIME_ALLOW_ANONYMOUS',
-        'REALTIME_ACCESS_TOKEN_IN_QUERY',
-        'PHASE_TRANSITIONS_LENIENT',
-        'SEED_DEMO',
-      ] as const
-    ).filter((flag) => env[flag]);
+    const insecureFlags = (['PHASE_TRANSITIONS_LENIENT', 'SEED_DEMO'] as const).filter(
+      (flag) => env[flag],
+    );
 
     if (
       env.NODE_ENV === 'production' &&
@@ -143,21 +139,6 @@ export const envSchema = z
           `Refusing to boot: ${insecureFlags.join(', ')} enabled with NODE_ENV=production. ` +
           'These exist only for the Flutter client migration window. Turn them off, or set ' +
           'I_ACCEPT_INSECURE_TRANSITION=true to acknowledge the risk deliberately.',
-      });
-    }
-
-    // Anonymous traffic carries no identity, so it needs a tenant to land in.
-    if (
-      (env.ALLOW_ANONYMOUS_WORKER_REPORTS || env.REALTIME_ALLOW_ANONYMOUS) &&
-      !env.DEFAULT_COMPANY_ID &&
-      !env.SEED_DEMO
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['DEFAULT_COMPANY_ID'],
-        message:
-          'DEFAULT_COMPANY_ID is required when anonymous reports or anonymous realtime are ' +
-          'enabled and demo seeding is off: unauthenticated traffic has no tenant otherwise.',
       });
     }
   });

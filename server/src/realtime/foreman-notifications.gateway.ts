@@ -50,18 +50,7 @@ export class ForemanNotificationsGateway implements OnGatewayConnection, OnGatew
     // client rather than throwing.
     void state.ready.then(() => {
       const principal = state.principal;
-      if (!principal) return;
-
-      // Anonymous sockets join the foreman room too, and this is the ugliest
-      // corner of the transition window. The un-rewired app opens *both* the
-      // foreman notification socket and the worker's one-shot notice socket
-      // with no credentials at all, so the server genuinely cannot tell them
-      // apart. Admitting anonymous readers is the only way the current app
-      // receives anything; the alternative is a foreman badge that never fires
-      // until the client rewiring ships. It is gated behind
-      // REALTIME_ALLOW_ANONYMOUS and disappears with it -- and while it is on,
-      // anyone who can reach the port can read this company's report events.
-      if (isForeman(principal) || principal.kind === 'anonymous') {
+      if (principal && isForeman(principal)) {
         this.registry.join(client, foremenRoom(principal.companyId));
       }
     });
@@ -105,15 +94,11 @@ export class ForemanNotificationsGateway implements OnGatewayConnection, OnGatew
     }
     const frame = parsed.data;
 
-    const employeeId = principal.kind === 'employee' ? principal.employeeId : frame.employeeId;
-    if (!employeeId) {
-      return errorFrame(ErrorCode.VALIDATION_FAILED, 'employeeId is required.');
-    }
-
     try {
+      // The token settles who this is; the frame's own `employeeId` is ignored.
       const { created } = await this.reports.ingestOutOfBandNotice(principal.companyId, {
         ...frame,
-        employeeId,
+        employeeId: principal.employeeId,
       });
       return ackFrame(FrameType.WORKER_REPORT_SUBMITTED, !created);
     } catch (error) {
