@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { AppConfig } from '../common/config/configuration';
 import { AppException } from '../common/errors/app-exception';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { MediaService } from '../media/media.service';
 import {
   buildPage,
   cursorFilter,
@@ -25,6 +26,7 @@ import type {
 export class ProjectsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly media: MediaService,
     private readonly config: AppConfig,
   ) {}
 
@@ -112,6 +114,12 @@ export class ProjectsService {
       ...input.assignedEmployeeIds,
       ...input.phases.flatMap((p) => p.assignedEmployeeIds),
     ]);
+    await this.media.assertOwned(
+      companyId,
+      input.phases.flatMap((p) =>
+        p.workInstructions.flatMap((i) => [...i.photoMediaIds, ...i.audioMediaIds]),
+      ),
+    );
 
     const created = await this.prisma.$transaction(async (tx) => {
       const project = await tx.project.create({

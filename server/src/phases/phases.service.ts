@@ -4,6 +4,7 @@ import { AppConfig } from '../common/config/configuration';
 import { AppException } from '../common/errors/app-exception';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { dayKeyToDate } from '../common/util/day-key';
+import { MediaService } from '../media/media.service';
 import type { ForemanPrincipal, Principal } from '../common/auth/principal';
 import { projectInclude, toPhaseDto, toProjectDto } from '../projects/project.mapper';
 import { ProjectsService } from '../projects/projects.service';
@@ -22,6 +23,7 @@ export class PhasesService {
     private readonly prisma: PrismaService,
     private readonly projects: ProjectsService,
     private readonly lifecycle: PhaseLifecycleService,
+    private readonly media: MediaService,
     private readonly config: AppConfig,
   ) {}
 
@@ -52,6 +54,10 @@ export class PhasesService {
   ): Promise<ProjectPhaseDto> {
     await this.projects.findOrThrow(companyId, projectId);
     await this.assertEmployeesExist(companyId, input.assignedEmployeeIds);
+    await this.media.assertOwned(
+      companyId,
+      input.workInstructions.flatMap((i) => [...i.photoMediaIds, ...i.audioMediaIds]),
+    );
 
     const phaseId = await this.prisma.$transaction(async (tx) => {
       // Appended at the end; `sortIndex` is dense so the next index is the count.
@@ -73,6 +79,14 @@ export class PhasesService {
     const existing = await this.findPhaseOrThrow(companyId, projectId, phaseId);
     if (input.assignedEmployeeIds) {
       await this.assertEmployeesExist(companyId, input.assignedEmployeeIds);
+    }
+    if (input.workInstructions) {
+      // Checked before the transaction: a media id from another tenant would
+      // otherwise satisfy the foreign key and leak that file into this company.
+      await this.media.assertOwned(
+        companyId,
+        input.workInstructions.flatMap((i) => [...i.photoMediaIds, ...i.audioMediaIds]),
+      );
     }
 
     const startDate = input.startDate ? dayKeyToDate(input.startDate) : existing.startDate;
