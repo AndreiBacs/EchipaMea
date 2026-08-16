@@ -16,9 +16,16 @@ describe('PhaseLifecycleService (strict)', () => {
     ['inProgress', 'submit', 'pendingReview'],
     ['pendingReview', 'approve', 'done'],
     ['pendingReview', 'reject', 'inProgress'],
+    ['pendingReview', 'submit', 'pendingReview'],
     ['done', 'reopen', 'inProgress'],
   ])('allows %s --%s--> %s', (from, action, to) => {
     expect(service.next(from, action)).toBe(to);
+  });
+
+  it('allows a repeat submission while awaiting review', () => {
+    // Phases run for days and workers file a report each evening. If the
+    // foreman has not reviewed day one, day two must still be submittable.
+    expect(service.next('pendingReview', 'submit')).toBe('pendingReview');
   });
 
   it.each<[PhaseStatus, PhaseAction]>([
@@ -28,7 +35,6 @@ describe('PhaseLifecycleService (strict)', () => {
     ['notStarted', 'reject'],
     ['inProgress', 'approve'],
     ['inProgress', 'start'],
-    ['pendingReview', 'submit'],
     ['pendingReview', 'start'],
   ])('rejects %s --%s-->', (from, action) => {
     expect(() => service.next(from, action)).toThrow(AppException);

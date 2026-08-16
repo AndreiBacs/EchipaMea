@@ -9,11 +9,14 @@ export type PhaseAction = 'start' | 'submit' | 'approve' | 'reject' | 'reopen';
 /**
  * The single place phase status may change.
  *
- *   notStarted            --start-->  inProgress
- *   notStarted|inProgress --submit--> pendingReview
- *   pendingReview         --approve-> done
- *   pendingReview         --reject--> inProgress
- *   done                  --reopen--> inProgress
+ *   notStarted                          --start-->  inProgress
+ *   notStarted|inProgress|pendingReview --submit--> pendingReview
+ *   pendingReview                       --approve-> done
+ *   pendingReview                       --reject--> inProgress
+ *   done                                --reopen--> inProgress
+ *
+ * Submitting from pendingReview is idempotent, not an error: phases span days
+ * and workers report daily, so a second report before review is expected.
  *
  * Rejection returns to `inProgress` rather than `notStarted`, matching the
  * Flutter `reviewPhase` behaviour: the work was started, it just was not
@@ -63,6 +66,11 @@ const TRANSITIONS: Record<PhaseStatus, Partial<Record<PhaseAction, PhaseStatus>>
   pendingReview: {
     approve: 'done',
     reject: 'inProgress',
+    // Submitting again is a no-op rather than an error. A phase spans several
+    // days and workers report at the end of each one, so a second report before
+    // the foreman reviews the first is normal -- rejecting it would block a
+    // worker from filing their day's work.
+    submit: 'pendingReview',
   },
   done: {
     reopen: 'inProgress',

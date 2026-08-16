@@ -6,6 +6,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { PhasesModule } from './phases/phases.module';
 import { ProjectsModule } from './projects/projects.module';
 import { MediaModule } from './media/media.module';
+import { ReportsModule } from './reports/reports.module';
 import { SequencesModule } from './sequences/sequences.module';
 import { ClientsModule } from './clients/clients.module';
 import { AppConfigModule } from './common/config/config.module';
@@ -31,6 +32,7 @@ import { StorageModule } from './media/storage/storage.module';
     PhasesModule,
     SequencesModule,
     MediaModule,
+    ReportsModule,
     HealthModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
