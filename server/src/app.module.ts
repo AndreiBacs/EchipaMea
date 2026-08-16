@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { EmployeesModule } from './employees/employees.module';
 import { PhasesModule } from './phases/phases.module';
 import { ProjectsModule } from './projects/projects.module';
+import { SequencesModule } from './sequences/sequences.module';
 import { ClientsModule } from './clients/clients.module';
 import { AppConfigModule } from './common/config/config.module';
 import { RequestContextModule } from './common/context/request-context.module';
@@ -27,6 +28,7 @@ import { StorageModule } from './media/storage/storage.module';
     EmployeesModule,
     ProjectsModule,
     PhasesModule,
+    SequencesModule,
     HealthModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
