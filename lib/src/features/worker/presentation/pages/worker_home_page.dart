@@ -332,7 +332,7 @@ class _ProjectWeatherRow extends ConsumerWidget {
 }
 
 _WorkerWeatherTexts _weatherTextsForLocale(BuildContext context) {
-  final l10n = AppLocalizations.of(context)!;
+  final l10n = AppLocalizations.of(context);
   return _WorkerWeatherTexts(
     loading: l10n.workerWeatherLoading,
     wind: l10n.workerWeatherWind,

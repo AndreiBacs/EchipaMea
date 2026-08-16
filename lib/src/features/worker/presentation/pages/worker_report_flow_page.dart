@@ -170,9 +170,6 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
                   isSubmitting: _submitting,
                   onSubmit: () {
                     final selectedPhase = phase;
-                    if (selectedPhase == null) {
-                      return;
-                    }
                     _submit(context, project, selectedPhase, session);
                   },
                 ),
