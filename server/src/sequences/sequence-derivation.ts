@@ -10,22 +10,14 @@
  * going stale.
  */
 
+import { byCodeUnit } from '../common/util/sort';
+
 export interface SequenceCandidatePhase {
   id: string;
   name: string;
   startDate: Date;
   endDate: Date;
   assignedEmployeeIds: string[];
-}
-
-/**
- * Dart's `String.compareTo` orders by UTF-16 code unit, and so does a plain JS
- * `<`. `localeCompare` would NOT match -- it would sort "Ș" next to "S" and
- * reorder Romanian phase names relative to the app.
- */
-function byCodeUnit(a: string, b: string): number {
-  if (a === b) return 0;
-  return a < b ? -1 : 1;
 }
 
 /** Inclusive on both ends, comparing calendar dates only. */

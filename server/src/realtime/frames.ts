@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { reportFieldsSchema } from '../reports/report-fields.schema';
+import { accuracyMetersSchema, latitudeSchema, longitudeSchema } from '../common/dto/geo';
 import { parseFlexibleIso } from '../common/util/iso';
 
 /**
@@ -34,9 +35,9 @@ export const workerLocationFrameSchema = z.object({
   type: z.literal(FrameType.WORKER_LOCATION),
   employeeId: z.string().trim().default(''),
   employeeName: z.string().trim().default(''),
-  latitude: z.number().finite().min(-90).max(90),
-  longitude: z.number().finite().min(-180).max(180),
-  accuracyMeters: z.number().finite().min(0).default(0),
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
+  accuracyMeters: accuracyMetersSchema.default(0),
   capturedAt: z
     .string()
     .trim()

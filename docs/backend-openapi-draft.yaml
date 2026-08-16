@@ -81,6 +81,149 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /worker/me:
+    get:
+      tags: [Worker]
+      summary: The signed-in worker's own profile
+      description: |
+        Requires a worker token; a foreman token has no employee identity and is
+        refused. Includes the working-days and working-hours window that gates
+        location telemetry — the app reads those from the foreman's roster of the
+        whole company today, which no worker device should be holding.
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /worker/projects:
+    get:
+      tags: [Worker]
+      summary: Projects assigned to the signed-in worker
+      description: |
+        Assigned at project level, or to any live phase. Replaces the client-side
+        filter in `worker_assigned_projects_provider.dart`, which pulls the whole
+        company project list onto the worker's device.
+
+        Finished projects are omitted unless `includeDone=true`, and the order is
+        inProgress, planned, done, then by name — matching the app's own sort.
+
+        Returned whole rather than cursor-paginated: both the filter and the sort
+        key are derived from phases, so no SQL cursor can express the boundary and
+        a cursor over it would skip or repeat rows as phases move.
+      parameters:
+        - name: includeDone
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        '200':
+          description: Assigned projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerProjects'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /worker/projects/{projectId}:
+    get:
+      tags: [Worker]
+      summary: One assigned project, with phases and work instructions
+      description: |
+        A project that exists but is not assigned to this worker answers 404, not
+        403 — a 403 would confirm the id is real and turn this into a way to
+        enumerate the company one guess at a time.
+
+        A *finished* assigned project is still readable here; hiding it from the
+        list is a default, not an authorisation rule.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /worker/arrivals:
+    post:
+      tags: [Worker]
+      summary: Announce arrival on site
+      description: |
+        Notifies every foreman in the company, by stored notification and by a
+        `worker_arrived` socket frame. Repeat taps within 15 minutes return the
+        first arrival with `duplicate: true` rather than putting a second row in
+        front of the foreman.
+
+        Rejected with 404 for a project the worker is not assigned to.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArrivalCreateRequest'
+      responses:
+        '201':
+          description: Arrival recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerArrival'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /worker/locations:
+    post:
+      tags: [Worker]
+      summary: Batch location upload (offline outbox flush)
+      description: |
+        The catch-up path for fixes captured while the telemetry socket was down.
+        Safe to retry: samples whose `capturedAt` is already stored are counted as
+        duplicates rather than written twice, and duplicates *within* one batch
+        are collapsed too. Batches over 500 samples are rejected, not truncated —
+        silently dropping the tail would leave the client believing it flushed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationBatchRequest'
+      responses:
+        '200':
+          description: Batch processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationBatchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /realtime/tickets:
     post:
       tags: [Realtime]
@@ -698,6 +841,122 @@ components:
       schema: { type: string }
 
   schemas:
+    WorkerProfile:
+      type: object
+      required:
+        - employeeId
+        - name
+        - role
+        - email
+        - phone
+        - workStartHour
+        - workEndHour
+        - workingDays
+        - companyId
+        - companyName
+      properties:
+        employeeId: { type: string }
+        name: { type: string }
+        role:
+          type: string
+          enum:
+            [
+              electrician,
+              plumber,
+              generalWorker,
+              carpenter,
+              welder,
+              helper,
+              painter,
+              mason,
+              hvacTechnician,
+            ]
+        email: { type: string }
+        phone: { type: string }
+        workStartHour: { type: integer, minimum: 0, maximum: 23 }
+        workEndHour: { type: integer, minimum: 0, maximum: 23 }
+        workingDays:
+          type: array
+          items: { type: integer, minimum: 1, maximum: 7 }
+          description: ISO-8601 weekdays, 1=Mon .. 7=Sun. Gates location telemetry.
+        latitude: { type: number, nullable: true }
+        longitude: { type: number, nullable: true }
+        companyId: { type: string }
+        companyName: { type: string }
+
+    WorkerProjects:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Project' }
+        page:
+          type: object
+          required: [limit, total]
+          properties:
+            limit: { type: integer }
+            total:
+              type: integer
+              description: Matching projects before `limit` was applied. No cursor — see the operation.
+
+    ArrivalCreateRequest:
+      type: object
+      required: [projectId]
+      properties:
+        projectId: { type: string }
+        arrivedAt:
+          type: string
+          format: date-time
+          description: Defaults to now. A phone that was briefly offline can backdate its tap.
+
+    WorkerArrival:
+      type: object
+      required: [id, projectId, employeeId, arrivedAt, duplicate]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        employeeId:
+          type: string
+          description: Taken from the token, never from the request.
+        arrivedAt: { type: string, format: date-time }
+        duplicate:
+          type: boolean
+          description: True when this matched an arrival from the last 15 minutes.
+
+    LocationSample:
+      type: object
+      required: [latitude, longitude, capturedAt]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        accuracyMeters: { type: number, minimum: 0, default: 0 }
+        capturedAt:
+          type: string
+          format: date-time
+          description: |
+            Send-time wall clock, not the GPS fix time. Doubles as the dedupe key
+            for this endpoint.
+
+    LocationBatchRequest:
+      type: object
+      required: [samples]
+      properties:
+        samples:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: { $ref: '#/components/schemas/LocationSample' }
+
+    LocationBatchResult:
+      type: object
+      required: [accepted, duplicates]
+      properties:
+        accepted: { type: integer, description: Samples written. }
+        duplicates:
+          type: integer
+          description: Samples already stored. Expected on a retry, not an error.
+
     RealtimeTicketResponse:
       type: object
       required: [ticket, expiresAt, expiresInSeconds, channels]

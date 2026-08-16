@@ -10,6 +10,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { RealtimeCoreModule } from './realtime/realtime-core.module';
 import { ReportsModule } from './reports/reports.module';
 import { SequencesModule } from './sequences/sequences.module';
+import { WorkerModule } from './worker/worker.module';
 import { ClientsModule } from './clients/clients.module';
 import { AppConfigModule } from './common/config/config.module';
 import { RequestContextModule } from './common/context/request-context.module';
@@ -37,6 +38,7 @@ import { StorageModule } from './media/storage/storage.module';
     MediaModule,
     ReportsModule,
     RealtimeModule,
+    WorkerModule,
     HealthModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],

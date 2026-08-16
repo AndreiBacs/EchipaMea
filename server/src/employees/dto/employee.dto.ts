@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { z } from 'zod';
 import { pageQuerySchema } from '../../common/dto/page.dto';
+import { latitudeSchema, longitudeSchema } from '../../common/dto/geo';
 
 export const workerRoleEnum = z.enum([
   'electrician',
@@ -24,8 +25,8 @@ const workingDaysSchema = z
   .max(7)
   .transform((days) => [...new Set(days)].sort((a, b) => a - b));
 
-const latitude = z.number().min(-90).max(90);
-const longitude = z.number().min(-180).max(180);
+const latitude = latitudeSchema;
+const longitude = longitudeSchema;
 
 export const employeeCreateSchema = z
   .object({
