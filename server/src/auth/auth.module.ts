@@ -8,6 +8,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { TenantGuard } from './guards/tenant.guard';
 import { PasswordService } from './password.service';
+import { PrincipalResolverService } from './principal-resolver.service';
 import { TokenService } from './token.service';
 import { WorkerAuthController } from './worker-auth.controller';
 import { WorkerTicketService } from './worker-ticket.service';
@@ -27,6 +28,7 @@ import { WorkerTicketService } from './worker-ticket.service';
   providers: [
     AuthService,
     PasswordService,
+    PrincipalResolverService,
     TokenService,
     WorkerTicketService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
@@ -34,6 +36,12 @@ import { WorkerTicketService } from './worker-ticket.service';
     { provide: APP_GUARD, useClass: TenantGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
-  exports: [AuthService, TokenService, PasswordService, WorkerTicketService],
+  exports: [
+    AuthService,
+    TokenService,
+    PasswordService,
+    PrincipalResolverService,
+    WorkerTicketService,
+  ],
 })
 export class AuthModule {}

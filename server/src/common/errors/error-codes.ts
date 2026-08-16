@@ -41,6 +41,8 @@ export const ErrorCode = {
   // Realtime
   SEND_NOT_ALLOWED: 'SEND_NOT_ALLOWED',
   UNKNOWN_MESSAGE_TYPE: 'UNKNOWN_MESSAGE_TYPE',
+  MALFORMED_FRAME: 'MALFORMED_FRAME',
+  NOT_AUTHENTICATED_YET: 'NOT_AUTHENTICATED_YET',
 } as const;
 
 export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];

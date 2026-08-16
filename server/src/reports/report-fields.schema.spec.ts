@@ -1,8 +1,4 @@
-import {
-  collectPhotoNames,
-  flattenBody,
-  reportFieldsSchema,
-} from './report-fields.schema';
+import { collectPhotoNames, flattenBody, reportFieldsSchema } from './report-fields.schema';
 
 describe('collectPhotoNames', () => {
   it('collects indexed fields in positional order', () => {
@@ -17,7 +13,11 @@ describe('collectPhotoNames', () => {
 
   it('ignores insertion order and sorts by index', () => {
     expect(
-      collectPhotoNames({ 'photoNames[2]': 'c.jpg', 'photoNames[0]': 'a.jpg', 'photoNames[1]': 'b.jpg' }),
+      collectPhotoNames({
+        'photoNames[2]': 'c.jpg',
+        'photoNames[0]': 'a.jpg',
+        'photoNames[1]': 'b.jpg',
+      }),
     ).toEqual(['a.jpg', 'b.jpg', 'c.jpg']);
   });
 
@@ -78,7 +78,9 @@ describe('reportFieldsSchema', () => {
   });
 
   it('accepts a timestamp with no fractional part', () => {
-    expect(() => reportFieldsSchema.parse({ ...valid, submittedAt: '2026-08-14T09:12:33Z' })).not.toThrow();
+    expect(() =>
+      reportFieldsSchema.parse({ ...valid, submittedAt: '2026-08-14T09:12:33Z' }),
+    ).not.toThrow();
   });
 
   it('accepts an offset instead of Z', () => {

@@ -5,6 +5,8 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AppConfig } from './common/config/configuration';
+import { PrismaService } from './common/prisma/prisma.service';
+import { TypeFieldWsAdapter } from './realtime/type-field-ws.adapter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -20,6 +22,11 @@ async function bootstrap(): Promise<void> {
   // at once. Versioning happens via the OpenAPI `info.version`.
   app.setGlobalPrefix('');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: undefined });
+
+  // Must be installed before `listen`. Nest's default gateway transport is
+  // socket.io, which the Flutter client -- a raw RFC-6455 socket sending flat
+  // `{"type": ...}` frames -- cannot talk to at all.
+  app.useWebSocketAdapter(new TypeFieldWsAdapter(app));
 
   app.use(
     helmet({
@@ -48,6 +55,19 @@ async function bootstrap(): Promise<void> {
       'Anonymous transition flags are ON. These exist only for the Flutter client ' +
         'migration window -- turn them off once the app sends bearer tokens.',
     );
+
+    // Without a tenant to attribute it to, anonymous access fail-closes at the
+    // first request. That looks like the flags simply not working, so say it at
+    // boot rather than leaving it to be discovered one 401 at a time.
+    if (!config.defaultCompanyId) {
+      const companies = await app.get(PrismaService).company.count();
+      if (companies !== 1) {
+        logger.warn(
+          `DEFAULT_COMPANY_ID is unset and ${companies} companies exist, so anonymous ` +
+            'requests will be rejected. Set it to the tenant the un-rewired app belongs to.',
+        );
+      }
+    }
   }
 }
 

@@ -81,6 +81,38 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /realtime/tickets:
+    post:
+      tags: [Realtime]
+      summary: Mint a single-use WebSocket handshake ticket
+      description: |
+        Returns a ticket to pass as `?ticket=` when opening a realtime channel,
+        plus the channel paths. Single-use and short-lived
+        (`REALTIME_TICKET_TTL_SECONDS`, 60s by default), so a client fetches one
+        per connection attempt including every reconnect.
+
+        It exists because Dart cannot set headers on a WebSocket from Flutter
+        web, and putting the access token in the query string would write it to
+        every access log along the way.
+
+        Available to foreman, admin and worker sessions. Anonymous sessions
+        cannot mint tickets even while the transition flags are on.
+
+        See docs/websockets-asyncapi-draft.yaml for the channel contracts.
+      responses:
+        '201':
+          description: Ticket minted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealtimeTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /clients:
     get:
       tags: [Clients]
@@ -666,6 +698,24 @@ components:
       schema: { type: string }
 
   schemas:
+    RealtimeTicketResponse:
+      type: object
+      required: [ticket, expiresAt, expiresInSeconds, channels]
+      properties:
+        ticket:
+          type: string
+          description: Opaque `rtt_`-prefixed secret. Stored server-side only as a hash.
+          example: rtt_8pQ2m1Zx...
+        expiresAt: { type: string, format: date-time }
+        expiresInSeconds: { type: integer, example: 60 }
+        channels:
+          type: object
+          description: Channel paths, so the client never hardcodes them.
+          required: [workerTelemetry, foremanNotifications]
+          properties:
+            workerTelemetry: { type: string, example: /ws/worker-telemetry }
+            foremanNotifications: { type: string, example: /ws/foreman-notifications }
+
     ErrorDetail:
       type: object
       required: [code, message]

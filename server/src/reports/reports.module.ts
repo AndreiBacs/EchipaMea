@@ -3,6 +3,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { AppConfig } from '../common/config/configuration';
 import { MediaModule } from '../media/media.module';
 import { PhasesModule } from '../phases/phases.module';
+import { RealtimeCoreModule } from '../realtime/realtime-core.module';
 import { WorkerReportsController } from './worker-reports.controller';
 import { WorkerReportsService } from './worker-reports.service';
 
@@ -10,6 +11,7 @@ import { WorkerReportsService } from './worker-reports.service';
   imports: [
     MediaModule,
     PhasesModule,
+    RealtimeCoreModule,
     MulterModule.registerAsync({
       inject: [AppConfig],
       useFactory: (config: AppConfig) => ({

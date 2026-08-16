@@ -6,6 +6,8 @@ import { EmployeesModule } from './employees/employees.module';
 import { PhasesModule } from './phases/phases.module';
 import { ProjectsModule } from './projects/projects.module';
 import { MediaModule } from './media/media.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { RealtimeCoreModule } from './realtime/realtime-core.module';
 import { ReportsModule } from './reports/reports.module';
 import { SequencesModule } from './sequences/sequences.module';
 import { ClientsModule } from './clients/clients.module';
@@ -24,6 +26,7 @@ import { StorageModule } from './media/storage/storage.module';
     RequestContextModule,
     PrismaModule,
     StorageModule,
+    RealtimeCoreModule,
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
     AuthModule,
     ClientsModule,
@@ -33,6 +36,7 @@ import { StorageModule } from './media/storage/storage.module';
     SequencesModule,
     MediaModule,
     ReportsModule,
+    RealtimeModule,
     HealthModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],

@@ -7,6 +7,7 @@ import { parseFlexibleIsoOrNow } from '../common/util/iso';
 import type { Principal } from '../common/auth/principal';
 import { MediaService } from '../media/media.service';
 import { PhaseLifecycleService } from '../phases/phase-lifecycle.service';
+import { ConnectionRegistryService } from '../realtime/connection-registry.service';
 import type { ReportFields } from './report-fields.schema';
 
 export interface IncomingFile {
@@ -61,6 +62,7 @@ export class WorkerReportsService {
     private readonly prisma: PrismaService,
     private readonly media: MediaService,
     private readonly lifecycle: PhaseLifecycleService,
+    private readonly realtime: ConnectionRegistryService,
     private readonly config: AppConfig,
   ) {}
 
@@ -119,7 +121,9 @@ export class WorkerReportsService {
       include: { media: true },
     });
     if (existing) {
-      this.logger.log(`Duplicate report ignored for phase ${fields.phaseId} (${idempotencyKey.slice(0, 12)}).`);
+      this.logger.log(
+        `Duplicate report ignored for phase ${fields.phaseId} (${idempotencyKey.slice(0, 12)}).`,
+      );
       return {
         result: {
           id: existing.id,
@@ -256,6 +260,13 @@ export class WorkerReportsService {
       submittedAt: fields.submittedAt,
     };
 
+    // Fan out from here rather than from the controller, so every path that
+    // creates a report notifies -- and so the client can stop doing it itself.
+    const delivered = this.realtime.publishToForemen(companyId, event);
+    this.logger.log(
+      `Report ${report.id} stored for phase ${fields.phaseId}; pushed to ${delivered} foreman socket(s).`,
+    );
+
     return {
       result: {
         id: report.id,
@@ -347,6 +358,20 @@ export class WorkerReportsService {
         })),
       });
     }
+
+    this.realtime.publishToForemen(companyId, {
+      type: 'worker_report_submitted',
+      projectId: frame.projectId,
+      projectName: frame.projectName ?? '',
+      phaseId: frame.phaseId,
+      phaseName: frame.phaseName ?? '',
+      employeeId: frame.employeeId,
+      employeeName: frame.employeeName ?? '',
+      description: frame.description ?? '',
+      photoCount: frame.photoCount ?? 0,
+      hasVoiceMemo: frame.hasVoiceMemo ?? false,
+      submittedAt: frame.submittedAt,
+    } satisfies ReportSubmittedEvent);
 
     this.logger.log(
       `Recorded out-of-band report notice for phase ${frame.phaseId} with no matching upload.`,
