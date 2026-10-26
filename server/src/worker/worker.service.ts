@@ -217,7 +217,12 @@ export class WorkerService {
         companyId,
         projectId: project.id,
         employeeId,
-        arrivedAt: { gte: new Date(arrivedAt.getTime() - ARRIVAL_DEDUPE_MINUTES * 60_000) },
+        // Both bounds: `arrivedAt` may be backdated (an offline tap flushed later),
+        // and a tap 40 minutes *before* an existing arrival is a separate one.
+        arrivedAt: {
+          gte: new Date(arrivedAt.getTime() - ARRIVAL_DEDUPE_MINUTES * 60_000),
+          lte: new Date(arrivedAt.getTime() + ARRIVAL_DEDUPE_MINUTES * 60_000),
+        },
       },
       orderBy: { arrivedAt: 'desc' },
       select: { id: true, arrivedAt: true },

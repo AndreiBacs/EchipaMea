@@ -108,6 +108,7 @@ export class ProjectsController {
   }
 
   @Post(':projectId/done')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     operationId: 'markProjectDone',
     summary: 'Mark a project done',
@@ -125,6 +126,7 @@ export class ProjectsController {
   }
 
   @Post(':projectId/reopen')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     operationId: 'reopenProject',
     summary: 'Clear the done override',

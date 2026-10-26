@@ -75,6 +75,7 @@ export class PhasesController {
   }
 
   @Post('reorder')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     operationId: 'reorderProjectPhases',
     summary: 'Reorder phases',
@@ -144,6 +145,7 @@ export class PhasesController {
 
   @Roles('foreman', 'admin', 'worker')
   @Post(':phaseId/start')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     operationId: 'startProjectPhase',
     summary: 'Move a phase from notStarted to inProgress',
@@ -161,13 +163,15 @@ export class PhasesController {
 
   @Roles('foreman', 'admin', 'worker')
   @Post(':phaseId/submit')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     operationId: 'submitProjectPhase',
     summary: 'Submit a phase for review',
     description:
       'With a worker token the submitting employee is taken from the JWT and any `employeeId` ' +
-      'in the body is ignored. Returns 409 PHASE_INVALID_TRANSITION unless the phase is ' +
-      'notStarted or inProgress.',
+      'in the body is ignored. Resubmitting a phase already pendingReview is accepted -- ' +
+      'phases span days and workers report daily. Submitting a done phase returns 409 ' +
+      'PHASE_INVALID_TRANSITION.',
   })
   @ApiParam({ name: 'projectId', type: String })
   @ApiParam({ name: 'phaseId', type: String })
@@ -182,6 +186,7 @@ export class PhasesController {
   }
 
   @Post(':phaseId/review')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     operationId: 'reviewProjectPhase',
     summary: 'Approve or reject a phase',

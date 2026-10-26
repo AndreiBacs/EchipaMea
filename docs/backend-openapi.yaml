@@ -2068,7 +2068,7 @@ paths:
         - Phases
   /projects/{projectId}/phases/{phaseId}/submit:
     post:
-      description: With a worker token the submitting employee is taken from the JWT and any `employeeId` in the body is ignored. Returns 409 PHASE_INVALID_TRANSITION unless the phase is notStarted or inProgress.
+      description: With a worker token the submitting employee is taken from the JWT and any `employeeId` in the body is ignored. Resubmitting a phase already pendingReview is accepted -- phases span days and workers report daily. Submitting a done phase returns 409 PHASE_INVALID_TRANSITION.
       operationId: submitProjectPhase
       parameters:
         - name: projectId
