@@ -35,4 +35,7 @@ RUN npm prune --omit=dev || true
 
 USER node
 EXPOSE 3000
-CMD ["node", "dist/main"]
+# Migrations run on start, from the image's own pinned Prisma CLI (a runtime
+# dependency for exactly this reason): `npx prisma` after a dev-dependency
+# prune would download whatever version is latest at boot time.
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && exec node dist/main"]

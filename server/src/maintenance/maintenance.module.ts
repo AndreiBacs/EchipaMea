@@ -4,9 +4,10 @@ import { MediaModule } from '../media/media.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { TelemetryModule } from '../telemetry/telemetry.module';
+import { DemoSeedService } from './demo-seed.service';
 import { RetentionService } from './retention.service';
 
-/** Housekeeping that runs on its own: the nightly retention job. */
+/** Housekeeping that runs on its own: the nightly retention job and the demo seed. */
 @Module({
   imports: [
     ScheduleModule.forRoot(),
@@ -15,7 +16,7 @@ import { RetentionService } from './retention.service';
     MediaModule,
     NotificationsModule,
   ],
-  providers: [RetentionService],
+  providers: [RetentionService, DemoSeedService],
   exports: [RetentionService],
 })
 export class MaintenanceModule {}

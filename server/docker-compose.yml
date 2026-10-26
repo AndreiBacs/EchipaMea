@@ -91,13 +91,9 @@ services:
       S3_FORCE_PATH_STYLE: 'true'
       SEED_DEMO: 'true'
       CORS_ORIGINS: '*'
+    # The image migrates on start; SEED_DEMO seeds both demo tenants at boot.
     ports:
       - '3000:3000'
-    command: >
-      /bin/sh -c "
-      npx prisma migrate deploy &&
-      node dist/main
-      "
 
 volumes:
   db-data:
