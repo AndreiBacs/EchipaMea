@@ -13,7 +13,10 @@ import { MediaService } from './media.service';
         // them to a temp directory first would only add I/O and cleanup.
         // Bounded by the same limit the service enforces.
         limits: {
-          fileSize: config.uploadMaxFileBytes,
+          // +1: busboy flags a file once it *reaches* this size, which would
+          // make the real ceiling one byte under UPLOAD_MAX_FILE_BYTES. The
+          // service's own `> limit` check is the one that decides.
+          fileSize: config.uploadMaxFileBytes + 1,
           files: config.uploadMaxFiles,
         },
       }),

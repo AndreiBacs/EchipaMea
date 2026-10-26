@@ -1,6 +1,26 @@
 import { collectPhotoNames, flattenBody, reportFieldsSchema } from './report-fields.schema';
 
 describe('collectPhotoNames', () => {
+  // This is the shape Multer actually hands over: append-field expands the
+  // brackets, so `photoNames[N]` keys never reach the controller.
+  it('reads the array Multer builds from photoNames[N] fields', () => {
+    expect(collectPhotoNames({ photoNames: ['a.jpg', 'b.jpg'] })).toEqual(['a.jpg', 'b.jpg']);
+  });
+
+  it('keeps positions for a sparse Multer array', () => {
+    const sparse: string[] = [];
+    sparse[0] = 'a.jpg';
+    sparse[2] = 'c.jpg';
+    expect(collectPhotoNames({ photoNames: sparse })).toEqual(['a.jpg', '', 'c.jpg']);
+  });
+
+  it('reads the object form append-field uses for large indices', () => {
+    expect(collectPhotoNames({ photoNames: { '1': 'b.jpg', '0': 'a.jpg' } })).toEqual([
+      'a.jpg',
+      'b.jpg',
+    ]);
+  });
+
   it('collects indexed fields in positional order', () => {
     expect(
       collectPhotoNames({

@@ -109,7 +109,9 @@ export class WorkerReportsController {
     const { result } = await this.reports.submit(principal, {
       fields,
       photos,
-      photoNames: collectPhotoNames(flat),
+      // The raw body: flattenBody keeps only the first element of an array,
+      // and Multer has already turned `photoNames[N]` into one.
+      photoNames: collectPhotoNames(body ?? {}),
       voiceMemo: memoPart
         ? { buffer: memoPart.buffer, filename: memoPart.originalname }
         : undefined,

@@ -96,11 +96,15 @@ export class ForemanNotificationsGateway implements OnGatewayConnection, OnGatew
 
     try {
       // The token settles who this is; the frame's own `employeeId` is ignored.
-      const { created } = await this.reports.ingestOutOfBandNotice(principal.companyId, {
+      const { outcome } = await this.reports.ingestOutOfBandNotice(principal.companyId, {
         ...frame,
         employeeId: principal.employeeId,
       });
-      return ackFrame(FrameType.WORKER_REPORT_SUBMITTED, !created);
+      // Acking a notice the server discarded would tell the device it landed.
+      if (outcome === 'unknownPhase') {
+        return errorFrame(ErrorCode.NOT_FOUND, 'No such phase in this project.');
+      }
+      return ackFrame(FrameType.WORKER_REPORT_SUBMITTED, outcome === 'duplicate');
     } catch (error) {
       // Never propagate: an exception here would reach the global filter with no
       // HTTP response to write to, and the client would learn nothing.

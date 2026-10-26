@@ -55,16 +55,34 @@ export type ReportFields = z.infer<typeof reportFieldsSchema>;
  * the placeholder `photoNames[index]`. Sparse or out-of-order indices are
  * tolerated: the array is filled by position and gaps become empty strings, so
  * one missing name never shifts the rest out of alignment with the photos.
+ *
+ * Multer (via `append-field`) expands the brackets before this runs:
+ * `photoNames[0]` arrives as `body.photoNames`, an array -- sparse when an
+ * index is missing -- or an object when an index is too large for an array.
+ * The raw `photoNames[N]` keys are still accepted, for parsers that leave
+ * them alone.
  */
 export function collectPhotoNames(body: Record<string, unknown>): string[] {
   const byIndex = new Map<number, string>();
+  const put = (rawIndex: string | number, value: unknown) => {
+    const index = Number(rawIndex);
+    if (!Number.isInteger(index) || index < 0) return;
+    if (typeof value === 'string') byIndex.set(index, value);
+    else if (typeof value === 'number' || typeof value === 'boolean') {
+      byIndex.set(index, String(value));
+    }
+  };
+
+  const nested = body.photoNames;
+  if (Array.isArray(nested)) {
+    nested.forEach((value, index) => put(index, value)); // forEach skips holes
+  } else if (typeof nested === 'object' && nested !== null) {
+    for (const [key, value] of Object.entries(nested)) put(key, value);
+  }
 
   for (const [key, value] of Object.entries(body)) {
     const match = /^photoNames\[(\d+)\]$/.exec(key);
-    if (!match?.[1]) continue;
-    const index = Number(match[1]);
-    if (!Number.isInteger(index) || index < 0) continue;
-    byIndex.set(index, typeof value === 'string' ? value : String(value));
+    if (match?.[1]) put(match[1], value);
   }
 
   if (byIndex.size === 0) return [];

@@ -292,6 +292,11 @@ export class WorkerReportsService {
    * is a no-op -- which is the whole reason `submittedAtRaw` is stored verbatim.
    * It only does work if no matching report exists, so foremen still get told
    * about a report that reached the server by some other path.
+   *
+   * A notice with no matching upload leaves only notifications behind, so a
+   * repeat of it is recognised by those: each carries the report's idempotency
+   * key as `noticeKey`. A notice for a phase this company does not have is
+   * reported back as such rather than acknowledged.
    */
   async ingestOutOfBandNotice(
     companyId: string,
@@ -307,7 +312,7 @@ export class WorkerReportsService {
       hasVoiceMemo?: boolean;
       submittedAt: string;
     },
-  ): Promise<{ created: boolean }> {
+  ): Promise<{ outcome: 'created' | 'duplicate' | 'unknownPhase' }> {
     const idempotencyKey = reportIdempotencyKey({
       companyId,
       phaseId: frame.phaseId,
@@ -319,7 +324,7 @@ export class WorkerReportsService {
       where: { idempotencyKey },
       select: { id: true },
     });
-    if (existing) return { created: false };
+    if (existing) return { outcome: 'duplicate' };
 
     const phase = await this.prisma.projectPhase.findFirst({
       where: { id: frame.phaseId, projectId: frame.projectId, companyId, deletedAt: null },
@@ -327,8 +332,20 @@ export class WorkerReportsService {
     });
     if (!phase) {
       this.logger.warn(`Out-of-band report notice for unknown phase ${frame.phaseId}; ignoring.`);
-      return { created: false };
+      return { outcome: 'unknownPhase' };
     }
+
+    const alreadyNotified = await this.prisma.notification.findFirst({
+      where: {
+        companyId,
+        kind: 'workerReportSubmitted',
+        phaseId: frame.phaseId,
+        employeeId: frame.employeeId,
+        payload: { path: ['noticeKey'], equals: idempotencyKey },
+      },
+      select: { id: true },
+    });
+    if (alreadyNotified) return { outcome: 'duplicate' };
 
     const occurredAt = parseFlexibleIsoOrNow(frame.submittedAt);
     const foremen = await this.prisma.user.findMany({
@@ -351,6 +368,7 @@ export class WorkerReportsService {
             employeeName: frame.employeeName ?? '',
             photoCount: frame.photoCount ?? 0,
             hasVoiceMemo: frame.hasVoiceMemo ?? false,
+            noticeKey: idempotencyKey,
           },
           projectId: frame.projectId,
           phaseId: frame.phaseId,
@@ -377,6 +395,6 @@ export class WorkerReportsService {
     this.logger.log(
       `Recorded out-of-band report notice for phase ${frame.phaseId} with no matching upload.`,
     );
-    return { created: true };
+    return { outcome: 'created' };
   }
 }
