@@ -54,7 +54,7 @@ Worker login is a real QR redeem. The foreman asks the server for a ticket (`POS
 - `foremanNotificationsProvider` — connects to `FOREMAN_NOTIFICATIONS_WS_URL` while a foreman session exists, and turns `worker_report_submitted` events into the app-bar notification badge and phase status changes.
 - Report submit posts multipart/form-data to `WORKER_REPORTS_API_URL`, then opens a short-lived socket, waits for ready, sends one `worker_report_submitted` frame and awaits the sink close so the frame flushes. All of this is best-effort — an unset or unreachable endpoint must not break the flow.
 
-**Backend contracts** are drafted in [docs/backend-openapi-draft.yaml](docs/backend-openapi-draft.yaml) (REST) and [docs/websockets-asyncapi-draft.yaml](docs/websockets-asyncapi-draft.yaml) (realtime). When changing a payload shape, keep the runtime frame, the OpenAPI draft, and the AsyncAPI draft in sync. REST endpoints assume `Authorization: Bearer <token>` (except the public `POST /foreman/login`) and the `error.code`/`error.message`/`error.field`/`traceId` envelope.
+**Backend contracts:** [docs/backend-openapi.yaml](docs/backend-openapi.yaml) (REST) is **generated** from the server code — after changing a route or DTO, run `npm run spec:generate` in `server/` and commit the result; never hand-edit it. [docs/websockets-asyncapi-draft.yaml](docs/websockets-asyncapi-draft.yaml) (realtime) is hand-written; when changing a frame, update it and the Dart client together. `npm run spec:check` (CI) fails if either spec disagrees with the code. REST endpoints assume `Authorization: Bearer <token>` (except the public `POST /foreman/login`) and the `error.code`/`error.message`/`error.field`/`traceId` envelope.
 
 ## Testing
 
