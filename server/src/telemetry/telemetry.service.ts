@@ -162,13 +162,17 @@ export class TelemetryService {
     };
   }
 
-  /** Retention sweep for the location trail. */
+  /**
+   * Retention sweep for the location trail. Measured on `receivedAt`, which the
+   * server assigns: `capturedAt` is the phone's clock, and a wrong one would
+   * otherwise delete fresh samples early or keep old ones past retention.
+   */
   async pruneOldSamples(): Promise<number> {
     const days = this.config.locationSampleRetentionDays;
     if (days <= 0) return 0;
     const cutoff = new Date(Date.now() - days * 24 * 3600_000);
     const result = await this.prisma.workerLocationSample.deleteMany({
-      where: { capturedAt: { lt: cutoff } },
+      where: { receivedAt: { lt: cutoff } },
     });
     if (result.count > 0) {
       this.logger.log(`Pruned ${result.count} location sample(s) older than ${days}d.`);

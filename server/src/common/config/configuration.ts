@@ -141,6 +141,9 @@ export class AppConfig {
   get locationSampleRetentionDays(): number {
     return this.get('LOCATION_SAMPLE_RETENTION_DAYS');
   }
+  get retentionJobsEnabled(): boolean {
+    return this.get('RETENTION_JOBS_ENABLED');
+  }
 
   // --- Seeding -------------------------------------------------------------
   get seedDemo(): boolean {

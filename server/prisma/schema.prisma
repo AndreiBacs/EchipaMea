@@ -645,6 +645,6 @@ model WorkerLocationSample {
 
   @@index([companyId, employeeId, capturedAt(sort: Desc)])
   /// Retention sweep.
-  @@index([capturedAt])
+  @@index([receivedAt])
   @@map("worker_location_samples")
 }

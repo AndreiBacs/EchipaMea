@@ -20,6 +20,7 @@ import { RequestContextModule } from './common/context/request-context.module';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { StorageModule } from './media/storage/storage.module';
 
 @Module({
@@ -46,6 +47,7 @@ import { StorageModule } from './media/storage/storage.module';
     TelemetryModule,
     CompanyModule,
     HealthModule,
+    MaintenanceModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
 })

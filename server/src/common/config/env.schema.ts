@@ -89,6 +89,9 @@ export const envSchema = z
     UPLOAD_MAX_FILES: int(20),
 
     LOCATION_SAMPLE_RETENTION_DAYS: int(90),
+    // The nightly prune job. Leave on for a single instance; with several,
+    // turn it off on all but one.
+    RETENTION_JOBS_ENABLED: bool(true),
 
     // --- Seeding -----------------------------------------------------------
     SEED_DEMO: bool(false),
