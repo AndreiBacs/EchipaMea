@@ -120,4 +120,19 @@ export class PrincipalResolverService {
       sessionId,
     };
   }
+
+  /** Drops a revoked session from the cache so its access token stops working now. */
+  forgetSession(companyId: string, sessionId: string): void {
+    this.cache.invalidateWhere((p) => p.companyId === companyId && p.sessionId === sessionId);
+  }
+
+  /** Drops every cached session of one user or employee. */
+  forgetSubject(companyId: string, subject: { userId?: string; employeeId?: string }): void {
+    this.cache.invalidateWhere(
+      (p) =>
+        p.companyId === companyId &&
+        ((subject.userId !== undefined && p.userId === subject.userId) ||
+          (subject.employeeId !== undefined && p.employeeId === subject.employeeId)),
+    );
+  }
 }

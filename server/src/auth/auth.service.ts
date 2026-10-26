@@ -5,6 +5,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import type { ForemanPrincipal, Principal } from '../common/auth/principal';
 import type { CurrentPrincipalDto, LoginResponseDto } from './dto/auth.dto';
 import { PasswordService } from './password.service';
+import { PrincipalResolverService } from './principal-resolver.service';
 import { TokenService } from './token.service';
 
 export interface RequestMeta {
@@ -20,6 +21,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly tokens: TokenService,
+    private readonly principals: PrincipalResolverService,
   ) {}
 
   async loginForeman(
@@ -147,6 +149,7 @@ export class AuthService {
   /** Revokes the caller's session family. Idempotent. */
   async logout(principal: Principal): Promise<void> {
     await this.tokens.revokeFamily(principal.companyId, principal.sessionId);
+    this.principals.forgetSession(principal.companyId, principal.sessionId);
   }
 
   async changePassword(
@@ -172,6 +175,7 @@ export class AuthService {
 
     // A password change should end other sessions; the caller re-authenticates.
     await this.tokens.revokeAllForSubject(principal.companyId, { userId: user.id });
+    this.principals.forgetSubject(principal.companyId, { userId: user.id });
   }
 
   async describePrincipal(principal: Principal): Promise<CurrentPrincipalDto> {
