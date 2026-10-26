@@ -13,7 +13,8 @@ export class ZodValidationPipe<TOut> implements PipeTransform<unknown, TOut> {
   // Parameterised over the *input* type too: schemas with `.default()` or
   // coercion have an input shape that differs from their output shape, and a
   // single-parameter ZodType<T> would reject them.
-  constructor(private readonly schema: ZodType<TOut, ZodTypeDef, unknown>) {}
+  // Public so `scripts/openapi-document.ts` can derive request schemas from it.
+  constructor(readonly schema: ZodType<TOut, ZodTypeDef, unknown>) {}
 
   transform(value: unknown): TOut {
     try {
