@@ -21,6 +21,21 @@ flutter run -d windows|chrome|<device-id>
 
 `.env` must exist before any run/build/test — `pubspec.yaml` declares it as a bundled asset and `main.dart` loads it at startup. Copy `.env.example` to `.env` (this is what CI does).
 
+Backend (`server/`, NestJS + Prisma + Postgres), run from `server/`:
+
+```bash
+npm run start:dev                # API on :3000 (needs server/.env and a migrated DB)
+npm run typecheck && npm run lint && npm run format:check
+npm test                         # unit tests (src/**/*.spec.ts)
+npm run test:e2e                 # real app + Postgres; TEST_DATABASE_URL must name a *_test DB
+npx jest --config ./test/jest-e2e.json --runInBand test/auth.e2e-spec.ts   # one e2e suite
+npm run spec:generate            # regenerate docs/backend-openapi.yaml after route/DTO changes
+npm run spec:check               # CI gate: specs must match the code
+npm run prisma:deploy && npm run seed
+```
+
+e2e suites each truncate every table and re-seed (`test/support/db.ts`); new suites should use `createTestApp()` / `loginForeman()` / `workerSession()` from `test/support/`. `POST /foreman/login` is throttled to 5/min per app instance, so log in once per role in `beforeAll`.
+
 ## Repo conventions (from `.cursor/rules/`, all still in force)
 
 - **Build after significant changes**: run a real build (`flutter build apk` or `flutter run`) before reporting completion on multi-file, routing, state, dependency, or platform-integration changes — not just `flutter analyze`.
@@ -32,7 +47,7 @@ flutter run -d windows|chrome|<device-id>
 
 **Layering** — `lib/src/core/` holds cross-cutting concerns (routing, i18n, theme, auth/session, env, adaptive breakpoints); `lib/src/features/<feature>/` follows `domain/entities` → `application` (coordinators, API clients) → `presentation/{pages,providers,widgets}`.
 
-**State: Riverpod, in-memory demo data.** There is no backend yet and no persistence layer for domain data. `projectsProvider`, `teamProvider`, `clientsProvider` are `NotifierProvider`s that seed hardcoded demo objects in `build()`. Only a few things persist, via SharedPreferences: foreman auth token, selected locale, theme mode, setup-flow completion, foreman getting-started checklist progress. Photos and voice memos are held as **local file paths**, not uploaded, until a backend stores binaries.
+**State: Riverpod, in-memory demo data.** `server/` implements the full API, but the app only calls it for auth, QR tickets, socket tickets and report upload; domain data has no client-side API wiring or persistence yet. `projectsProvider`, `teamProvider`, `clientsProvider` are `NotifierProvider`s that seed hardcoded demo objects in `build()`. Only a few things persist, via SharedPreferences: foreman auth token, selected locale, theme mode, setup-flow completion, foreman getting-started checklist progress. Photos and voice memos are held as **local file paths**, not uploaded, until a backend stores binaries.
 
 **Two parallel session models.** `authSessionProvider` (`AsyncNotifier`, SharedPreferences-backed) is the *foreman* session; `sessionProvider` (`Notifier`, memory only) is the *worker* session created by scanning a QR ticket. Both can exist on the same device at once, and [app_router.dart](lib/src/core/routing/app_router.dart) `redirect` arbitrates between them — that redirect is the single source of truth for who may reach `/foreman/*` vs `/worker/*`, and it also gates the first-run `/setup` flow. Route changes almost always mean touching that redirect.
 
