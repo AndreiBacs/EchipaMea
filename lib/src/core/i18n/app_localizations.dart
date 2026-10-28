@@ -184,6 +184,8 @@ class AppLocalizations {
       'phaseWorkInstructionsTitle': 'Instructiuni pentru echipa',
       'phaseWorkInstructionsHint':
           'Fiecare pas poate avea fotografii si note vocale proprii; sunt vizibile muncitorilor alocati pe faza.',
+      'phaseInstructionAttachmentsUnavailable':
+          'Fotografiile si mesajele vocale pentru pasi nu pot fi inca adaugate cand aplicatia este conectata la server.',
       'phaseAddInstructionStep': 'Adauga pas',
       'phaseRemoveInstructionStep': 'Elimina pas',
       'phaseInstructionPhotosForStep': 'Fotografii pentru acest pas',
@@ -589,6 +591,8 @@ class AppLocalizations {
       'phaseWorkInstructionsTitle': 'Utasitasok a csapatnak',
       'phaseWorkInstructionsHint':
           'Minden lepeshez kulon fotok es hangjegyzetek tartozhatnak; a fazishoz rendelt munkasok latjak.',
+      'phaseInstructionAttachmentsUnavailable':
+          'A lepesekhez meg nem adhatok hozza fotok es hangjegyzetek, amikor az alkalmazas a szerverhez csatlakozik.',
       'phaseAddInstructionStep': 'Lepes hozzaadasa',
       'phaseRemoveInstructionStep': 'Lepes torlese',
       'phaseInstructionPhotosForStep': 'Referenciafotok ehhez a lepeshez',
@@ -992,6 +996,8 @@ class AppLocalizations {
       'phaseWorkInstructionsTitle': 'Instructions for the crew',
       'phaseWorkInstructionsHint':
           'Each step can include its own reference photos and voice memos; assigned workers see them on the job.',
+      'phaseInstructionAttachmentsUnavailable':
+          'Photos and voice memos can\'t be added to steps yet while the app is connected to the server.',
       'phaseAddInstructionStep': 'Add step',
       'phaseRemoveInstructionStep': 'Remove step',
       'phaseInstructionPhotosForStep': 'Photos for this step',
@@ -1391,6 +1397,8 @@ class AppLocalizations {
   String get phaseEditDoneHint => _t('phaseEditDoneHint');
   String get phaseWorkInstructionsTitle => _t('phaseWorkInstructionsTitle');
   String get phaseWorkInstructionsHint => _t('phaseWorkInstructionsHint');
+  String get phaseInstructionAttachmentsUnavailable =>
+      _t('phaseInstructionAttachmentsUnavailable');
   String get phaseAddInstructionStep => _t('phaseAddInstructionStep');
   String get phaseRemoveInstructionStep => _t('phaseRemoveInstructionStep');
   String get phaseInstructionPhotosForStep =>

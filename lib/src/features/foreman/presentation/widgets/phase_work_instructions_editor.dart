@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:universal_io/io.dart';
 
+import '../../../../core/config/app_env.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../domain/entities/project.dart';
 
@@ -26,9 +27,10 @@ class PhaseWorkInstructionsSnapshot {
       for (final i in items)
         if (i.text.trim().isNotEmpty ||
             i.photoPaths.isNotEmpty ||
-            i.audioPaths.isNotEmpty)
-          PhaseWorkInstruction(
-            id: i.id,
+            i.audioPaths.isNotEmpty ||
+            i.photoMediaIds.isNotEmpty ||
+            i.audioMediaIds.isNotEmpty)
+          i.copyWith(
             text: i.text.trim(),
             photoPaths: List<String>.from(i.photoPaths),
             audioPaths: List<String>.from(i.audioPaths),
@@ -43,6 +45,8 @@ class _InstructionEditRow {
     required String text,
     List<String>? photoPaths,
     List<String>? audioPaths,
+    this.photoMediaIds = const [],
+    this.audioMediaIds = const [],
   }) : textController = TextEditingController(text: text),
        photoPaths = List<String>.from(photoPaths ?? []),
        audioPaths = List<String>.from(audioPaths ?? []);
@@ -51,6 +55,11 @@ class _InstructionEditRow {
   final TextEditingController textController;
   final List<String> photoPaths;
   final List<String> audioPaths;
+
+  /// Server-stored attachments: not shown or editable yet, only carried so
+  /// that saving keeps them.
+  final List<String> photoMediaIds;
+  final List<String> audioMediaIds;
 
   void dispose() {
     textController.dispose();
@@ -94,6 +103,11 @@ class PhaseWorkInstructionsEditorState
 
   static String _newId() => 'wi_${DateTime.now().microsecondsSinceEpoch}';
 
+  /// Photos and voice memos live on this device in mock mode. The server
+  /// cannot receive them yet, so with a backend the controls are hidden
+  /// rather than letting the foreman attach files that would be lost.
+  static bool get _attachmentsEnabled => !AppEnv.hasBackend;
+
   static bool _sameInitialItems(
     List<PhaseWorkInstruction> a,
     List<PhaseWorkInstruction> b,
@@ -103,6 +117,8 @@ class PhaseWorkInstructionsEditorState
       if (a[i].id != b[i].id || a[i].text != b[i].text) return false;
       if (!listEquals(a[i].photoPaths, b[i].photoPaths)) return false;
       if (!listEquals(a[i].audioPaths, b[i].audioPaths)) return false;
+      if (!listEquals(a[i].photoMediaIds, b[i].photoMediaIds)) return false;
+      if (!listEquals(a[i].audioMediaIds, b[i].audioMediaIds)) return false;
     }
     return true;
   }
@@ -128,6 +144,8 @@ class PhaseWorkInstructionsEditorState
           text: i.text,
           photoPaths: i.photoPaths,
           audioPaths: i.audioPaths,
+          photoMediaIds: i.photoMediaIds,
+          audioMediaIds: i.audioMediaIds,
         ),
     ];
   }
@@ -179,6 +197,8 @@ class PhaseWorkInstructionsEditorState
             text: r.textController.text,
             photoPaths: List<String>.from(r.photoPaths),
             audioPaths: List<String>.from(r.audioPaths),
+            photoMediaIds: r.photoMediaIds,
+            audioMediaIds: r.audioMediaIds,
           ),
       ],
     );
@@ -315,6 +335,16 @@ class PhaseWorkInstructionsEditorState
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        if (!_attachmentsEnabled) ...[
+          const SizedBox(height: 4),
+          Text(
+            l10n.phaseInstructionAttachmentsUnavailable,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         ...List.generate(_rows.length, (i) {
           final row = _rows[i];
@@ -354,113 +384,119 @@ class PhaseWorkInstructionsEditorState
                         ],
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.phaseInstructionPhotosForStep,
-                      style: theme.textTheme.labelLarge,
-                    ),
-                    const SizedBox(height: 6),
-                    if (!widget.readOnly)
-                      OutlinedButton.icon(
-                        onPressed: row.photoPaths.length >= _maxPhotosPerRow
-                            ? null
-                            : () => _pickPhotosForRow(i),
-                        icon: const Icon(
-                          Icons.photo_library_outlined,
-                          size: 18,
-                        ),
-                        label: Text(l10n.phaseInstructionAddPhotos),
+                    if (_attachmentsEnabled) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.phaseInstructionPhotosForStep,
+                        style: theme.textTheme.labelLarge,
                       ),
-                    if (row.photoPaths.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: List.generate(row.photoPaths.length, (pi) {
-                          return Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              _InstructionPhotoThumb(path: row.photoPaths[pi]),
-                              if (!widget.readOnly)
-                                Positioned(
-                                  top: -4,
-                                  right: -4,
-                                  child: Material(
-                                    color: theme.colorScheme.errorContainer,
-                                    shape: const CircleBorder(),
-                                    child: IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
-                                        minWidth: 28,
-                                        minHeight: 28,
+                      const SizedBox(height: 6),
+                      if (!widget.readOnly)
+                        OutlinedButton.icon(
+                          onPressed: row.photoPaths.length >= _maxPhotosPerRow
+                              ? null
+                              : () => _pickPhotosForRow(i),
+                          icon: const Icon(
+                            Icons.photo_library_outlined,
+                            size: 18,
+                          ),
+                          label: Text(l10n.phaseInstructionAddPhotos),
+                        ),
+                      if (row.photoPaths.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: List.generate(row.photoPaths.length, (pi) {
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                _InstructionPhotoThumb(
+                                  path: row.photoPaths[pi],
+                                ),
+                                if (!widget.readOnly)
+                                  Positioned(
+                                    top: -4,
+                                    right: -4,
+                                    child: Material(
+                                      color: theme.colorScheme.errorContainer,
+                                      shape: const CircleBorder(),
+                                      child: IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 28,
+                                          minHeight: 28,
+                                        ),
+                                        tooltip:
+                                            l10n.phaseInstructionRemovePhoto,
+                                        icon: Icon(
+                                          Icons.close,
+                                          size: 16,
+                                          color: theme
+                                              .colorScheme
+                                              .onErrorContainer,
+                                        ),
+                                        onPressed: () => _removePhoto(i, pi),
                                       ),
-                                      tooltip: l10n.phaseInstructionRemovePhoto,
-                                      icon: Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color:
-                                            theme.colorScheme.onErrorContainer,
-                                      ),
-                                      onPressed: () => _removePhoto(i, pi),
                                     ),
                                   ),
-                                ),
-                            ],
+                              ],
+                            );
+                          }),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.phaseInstructionAudioForStep,
+                        style: theme.textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 6),
+                      if (_audioUnsupported)
+                        Text(
+                          l10n.workerReportRecordingUnavailable,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      if (!widget.readOnly && !_audioUnsupported) ...[
+                        if (recordingHere)
+                          FilledButton.tonalIcon(
+                            onPressed: _stopRecording,
+                            icon: const Icon(Icons.stop_circle_outlined),
+                            label: Text(l10n.workerReportStopRecording),
+                          )
+                        else
+                          FilledButton.tonalIcon(
+                            onPressed: row.audioPaths.length >= _maxAudioPerRow
+                                ? null
+                                : () => _startRecording(i),
+                            icon: const Icon(Icons.mic_none),
+                            label: Text(l10n.phaseInstructionAddVoiceNote),
+                          ),
+                      ],
+                      if (row.audioPaths.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        ...List.generate(row.audioPaths.length, (ai) {
+                          return ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.graphic_eq, size: 20),
+                            title: Text(
+                              '${l10n.phaseInstructionVoiceNoteLabel} ${ai + 1}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: !widget.readOnly
+                                ? IconButton(
+                                    tooltip: l10n.phaseInstructionRemoveAudio,
+                                    icon: const Icon(Icons.delete_outline),
+                                    onPressed: () => _removeAudio(i, ai),
+                                  )
+                                : null,
                           );
                         }),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.phaseInstructionAudioForStep,
-                      style: theme.textTheme.labelLarge,
-                    ),
-                    const SizedBox(height: 6),
-                    if (_audioUnsupported)
-                      Text(
-                        l10n.workerReportRecordingUnavailable,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    if (!widget.readOnly && !_audioUnsupported) ...[
-                      if (recordingHere)
-                        FilledButton.tonalIcon(
-                          onPressed: _stopRecording,
-                          icon: const Icon(Icons.stop_circle_outlined),
-                          label: Text(l10n.workerReportStopRecording),
-                        )
-                      else
-                        FilledButton.tonalIcon(
-                          onPressed: row.audioPaths.length >= _maxAudioPerRow
-                              ? null
-                              : () => _startRecording(i),
-                          icon: const Icon(Icons.mic_none),
-                          label: Text(l10n.phaseInstructionAddVoiceNote),
-                        ),
-                    ],
-                    if (row.audioPaths.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      ...List.generate(row.audioPaths.length, (ai) {
-                        return ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.graphic_eq, size: 20),
-                          title: Text(
-                            '${l10n.phaseInstructionVoiceNoteLabel} ${ai + 1}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: !widget.readOnly
-                              ? IconButton(
-                                  tooltip: l10n.phaseInstructionRemoveAudio,
-                                  icon: const Icon(Icons.delete_outline),
-                                  onPressed: () => _removeAudio(i, ai),
-                                )
-                              : null,
-                        );
-                      }),
+                      ],
                     ],
                   ],
                 ),

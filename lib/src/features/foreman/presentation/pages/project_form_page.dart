@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/network/api_error_messages.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
 import '../../../../core/ui/async_status_view.dart';
 import 'foreman_shell_page.dart';
@@ -12,7 +13,7 @@ import '../providers/projects_controller.dart';
 import '../providers/team_controller.dart';
 import '../widgets/phase_work_instructions_editor.dart';
 
-class ProjectFormPage extends ConsumerStatefulWidget {
+class ProjectFormPage extends ConsumerWidget {
   const ProjectFormPage({
     super.key,
     this.projectId,
@@ -34,18 +35,80 @@ class ProjectFormPage extends ConsumerStatefulWidget {
   final int initialTabIndex;
 
   @override
-  ConsumerState<ProjectFormPage> createState() => _ProjectFormPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = projectId;
+    if (id == null) {
+      return _ProjectForm(
+        existing: null,
+        initialClientId: initialClientId,
+        initialTabIndex: initialTabIndex,
+      );
+    }
+
+    // Resolved before the form is built, because the form copies the project
+    // into its fields once, in initState.
+    final l10n = context.l10n;
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current;
+    final existing = projects?.where((p) => p.id == id).firstOrNull;
+    if (existing != null) {
+      return _ProjectForm(
+        key: ValueKey(id),
+        existing: existing,
+        initialClientId: initialClientId,
+        initialTabIndex: initialTabIndex,
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.projectFormEditTitle)),
+      body: projects == null
+          ? AsyncStatusView(
+              projectsState,
+              onRetry: () => ref.invalidate(projectsProvider),
+            )
+          : Center(child: Text(l10n.workerProjectNotFound)),
+    );
+  }
 }
 
-class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
+class _ProjectForm extends ConsumerStatefulWidget {
+  const _ProjectForm({
+    super.key,
+    required this.existing,
+    this.initialClientId,
+    this.initialTabIndex = 0,
+  });
+
+  /// Null when creating a project.
+  final Project? existing;
+  final String? initialClientId;
+  final int initialTabIndex;
+
+  String? get projectId => existing?.id;
+
+  @override
+  ConsumerState<_ProjectForm> createState() => _ProjectFormState();
+}
+
+class _ProjectFormState extends ConsumerState<_ProjectForm>
     with SingleTickerProviderStateMixin {
   late final TextEditingController _nameController;
   late final TextEditingController _addressLine1Controller;
   late final TextEditingController _cityController;
   late final TextEditingController _stateController;
   late final TextEditingController _zipCodeController;
-  late ProjectStatus _selectedStatus;
+
+  /// Whether to close the project. Its status otherwise follows its phases,
+  /// so "done" is the only status the foreman chooses.
+  late bool _closeProject;
   bool _useClientAddress = true;
+  bool _saving = false;
+
+  /// The saved project's phases, which the route keeps current, or the draft
+  /// phases of a new one.
+  List<ProjectPhase> get _phases => widget.existing?.phases ?? _draftPhases;
+
+  ProjectStatus get _derivedStatus => projectStatusFromPhases(_phases);
   String? _selectedClientId;
 
   /// Draft phases while creating a project (saved with [addProject]).
@@ -57,9 +120,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
   @override
   void initState() {
     super.initState();
-    final existing = widget.projectId == null
-        ? null
-        : ref.read(projectsProvider.notifier).findById(widget.projectId!);
+    final existing = widget.existing;
     _nameController = TextEditingController(text: existing?.name ?? '');
     _addressLine1Controller = TextEditingController(
       text: existing?.addressLine1 ?? '',
@@ -67,7 +128,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     _cityController = TextEditingController(text: existing?.city ?? '');
     _stateController = TextEditingController(text: existing?.state ?? '');
     _zipCodeController = TextEditingController(text: existing?.zipCode ?? '');
-    _selectedStatus = existing?.status ?? ProjectStatus.planned;
+    _closeProject = existing?.status == ProjectStatus.done;
     _selectedClientId = existing?.clientId ?? widget.initialClientId;
     _useClientAddress = existing?.useClientAddress ?? true;
     final today = DateTime.now();
@@ -253,9 +314,14 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                     decoration: InputDecoration(labelText: l10n.zipCodeLabel),
                   ),
                   const SizedBox(height: 12),
+                  // The status follows the phases; the only choice is closing
+                  // the project, or reopening a closed one.
                   DropdownButtonFormField<ProjectStatus>(
-                    initialValue: _selectedStatus,
-                    items: ProjectStatus.values
+                    key: ValueKey(_derivedStatus),
+                    initialValue: _closeProject
+                        ? ProjectStatus.done
+                        : _derivedStatus,
+                    items: {_derivedStatus, ProjectStatus.done}
                         .map(
                           (status) => DropdownMenuItem<ProjectStatus>(
                             value: status,
@@ -265,7 +331,9 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() => _selectedStatus = value);
+                      setState(
+                        () => _closeProject = value == ProjectStatus.done,
+                      );
                     },
                     decoration: InputDecoration(labelText: l10n.statusLabel),
                   ),
@@ -282,7 +350,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: () => _save(context, isEdit: isEdit),
+                          onPressed: _saving ? null : _save,
                           child: Text(
                             isEdit ? l10n.saveChanges : l10n.createProject,
                           ),
@@ -357,7 +425,8 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
         }
 
         final projectId = widget.projectId!;
-        final projects = ref.watch(projectsProvider);
+        final projects =
+            ref.watch(projectsProvider).current ?? const <Project>[];
         Project? project;
         for (final p in projects) {
           if (p.id == projectId) {
@@ -386,33 +455,33 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                   ),
                   onRemove: (phase) {
                     if (phase.status != PhaseStatus.notStarted) return;
-                    ref
-                        .read(projectsProvider.notifier)
-                        .removePhase(
-                          projectId: resolvedProject.id,
-                          phaseId: phase.id,
-                        );
+                    _runPhaseAction(
+                      () => ref
+                          .read(projectsProvider.notifier)
+                          .removePhase(
+                            projectId: resolvedProject.id,
+                            phaseId: phase.id,
+                          ),
+                    );
                   },
-                  onApprove: (phase) {
-                    ref
+                  onApprove: (phase) => _runPhaseAction(
+                    () => ref
                         .read(projectsProvider.notifier)
                         .reviewPhase(
                           projectId: resolvedProject.id,
                           phaseId: phase.id,
                           approved: true,
-                          foremanId: 'foreman_local',
-                        );
-                  },
-                  onReject: (phase) {
-                    ref
+                        ),
+                  ),
+                  onReject: (phase) => _runPhaseAction(
+                    () => ref
                         .read(projectsProvider.notifier)
                         .reviewPhase(
                           projectId: resolvedProject.id,
                           phaseId: phase.id,
                           approved: false,
-                          foremanId: 'foreman_local',
-                        );
-                  },
+                        ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _MembersByPhaseCard(
@@ -646,7 +715,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     WidgetsBinding.instance.addPostFrameCallback((_) => disposeControllers());
   }
 
-  void _save(BuildContext context, {required bool isEdit}) {
+  Future<void> _save() async {
     final name = _nameController.text.trim();
     final clientId = _selectedClientId?.trim() ?? '';
     if (name.isEmpty || clientId.isEmpty) return;
@@ -663,51 +732,67 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     }
 
     final team = ref.read(teamProvider).current ?? const <Employee>[];
-    final phases = isEdit
-        ? ref
-                  .read(projectsProvider.notifier)
-                  .findById(widget.projectId!)
-                  ?.phases ??
-              const <ProjectPhase>[]
-        : List<ProjectPhase>.from(_draftPhases);
+    final phases = List<ProjectPhase>.from(_phases);
     final assignment = _deriveProjectAssignmentsFromPhases(phases, team);
+    final status = _closeProject ? ProjectStatus.done : _derivedStatus;
 
-    if (isEdit) {
-      ref
-          .read(projectsProvider.notifier)
-          .updateProject(
-            id: widget.projectId!,
-            name: name,
-            clientId: clientId,
-            status: _selectedStatus,
-            workers: assignment.workers,
-            assignedEmployeeIds: assignment.assignedEmployeeIds,
-            useClientAddress: _useClientAddress,
-            addressLine1: addressLine1,
-            city: city,
-            stateProvince: stateProvince,
-            zipCode: zipCode,
-            phases: phases,
-          );
-    } else {
-      ref
-          .read(projectsProvider.notifier)
-          .addProject(
-            name: name,
-            clientId: clientId,
-            status: _selectedStatus,
-            workers: assignment.workers,
-            assignedEmployeeIds: assignment.assignedEmployeeIds,
-            useClientAddress: _useClientAddress,
-            addressLine1: addressLine1,
-            city: city,
-            stateProvince: stateProvince,
-            zipCode: zipCode,
-            phases: phases,
-          );
+    final existing = widget.existing;
+    final notifier = ref.read(projectsProvider.notifier);
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() => _saving = true);
+    try {
+      if (existing != null) {
+        await notifier.updateProject(
+          id: existing.id,
+          name: name,
+          clientId: clientId,
+          status: status,
+          workers: assignment.workers,
+          assignedEmployeeIds: assignment.assignedEmployeeIds,
+          useClientAddress: _useClientAddress,
+          addressLine1: addressLine1,
+          city: city,
+          stateProvince: stateProvince,
+          zipCode: zipCode,
+        );
+      } else {
+        await notifier.addProject(
+          name: name,
+          clientId: clientId,
+          status: status,
+          workers: assignment.workers,
+          assignedEmployeeIds: assignment.assignedEmployeeIds,
+          useClientAddress: _useClientAddress,
+          addressLine1: addressLine1,
+          city: city,
+          stateProvince: stateProvince,
+          zipCode: zipCode,
+          phases: phases,
+        );
+      }
+      navigator.pop();
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(l10n, error))),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
+  }
 
-    Navigator.of(context).pop();
+  /// Runs a change to a saved phase, showing the server's refusal if any.
+  Future<void> _runPhaseAction(Future<void> Function() action) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await action();
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(l10n, error))),
+      );
+    }
   }
 
   void _syncAddressFromClient() {

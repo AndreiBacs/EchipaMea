@@ -8,24 +8,37 @@ class PhaseWorkInstruction {
     required this.text,
     this.photoPaths = const [],
     this.audioPaths = const [],
+    this.photoMediaIds = const [],
+    this.audioMediaIds = const [],
   });
 
   final String id;
   final String text;
+
+  /// Attachments recorded on this device (mock mode).
   final List<String> photoPaths;
   final List<String> audioPaths;
+
+  /// Attachments stored on the server. The app cannot show or add these yet,
+  /// but carries them so that saving the phase does not delete them.
+  final List<String> photoMediaIds;
+  final List<String> audioMediaIds;
 
   PhaseWorkInstruction copyWith({
     String? id,
     String? text,
     List<String>? photoPaths,
     List<String>? audioPaths,
+    List<String>? photoMediaIds,
+    List<String>? audioMediaIds,
   }) {
     return PhaseWorkInstruction(
       id: id ?? this.id,
       text: text ?? this.text,
       photoPaths: photoPaths ?? this.photoPaths,
       audioPaths: audioPaths ?? this.audioPaths,
+      photoMediaIds: photoMediaIds ?? this.photoMediaIds,
+      audioMediaIds: audioMediaIds ?? this.audioMediaIds,
     );
   }
 }
@@ -66,6 +79,7 @@ class ProjectPhase {
   final String? reviewNotes;
 
   ProjectPhase copyWith({
+    String? id,
     String? name,
     DateTime? startDate,
     DateTime? endDate,
@@ -80,7 +94,7 @@ class ProjectPhase {
     String? reviewNotes,
   }) {
     return ProjectPhase(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
@@ -141,6 +155,7 @@ class Project {
   }
 
   Project copyWith({
+    String? id,
     String? name,
     String? clientId,
     ProjectStatus? status,
@@ -156,7 +171,7 @@ class Project {
     List<ProjectPhase>? phases,
   }) {
     return Project(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       clientId: clientId ?? this.clientId,
       status: status ?? this.status,

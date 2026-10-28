@@ -109,7 +109,7 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
     final projectId = (data['projectId'] as String?)?.trim();
     final phaseId = (data['phaseId'] as String?)?.trim();
     if (projectId != null && projectId.isNotEmpty) {
-      final projects = ref.read(projectsProvider);
+      final projects = ref.read(projectsProvider).value ?? const <Project>[];
       Project? targetProject;
       for (final p in projects) {
         if (p.id == projectId) {
@@ -130,13 +130,17 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
         }
         if (targetPhaseId != null && targetPhaseId.isNotEmpty) {
           final employeeId = (data['employeeId'] as String?)?.trim() ?? '';
-          ref
-              .read(projectsProvider.notifier)
-              .submitPhaseForReview(
-                projectId: projectId,
-                phaseId: targetPhaseId,
-                employeeId: employeeId,
-              );
+          // A failed refresh leaves the old status; the badge still updates.
+          unawaited(
+            ref
+                .read(projectsProvider.notifier)
+                .submitPhaseForReview(
+                  projectId: projectId,
+                  phaseId: targetPhaseId,
+                  employeeId: employeeId,
+                )
+                .catchError((Object _) {}),
+          );
         }
       }
     }

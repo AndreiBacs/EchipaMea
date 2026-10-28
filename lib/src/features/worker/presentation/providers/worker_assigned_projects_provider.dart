@@ -22,7 +22,7 @@ final workerAssignedProjectsProvider = Provider<List<Project>>((ref) {
 
   final completedLocally = ref.watch(workerCompletedProjectIdsProvider);
 
-  final projects = ref.watch(projectsProvider);
+  final projects = ref.watch(projectsProvider).value ?? const <Project>[];
   final mine = projects.where((p) {
     if (p.status == ProjectStatus.done) return false;
     if (completedLocally.contains(p.id)) return false;

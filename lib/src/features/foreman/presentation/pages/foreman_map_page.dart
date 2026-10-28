@@ -17,8 +17,7 @@ class ForemanMapPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final projects = ref
-        .watch(projectsProvider)
+    final projects = (ref.watch(projectsProvider).current ?? const <Project>[])
         .where((project) => project.status == ProjectStatus.inProgress)
         .toList();
     final employees = ref.watch(teamProvider).current ?? const <Employee>[];

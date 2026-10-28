@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/network/api_error_messages.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
 import '../../../../core/ui/async_status_view.dart';
 import '../providers/projects_controller.dart';
@@ -10,7 +11,7 @@ import '../providers/team_controller.dart';
 import '../widgets/phase_work_instructions_editor.dart';
 
 /// Full-screen form to add or edit a [ProjectPhase] (name, description, team).
-class ProjectPhaseFormPage extends ConsumerStatefulWidget {
+class ProjectPhaseFormPage extends ConsumerWidget {
   const ProjectPhaseFormPage({
     super.key,
     required this.projectId,
@@ -32,22 +33,64 @@ class ProjectPhaseFormPage extends ConsumerStatefulWidget {
   bool get isNew => phaseId == null;
 
   @override
-  ConsumerState<ProjectPhaseFormPage> createState() =>
-      _ProjectPhaseFormPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Resolved before the form is built, because the form copies the phase
+    // into its fields once, in initState.
+    final l10n = context.l10n;
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current;
+    final project = projects?.where((p) => p.id == projectId).firstOrNull;
+    final phase = project?.phases.where((p) => p.id == phaseId).firstOrNull;
+    if (project != null && (isNew || phase != null)) {
+      return _PhaseForm(
+        key: ValueKey('$projectId/$phaseId'),
+        projectId: projectId,
+        existing: phase,
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(title: Text(isNew ? l10n.addPhase : l10n.editPhase)),
+      body: projects == null
+          ? AsyncStatusView(
+              projectsState,
+              onRetry: () => ref.invalidate(projectsProvider),
+            )
+          : Center(child: Text(l10n.workerProjectNotFound)),
+    );
+  }
 }
 
-class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
+class _PhaseForm extends ConsumerStatefulWidget {
+  const _PhaseForm({
+    super.key,
+    required this.projectId,
+    required this.existing,
+  });
+
+  final String projectId;
+
+  /// Null when adding a phase.
+  final ProjectPhase? existing;
+
+  bool get isNew => existing == null;
+
+  @override
+  ConsumerState<_PhaseForm> createState() => _PhaseFormState();
+}
+
+class _PhaseFormState extends ConsumerState<_PhaseForm> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late DateTime _startDate;
   late DateTime _endDate;
   var _selectedEmployeeIds = <String>{};
   late PhaseWorkInstructionsSnapshot _instructionsSnap;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    final phase = _findPhase(ref.read(projectsProvider));
+    final phase = widget.existing;
     _nameController = TextEditingController(text: phase?.name ?? '');
     _descriptionController = TextEditingController(
       text: phase?.description ?? '',
@@ -61,29 +104,12 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
       items: [
         for (final w
             in phase?.workInstructions ?? const <PhaseWorkInstruction>[])
-          PhaseWorkInstruction(
-            id: w.id,
-            text: w.text,
+          w.copyWith(
             photoPaths: List<String>.from(w.photoPaths),
             audioPaths: List<String>.from(w.audioPaths),
           ),
       ],
     );
-  }
-
-  ProjectPhase? _findPhase(List<Project> projects) {
-    Project? project;
-    for (final p in projects) {
-      if (p.id == widget.projectId) {
-        project = p;
-        break;
-      }
-    }
-    if (project == null || widget.phaseId == null) return null;
-    for (final ph in project.phases) {
-      if (ph.id == widget.phaseId) return ph;
-    }
-    return null;
   }
 
   @override
@@ -97,16 +123,7 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final team = ref.watch(teamProvider).current ?? const <Employee>[];
-    final projects = ref.watch(projectsProvider);
-    final phase = widget.isNew ? null : _findPhase(projects);
-
-    if (!widget.isNew && phase == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.editPhase)),
-        body: Center(child: Text(l10n.workerProjectNotFound)),
-      );
-    }
-
+    final phase = widget.existing;
     final isDone = phase?.status == PhaseStatus.done;
 
     return Scaffold(
@@ -202,7 +219,7 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
                   const SizedBox(height: 16),
                   PhaseWorkInstructionsEditor(
                     key: ValueKey(
-                      'phase_instr_${widget.phaseId ?? widget.projectId}',
+                      'phase_instr_${widget.existing?.id ?? widget.projectId}',
                     ),
                     l10n: l10n,
                     readOnly: isDone,
@@ -253,7 +270,7 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: () => _save(context, l10n),
+                          onPressed: _saving ? null : _save,
                           child: Text(l10n.saveChanges),
                         ),
                       ),
@@ -268,45 +285,55 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
     );
   }
 
-  void _save(BuildContext context, AppLocalizations l10n) {
+  Future<void> _save() async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
     if (_endDate.isBefore(_startDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(l10n.phaseDateValidationEndAfterStart)),
       );
       return;
     }
     final description = _descriptionController.text.trim();
     final ids = _selectedEmployeeIds.toList();
+    final existing = widget.existing;
+    final notifier = ref.read(projectsProvider.notifier);
+    final router = GoRouter.of(context);
 
-    if (widget.isNew) {
-      ref
-          .read(projectsProvider.notifier)
-          .addPhase(
-            projectId: widget.projectId,
-            name: name,
-            startDate: _startDate,
-            endDate: _endDate,
-            assignedEmployeeIds: ids,
-            description: description,
-            workInstructions: _instructionsSnap.forPersistence(),
-          );
-    } else {
-      ref
-          .read(projectsProvider.notifier)
-          .updatePhase(
-            projectId: widget.projectId,
-            phaseId: widget.phaseId!,
-            name: name,
-            startDate: _startDate,
-            endDate: _endDate,
-            assignedEmployeeIds: ids,
-            description: description,
-            workInstructions: _instructionsSnap.forPersistence(),
-          );
+    setState(() => _saving = true);
+    try {
+      if (existing == null) {
+        await notifier.addPhase(
+          projectId: widget.projectId,
+          name: name,
+          startDate: _startDate,
+          endDate: _endDate,
+          assignedEmployeeIds: ids,
+          description: description,
+          workInstructions: _instructionsSnap.forPersistence(),
+        );
+      } else {
+        await notifier.updatePhase(
+          projectId: widget.projectId,
+          phaseId: existing.id,
+          name: name,
+          startDate: _startDate,
+          endDate: _endDate,
+          assignedEmployeeIds: ids,
+          description: description,
+          workInstructions: _instructionsSnap.forPersistence(),
+        );
+      }
+      router.pop();
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(l10n, error))),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-    context.pop();
   }
 }
 

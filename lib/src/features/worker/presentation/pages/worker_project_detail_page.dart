@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/auth/session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/network/api_error_messages.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../providers/worker_assigned_projects_provider.dart';
 import '../../application/worker_foreman_inbox_controller.dart';
@@ -24,8 +25,8 @@ class WorkerProjectDetailPage extends ConsumerWidget {
     final l10n = context.l10n;
     final session = ref.watch(sessionProvider).value;
     final project = ref.watch(
-      projectsProvider.select((list) {
-        for (final p in list) {
+      projectsProvider.select((state) {
+        for (final p in state.value ?? const <Project>[]) {
           if (p.id == projectId) return p;
         }
         return null;
@@ -176,21 +177,34 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                               if (phase.status != PhaseStatus.pendingReview &&
                                   phase.status != PhaseStatus.done)
                                 FilledButton.tonal(
-                                  onPressed: () {
-                                    ref
-                                        .read(projectsProvider.notifier)
-                                        .submitPhaseForReview(
-                                          projectId: project.id,
-                                          phaseId: phase.id,
-                                          employeeId: session.employeeId,
-                                        );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          l10n.phaseSubmittedForReview,
-                                        ),
-                                      ),
+                                  onPressed: () async {
+                                    final messenger = ScaffoldMessenger.of(
+                                      context,
                                     );
+                                    try {
+                                      await ref
+                                          .read(projectsProvider.notifier)
+                                          .submitPhaseForReview(
+                                            projectId: project.id,
+                                            phaseId: phase.id,
+                                            employeeId: session.employeeId,
+                                          );
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            l10n.phaseSubmittedForReview,
+                                          ),
+                                        ),
+                                      );
+                                    } catch (error) {
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            apiErrorMessage(l10n, error),
+                                          ),
+                                        ),
+                                      );
+                                    }
                                   },
                                   child: Text(l10n.workerSubmitForReview),
                                 ),

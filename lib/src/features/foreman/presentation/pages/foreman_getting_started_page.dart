@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/ui/async_status_view.dart';
 import '../../application/foreman_workflow_progress_controller.dart';
 import '../../domain/entities/foreman_workflow_step.dart';
 import '../providers/projects_controller.dart';
@@ -104,14 +105,17 @@ class ForemanGettingStartedPage extends ConsumerWidget {
       case ForemanWorkflowStep.createProject:
         context.push(ProjectFormPage.createPath);
       case ForemanWorkflowStep.configurePhase:
-        final projects = ref.read(projectsProvider);
+        final projects =
+            ref.read(projectsProvider).current ?? const <Project>[];
         if (projects.isEmpty) {
           final phaseHint = context.l10n.foremanGettingStartedPhaseHint;
           final rootNavigator = Navigator.of(context, rootNavigator: true);
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.go(ForemanShellPage.projectsPath);
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              final messenger = ScaffoldMessenger.maybeOf(rootNavigator.context);
+              final messenger = ScaffoldMessenger.maybeOf(
+                rootNavigator.context,
+              );
               if (messenger == null) return;
               messenger
                 ..hideCurrentSnackBar()

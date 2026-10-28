@@ -18,7 +18,14 @@ class ProjectsPage extends ConsumerStatefulWidget {
 class _ProjectsPageState extends ConsumerState<ProjectsPage> {
   @override
   Widget build(BuildContext context) {
-    final projects = ref.watch(projectsProvider);
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current;
+    if (projects == null) {
+      return AsyncStatusView(
+        projectsState,
+        onRetry: () => ref.invalidate(projectsProvider),
+      );
+    }
     final clients = ref.watch(clientsProvider).current ?? const <Client>[];
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;

@@ -24,7 +24,7 @@ class ClientsPage extends ConsumerWidget {
         onRetry: () => ref.invalidate(clientsProvider),
       );
     }
-    final projects = ref.watch(projectsProvider);
+    final projects = ref.watch(projectsProvider).current ?? const <Project>[];
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;
     // Precompute once so each row renders in O(1) instead of O(projects).

@@ -67,7 +67,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final team = ref.watch(teamProvider).current ?? const <Employee>[];
-    final projects = ref.watch(projectsProvider);
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current;
+    if (projects == null) {
+      return AsyncStatusView(
+        projectsState,
+        onRetry: () => ref.invalidate(projectsProvider),
+      );
+    }
     final projectsNotifier = ref.read(projectsProvider.notifier);
     final employeesById = {for (final e in team) e.id: e};
     final today = DateTime.now();
@@ -537,7 +544,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       case ForemanWorkflowStep.createProject:
         context.push(ProjectFormPage.createPath);
       case ForemanWorkflowStep.configurePhase:
-        final projects = ref.read(projectsProvider);
+        final projects =
+            ref.read(projectsProvider).current ?? const <Project>[];
         if (projects.isEmpty) {
           final phaseHint = context.l10n.foremanGettingStartedPhaseHint;
           final rootNavigator = Navigator.of(context, rootNavigator: true);

@@ -82,8 +82,8 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final project = ref.watch(
-      projectsProvider.select((list) {
-        for (final p in list) {
+      projectsProvider.select((state) {
+        for (final p in state.value ?? const <Project>[]) {
           if (p.id == widget.projectId) return p;
         }
         return null;

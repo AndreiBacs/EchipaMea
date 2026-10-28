@@ -20,9 +20,9 @@ class ClientProjectsPage extends ConsumerWidget {
     final l10n = context.l10n;
     final clients = ref.watch(clientsProvider).current ?? const <Client>[];
     final client = clients.where((c) => c.id == clientId).firstOrNull;
-    final projects = ref
-        .watch(projectsProvider)
-        .where((project) => project.clientId == clientId)
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current
+        ?.where((project) => project.clientId == clientId)
         .toList();
 
     return Scaffold(
@@ -33,7 +33,12 @@ class ClientProjectsPage extends ConsumerWidget {
               : '${l10n.clientProjectsTitle}: ${client.name}',
         ),
       ),
-      body: projects.isEmpty
+      body: projects == null
+          ? AsyncStatusView(
+              projectsState,
+              onRetry: () => ref.invalidate(projectsProvider),
+            )
+          : projects.isEmpty
           ? Center(child: Text(l10n.noProjectsForClient))
           : ListView.separated(
               padding: const EdgeInsets.all(16),
