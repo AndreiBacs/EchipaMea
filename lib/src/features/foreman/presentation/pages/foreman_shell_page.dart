@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,9 +7,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
+import '../../../../core/ui/async_status_view.dart';
 import '../../application/foreman_notifications_coordinator.dart';
+import '../../domain/entities/foreman_notification.dart';
 import 'clients_page.dart';
 import 'dashboard_page.dart';
+import 'project_form_page.dart';
 import 'projects_page.dart';
 import 'team_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
@@ -28,7 +33,8 @@ class ForemanShellPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final notifications = ref.watch(foremanNotificationsProvider);
+    final unreadCount =
+        ref.watch(foremanNotificationsProvider).current?.unreadCount ?? 0;
     final body = switch (currentTab) {
       ForemanTab.dashboard => const DashboardPage(),
       ForemanTab.projects => const ProjectsPage(),
@@ -48,8 +54,8 @@ class ForemanShellPage extends ConsumerWidget {
             tooltip: l10n.foremanNotifications,
             onPressed: () => _showNotificationsDialog(context, ref),
             icon: Badge.count(
-              count: notifications.unreadCount,
-              isLabelVisible: notifications.unreadCount > 0,
+              count: unreadCount,
+              isLabelVisible: unreadCount > 0,
               child: const Icon(Icons.notifications_outlined),
             ),
           ),
@@ -187,50 +193,101 @@ class ForemanShellPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
-    final l10n = context.l10n;
-    ref.read(foremanNotificationsProvider.notifier).markAllRead();
-    final items = ref.read(foremanNotificationsProvider).items;
+    final router = GoRouter.of(context);
+    unawaited(ref.read(foremanNotificationsProvider.notifier).markAllRead());
 
     await showDialog<void>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(l10n.foremanNotifications),
-          content: SizedBox(
-            width: 420,
-            child: items.isEmpty
-                ? Text(l10n.foremanNotificationsEmpty)
-                : ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      final hh = item.receivedAt.hour.toString().padLeft(
-                        2,
-                        '0',
-                      );
-                      final mm = item.receivedAt.minute.toString().padLeft(
-                        2,
-                        '0',
-                      );
-                      return ListTile(
-                        dense: true,
-                        title: Text(item.title),
-                        subtitle: Text('${item.subtitle}\n$hh:$mm'),
-                        isThreeLine: true,
-                      );
-                    },
-                  ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.close),
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, _) {
+          // Worded here, in the current language, so switching language
+          // rewords the list too.
+          final l10n = context.l10n;
+          final items =
+              ref.watch(foremanNotificationsProvider).current?.items ??
+              const <ForemanNotificationItem>[];
+          return AlertDialog(
+            title: Text(l10n.foremanNotifications),
+            content: SizedBox(
+              width: 420,
+              child: items.isEmpty
+                  ? Text(l10n.foremanNotificationsEmpty)
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        final hh = item.occurredAt.hour.toString().padLeft(
+                          2,
+                          '0',
+                        );
+                        final mm = item.occurredAt.minute.toString().padLeft(
+                          2,
+                          '0',
+                        );
+                        final projectId = item.projectId;
+                        return ListTile(
+                          dense: true,
+                          title: Text(_notificationTitle(l10n, item)),
+                          subtitle: Text(
+                            '${_notificationText(l10n, item)}\n$hh:$mm',
+                          ),
+                          isThreeLine: true,
+                          onTap: projectId == null
+                              ? null
+                              : () {
+                                  Navigator.of(dialogContext).pop();
+                                  router.push(
+                                    ProjectFormPage.editPathWithPhasesTab(
+                                      projectId,
+                                    ),
+                                  );
+                                },
+                        );
+                      },
+                    ),
             ),
-          ],
-        );
-      },
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(l10n.close),
+              ),
+            ],
+          );
+        },
+      ),
     );
+  }
+
+  static String _notificationTitle(
+    AppLocalizations l10n,
+    ForemanNotificationItem item,
+  ) => switch (item.kind) {
+    ForemanNotificationKind.workerReportSubmitted =>
+      l10n.foremanNotificationWorkerReportTitle,
+    ForemanNotificationKind.phaseApproved =>
+      l10n.foremanNotificationPhaseApprovedTitle,
+    ForemanNotificationKind.phaseRejected =>
+      l10n.foremanNotificationPhaseRejectedTitle,
+    ForemanNotificationKind.workerArrived =>
+      l10n.foremanNotificationWorkerArrivedTitle,
+    ForemanNotificationKind.other => l10n.foremanNotificationOtherTitle,
+  };
+
+  /// Who and where, from the names recorded when it happened.
+  static String _notificationText(
+    AppLocalizations l10n,
+    ForemanNotificationItem item,
+  ) {
+    final parts = [
+      item.employeeName,
+      item.projectName,
+      item.phaseName,
+    ].where((part) => part.trim().isNotEmpty);
+    if (parts.isNotEmpty) return parts.join(' - ');
+    return item.kind == ForemanNotificationKind.workerReportSubmitted
+        ? l10n.foremanNotificationWorkerReportBodyFallback
+        : '';
   }
 }

@@ -6,9 +6,11 @@ import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/network/api_error_messages.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
 import '../../../../core/ui/async_status_view.dart';
+import '../../../../core/util/day_key.dart';
 import 'foreman_shell_page.dart';
 import 'project_phase_form_page.dart';
 import '../providers/clients_controller.dart';
+import '../providers/day_sequences_controller.dart';
 import '../providers/projects_controller.dart';
 import '../providers/team_controller.dart';
 import '../widgets/phase_work_instructions_editor.dart';
@@ -498,7 +500,6 @@ class _ProjectFormState extends ConsumerState<_ProjectForm>
                   },
                   project: resolvedProject,
                   team: team,
-                  notifier: ref.read(projectsProvider.notifier),
                 ),
               ],
             ),
@@ -1070,14 +1071,12 @@ class _DailySequencePlannerCard extends StatelessWidget {
     required this.onPickDay,
     required this.project,
     required this.team,
-    required this.notifier,
   });
 
   final DateTime selectedDay;
   final ValueChanged<DateTime> onPickDay;
   final Project project;
   final List<Employee> team;
-  final ProjectsNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
@@ -1128,7 +1127,6 @@ class _DailySequencePlannerCard extends StatelessWidget {
                 worker: worker,
                 project: project,
                 day: selectedDay,
-                notifier: notifier,
               ),
           ],
         ),
@@ -1137,32 +1135,32 @@ class _DailySequencePlannerCard extends StatelessWidget {
   }
 }
 
-class _WorkerDaySequenceRow extends StatelessWidget {
+class _WorkerDaySequenceRow extends ConsumerWidget {
   const _WorkerDaySequenceRow({
     required this.worker,
     required this.project,
     required this.day,
-    required this.notifier,
   });
 
   final Employee worker;
   final Project project;
   final DateTime day;
-  final ProjectsNotifier notifier;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final sequence = notifier.sequenceForDay(
-      projectId: project.id,
-      workerId: worker.id,
-      day: day,
-    );
-    final suggested = notifier.suggestedSequenceForDay(
-      projectId: project.id,
-      workerId: worker.id,
-      day: day,
-    );
+    final sequences = daySequencesProvider(dayKey(day));
+    final sequence =
+        ref
+            .watch(sequences)
+            .current
+            ?.of(projectId: project.id, workerId: worker.id) ??
+        DailyWorkerSequence(
+          projectId: project.id,
+          dayKey: dayKey(day),
+          workerId: worker.id,
+          orderedPhaseIds: const [],
+        );
     final labelsById = {for (final p in project.phases) p.id: p.name};
     final orderedIds = [
       for (final id in sequence.orderedPhaseIds)
@@ -1172,17 +1170,33 @@ class _WorkerDaySequenceRow extends StatelessWidget {
       for (final id in sequence.orderedPhaseIds)
         if (labelsById.containsKey(id)) labelsById[id]!,
     ];
-    final suggestedCount = suggested.orderedPhaseIds
+    final suggestedCount = sequence.suggestedPhaseIds
         .where(labelsById.containsKey)
         .length;
-    void saveOrder(List<String> ids) {
-      notifier.saveDailySequence(
+    // Shows the server's refusal, if any; the row keeps the old order.
+    Future<void> run(Future<void> Function(DaySequencesNotifier) change) async {
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        await change(ref.read(sequences.notifier));
+      } catch (error) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(l10n, error))),
+        );
+      }
+    }
+
+    void saveOrder(List<String> ids) => run(
+      (sequences) => sequences.save(
         projectId: project.id,
         workerId: worker.id,
-        day: day,
         orderedPhaseIds: ids,
-      );
-    }
+      ),
+    );
+
+    void resetOrder() => run(
+      (sequences) =>
+          sequences.reset(projectId: project.id, workerId: worker.id),
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1308,7 +1322,7 @@ class _WorkerDaySequenceRow extends StatelessWidget {
                         onPressed: suggestedCount == 0
                             ? null
                             : () {
-                                saveOrder(suggested.orderedPhaseIds);
+                                saveOrder(sequence.suggestedPhaseIds);
                               },
                         icon: const Icon(Icons.auto_awesome),
                         label: Text(l10n.plannerUseAutoSuggestion),
@@ -1328,15 +1342,7 @@ class _WorkerDaySequenceRow extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
-                        onPressed: sequence.isManual
-                            ? () {
-                                notifier.resetDailySequence(
-                                  projectId: project.id,
-                                  workerId: worker.id,
-                                  day: day,
-                                );
-                              }
-                            : null,
+                        onPressed: sequence.isManual ? resetOrder : null,
                         icon: const Icon(Icons.refresh),
                         label: Text(l10n.plannerResetToAuto),
                       ),
@@ -1351,7 +1357,7 @@ class _WorkerDaySequenceRow extends StatelessWidget {
                       onPressed: suggestedCount == 0
                           ? null
                           : () {
-                              saveOrder(suggested.orderedPhaseIds);
+                              saveOrder(sequence.suggestedPhaseIds);
                             },
                       icon: const Icon(Icons.auto_awesome),
                       label: Text(l10n.plannerUseAutoSuggestion),
@@ -1369,15 +1375,7 @@ class _WorkerDaySequenceRow extends StatelessWidget {
                       label: Text(l10n.plannerMoveLastToFirst),
                     ),
                     OutlinedButton.icon(
-                      onPressed: sequence.isManual
-                          ? () {
-                              notifier.resetDailySequence(
-                                projectId: project.id,
-                                workerId: worker.id,
-                                day: day,
-                              );
-                            }
-                          : null,
+                      onPressed: sequence.isManual ? resetOrder : null,
                       icon: const Icon(Icons.refresh),
                       label: Text(l10n.plannerResetToAuto),
                     ),

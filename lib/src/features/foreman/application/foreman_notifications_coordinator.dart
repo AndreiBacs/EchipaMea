@@ -1,176 +1,172 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../core/auth/auth_session_controller.dart';
 import '../../../core/config/app_env.dart';
-import '../../../core/i18n/app_localizations.dart';
-import '../../../core/i18n/locale_controller.dart';
+import '../../../core/network/backoff.dart';
 import '../../../core/network/realtime_ticket_api.dart';
+import '../data/notifications_repository.dart';
 import '../domain/entities/foreman_notification.dart';
 import '../presentation/providers/projects_controller.dart';
 
 final foremanNotificationsProvider =
-    NotifierProvider<ForemanNotificationsNotifier, ForemanNotificationsState>(
-      ForemanNotificationsNotifier.new,
-    );
+    AsyncNotifierProvider<
+      ForemanNotificationsNotifier,
+      ForemanNotificationsState
+    >(ForemanNotificationsNotifier.new);
 
-class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
+/// The foreman's notifications, and the live feed that says when there are
+/// new ones.
+///
+/// The server stores every notification; the socket only announces them. So
+/// a `worker_report_submitted` frame triggers a refetch of the list and of the
+/// projects (the report also moved its phase to pendingReview), and nothing
+/// is lost while the socket is down: it reconnects with backoff for as long
+/// as a foreman is signed in, and refetches once it is back.
+class ForemanNotificationsNotifier
+    extends AsyncNotifier<ForemanNotificationsState> {
   WebSocketChannel? _channel;
   bool _connecting = false;
+  Timer? _reconnectTimer;
+  final _backoff = Backoff();
+
+  /// Set while recovering from a dropped connection, so the next successful
+  /// one also refetches what was missed.
+  bool _missedEvents = false;
+
+  NotificationsRepository get _repository =>
+      ref.read(notificationsRepositoryProvider);
 
   @override
-  ForemanNotificationsState build() {
+  Future<ForemanNotificationsState> build() async {
+    final repository = ref.watch(notificationsRepositoryProvider);
     ref.listen<AsyncValue<AuthSession?>>(authSessionProvider, (_, next) {
-      final session = next.asData?.value;
-      if (session == null) {
-        _disconnect();
-        state = const ForemanNotificationsState.empty();
-        return;
+      if (next.asData?.value == null) {
+        _stop();
+      } else {
+        unawaited(_connect());
       }
-      unawaited(_connect());
     }, fireImmediately: true);
-    ref.onDispose(_disconnect);
-    return const ForemanNotificationsState.empty();
+    ref.onDispose(_stop);
+    if (!await watchForemanScope(ref)) {
+      return const ForemanNotificationsState.empty();
+    }
+    return repository.latest();
   }
 
-  void markAllRead() {
-    state = state.copyWith(unreadCount: 0);
+  /// Reloads the list. A failure keeps the one already shown.
+  Future<void> refresh() async {
+    try {
+      final latest = await _repository.latest();
+      if (ref.mounted) state = AsyncData(latest);
+    } catch (_) {}
+  }
+
+  /// The foreman opened the list, so everything in it is read. The badge
+  /// clears at once; if the server cannot be told, it catches up on the next
+  /// refresh.
+  Future<void> markAllRead() async {
+    final current = state.value;
+    if (current != null) state = AsyncData(current.allRead(DateTime.now()));
+    try {
+      await _repository.markAllRead();
+      await refresh();
+    } catch (_) {}
   }
 
   /// Opens the feed, proving who we are first.
   ///
-  /// This channel used to be opened with no credentials at all, which meant the
-  /// server had to admit anonymous readers to make it work -- and an anonymous
-  /// reader on a company's report feed is a stranger reading it. A ticket is
-  /// fetched with the foreman's token and passed as `?ticket=`, because
-  /// Dart cannot set headers on a WebSocket from Flutter web.
-  ///
-  /// Without a ticket we simply do not connect. Failing closed costs a
-  /// notification badge; failing open costs the company's data.
+  /// A ticket is fetched with the foreman's token and passed as `?ticket=`,
+  /// because Dart cannot set headers on a WebSocket from Flutter web. Without
+  /// a ticket we do not connect: failing closed costs a notification badge,
+  /// failing open would cost the company's data.
   Future<void> _connect() async {
     if (_channel != null || _connecting) return;
     final endpoint = AppEnv.foremanNotificationsWsUrl.trim();
-    if (endpoint.isEmpty) return;
+    // Mock mode has no server to mint a ticket.
+    if (endpoint.isEmpty || !AppEnv.hasBackend) return;
 
+    _reconnectTimer?.cancel();
     _connecting = true;
     try {
       final ticket = await ref
           .read(foremanRealtimeTicketApiProvider)
           .fetchTicket();
-      if (ticket == null) return;
-
-      // The session may have ended while the ticket request was in flight.
-      if (ref.read(authSessionProvider).asData?.value == null) return;
-
-      final uri = socketUriWithTicket(endpoint, ticket);
-      if (uri == null) return;
+      // Signed out, or rebuilt for another foreman, while the ticket was
+      // being fetched.
+      if (!ref.mounted || !_signedIn) return;
+      final uri = ticket == null ? null : socketUriWithTicket(endpoint, ticket);
+      if (uri == null) {
+        _scheduleReconnect();
+        return;
+      }
 
       final channel = WebSocketChannel.connect(uri);
       _channel = channel;
       channel.stream.listen(
         _onMessage,
-        onError: (_) => _disconnect(),
-        onDone: _disconnect,
+        onError: (_) => _onClosed(channel),
+        onDone: () => _onClosed(channel),
         cancelOnError: true,
       );
+      unawaited(
+        channel.ready.then((_) {
+          _backoff.reset();
+          if (_missedEvents) {
+            _missedEvents = false;
+            unawaited(refresh());
+          }
+        }, onError: (_) {}),
+      );
     } catch (_) {
-      _disconnect();
+      if (ref.mounted) _scheduleReconnect();
     } finally {
       _connecting = false;
     }
   }
 
-  void _disconnect() {
+  bool get _signedIn => ref.read(authSessionProvider).asData?.value != null;
+
+  void _onClosed(WebSocketChannel channel) {
+    // A socket we already replaced or closed on purpose.
+    if (!identical(_channel, channel)) return;
+    _channel = null;
+    if (ref.mounted && _signedIn) _scheduleReconnect();
+  }
+
+  void _scheduleReconnect() {
+    _missedEvents = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(_backoff.next(), () {
+      if (ref.mounted && _signedIn) unawaited(_connect());
+    });
+  }
+
+  void _stop() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _backoff.reset();
+    _missedEvents = false;
     final channel = _channel;
     _channel = null;
     unawaited(channel?.sink.close() ?? Future<void>.value());
   }
 
   void _onMessage(dynamic raw) {
-    Map<String, dynamic>? data;
+    Object? data;
     try {
-      if (raw is String) {
-        final decoded = jsonDecode(raw);
-        if (decoded is Map<String, dynamic>) {
-          data = decoded;
-        }
-      }
+      data = raw is String ? jsonDecode(raw) : null;
     } catch (_) {
-      data = null;
+      return;
     }
-    if (data == null) return;
-
+    if (data is! Map<String, dynamic>) return;
     if (data['type'] != 'worker_report_submitted') return;
+    if (!ref.mounted) return;
 
-    final projectId = (data['projectId'] as String?)?.trim();
-    final phaseId = (data['phaseId'] as String?)?.trim();
-    if (projectId != null && projectId.isNotEmpty) {
-      final projects = ref.read(projectsProvider).value ?? const <Project>[];
-      Project? targetProject;
-      for (final p in projects) {
-        if (p.id == projectId) {
-          targetProject = p;
-          break;
-        }
-      }
-      if (targetProject != null) {
-        String? targetPhaseId = phaseId;
-        if (targetPhaseId == null || targetPhaseId.isEmpty) {
-          for (final phase in targetProject.phases) {
-            if (phase.status == PhaseStatus.notStarted ||
-                phase.status == PhaseStatus.inProgress) {
-              targetPhaseId = phase.id;
-              break;
-            }
-          }
-        }
-        if (targetPhaseId != null && targetPhaseId.isNotEmpty) {
-          final employeeId = (data['employeeId'] as String?)?.trim() ?? '';
-          // A failed refresh leaves the old status; the badge still updates.
-          unawaited(
-            ref
-                .read(projectsProvider.notifier)
-                .submitPhaseForReview(
-                  projectId: projectId,
-                  phaseId: targetPhaseId,
-                  employeeId: employeeId,
-                )
-                .catchError((Object _) {}),
-          );
-        }
-      }
-    }
-
-    final employeeName = (data['employeeName'] as String?)?.trim();
-    final projectName = (data['projectName'] as String?)?.trim();
-    final submittedAtRaw = data['submittedAt'] as String?;
-    final submittedAt =
-        DateTime.tryParse(submittedAtRaw ?? '') ?? DateTime.now();
-
-    final locale = ref.read(localeProvider) ?? const Locale('ro');
-    final l10n = AppLocalizations(locale);
-    final title = l10n.foremanNotificationWorkerReportTitle;
-    final subtitle = [
-      if (employeeName != null && employeeName.isNotEmpty) employeeName,
-      if (projectName != null && projectName.isNotEmpty) projectName,
-    ].join(' - ');
-
-    final item = ForemanNotificationItem(
-      title: title,
-      subtitle: subtitle.isEmpty
-          ? l10n.foremanNotificationWorkerReportBodyFallback
-          : subtitle,
-      receivedAt: submittedAt.toLocal(),
-    );
-
-    final nextItems = [item, ...state.items];
-    state = state.copyWith(
-      items: nextItems.take(50).toList(),
-      unreadCount: state.unreadCount + 1,
-    );
+    unawaited(refresh());
+    ref.invalidate(projectsProvider);
   }
 }

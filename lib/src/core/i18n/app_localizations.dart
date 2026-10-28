@@ -383,6 +383,10 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Raport de la muncitor trimis',
       'foremanNotificationWorkerReportBodyFallback':
           'A fost incarcat un raport nou.',
+      'foremanNotificationPhaseApprovedTitle': 'Faza aprobata',
+      'foremanNotificationPhaseRejectedTitle': 'Faza trimisa inapoi',
+      'foremanNotificationWorkerArrivedTitle': 'Muncitor ajuns pe santier',
+      'foremanNotificationOtherTitle': 'Notificare',
       'foremanGettingStartedTitle': 'Primii pasi',
       'foremanGettingStartedDescription':
           'Invata fluxul principal pentru configurarea activitatii echipei.',
@@ -788,6 +792,11 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Munkas jelentes erkezett',
       'foremanNotificationWorkerReportBodyFallback':
           'Uj jelentes lett feltoltve.',
+      'foremanNotificationPhaseApprovedTitle': 'Fazis jovahagyva',
+      'foremanNotificationPhaseRejectedTitle': 'Fazis visszakuldve',
+      'foremanNotificationWorkerArrivedTitle':
+          'Munkas megerkezett a helyszinre',
+      'foremanNotificationOtherTitle': 'Ertesites',
       'foremanGettingStartedTitle': 'Elso lepesek',
       'foremanGettingStartedDescription':
           'Tanuld meg a fo folyamatot a csapatmunka beallitasaert.',
@@ -1190,6 +1199,10 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Worker report submitted',
       'foremanNotificationWorkerReportBodyFallback':
           'A new report was uploaded.',
+      'foremanNotificationPhaseApprovedTitle': 'Phase approved',
+      'foremanNotificationPhaseRejectedTitle': 'Phase sent back',
+      'foremanNotificationWorkerArrivedTitle': 'Worker arrived on site',
+      'foremanNotificationOtherTitle': 'Notification',
       'foremanGettingStartedTitle': 'Getting started',
       'foremanGettingStartedDescription':
           'Learn the core workflow to set up your team operations.',
@@ -1579,6 +1592,14 @@ class AppLocalizations {
       _t('foremanNotificationWorkerReportTitle');
   String get foremanNotificationWorkerReportBodyFallback =>
       _t('foremanNotificationWorkerReportBodyFallback');
+  String get foremanNotificationPhaseApprovedTitle =>
+      _t('foremanNotificationPhaseApprovedTitle');
+  String get foremanNotificationPhaseRejectedTitle =>
+      _t('foremanNotificationPhaseRejectedTitle');
+  String get foremanNotificationWorkerArrivedTitle =>
+      _t('foremanNotificationWorkerArrivedTitle');
+  String get foremanNotificationOtherTitle =>
+      _t('foremanNotificationOtherTitle');
   String get foremanGettingStartedTitle => _t('foremanGettingStartedTitle');
   String get foremanGettingStartedDescription =>
       _t('foremanGettingStartedDescription');
