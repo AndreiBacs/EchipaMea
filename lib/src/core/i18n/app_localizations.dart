@@ -404,6 +404,17 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeDescription':
           'Completeaza echipa cu un angajat nou.',
       'genericErrorMessage': 'A aparut o eroare. Te rugam sa incerci din nou.',
+      'apiErrorNetwork':
+          'Serverul nu poate fi contactat. Verifica conexiunea si incearca din nou.',
+      'apiErrorSessionExpired': 'Sesiunea a expirat. Autentifica-te din nou.',
+      'apiErrorForbidden': 'Nu ai permisiunea pentru aceasta actiune.',
+      'apiErrorNotFound': 'Elementul nu mai exista.',
+      'apiErrorValidation': 'Unele date nu sunt valide. Verifica formularul.',
+      'apiErrorRateLimited':
+          'Prea multe incercari. Asteapta un minut si incearca din nou.',
+      'apiErrorServer': 'Serverul a intampinat o problema. Incearca din nou.',
+      'apiErrorInvalidCredentials': 'Email sau parola incorecta.',
+      'apiErrorAccountDisabled': 'Acest cont a fost dezactivat.',
     },
     'hu': {
       'appTitle': 'EchipaMea',
@@ -793,6 +804,17 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeDescription':
           'Bovitsd a csapatot egy uj dolgozoval.',
       'genericErrorMessage': 'Hiba tortent. Kerjuk, probald ujra.',
+      'apiErrorNetwork':
+          'A szerver nem erheto el. Ellenorizd a kapcsolatot, es probald ujra.',
+      'apiErrorSessionExpired': 'A munkamenet lejart. Jelentkezz be ujra.',
+      'apiErrorForbidden': 'Nincs jogosultsagod ehhez a muvelethez.',
+      'apiErrorNotFound': 'Ez az elem mar nem letezik.',
+      'apiErrorValidation': 'Nehany adat ervenytelen. Ellenorizd az urlapot.',
+      'apiErrorRateLimited':
+          'Tul sok probalkozas. Varj egy percet, es probald ujra.',
+      'apiErrorServer': 'Hiba tortent a szerveren. Probald ujra.',
+      'apiErrorInvalidCredentials': 'Hibas e-mail-cim vagy jelszo.',
+      'apiErrorAccountDisabled': 'Ezt a fiokot letiltottak.',
     },
     'en': {
       'appTitle': 'EchipaMea',
@@ -1179,6 +1201,18 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeDescription':
           'Grow your crew by adding a new employee.',
       'genericErrorMessage': 'Something went wrong. Please try again.',
+      'apiErrorNetwork':
+          'Could not reach the server. Check your connection and try again.',
+      'apiErrorSessionExpired':
+          'Your session has expired. Please sign in again.',
+      'apiErrorForbidden': 'You don\'t have permission to do that.',
+      'apiErrorNotFound': 'This item no longer exists.',
+      'apiErrorValidation':
+          'Some details are not valid. Please check the form.',
+      'apiErrorRateLimited': 'Too many attempts. Wait a minute and try again.',
+      'apiErrorServer': 'The server ran into a problem. Please try again.',
+      'apiErrorInvalidCredentials': 'Incorrect email or password.',
+      'apiErrorAccountDisabled': 'This account has been disabled.',
     },
   };
 
@@ -1558,6 +1592,15 @@ class AppLocalizations {
   String get foremanWorkflowAddEmployeeDescription =>
       _t('foremanWorkflowAddEmployeeDescription');
   String get genericErrorMessage => _t('genericErrorMessage');
+  String get apiErrorNetwork => _t('apiErrorNetwork');
+  String get apiErrorSessionExpired => _t('apiErrorSessionExpired');
+  String get apiErrorForbidden => _t('apiErrorForbidden');
+  String get apiErrorNotFound => _t('apiErrorNotFound');
+  String get apiErrorValidation => _t('apiErrorValidation');
+  String get apiErrorRateLimited => _t('apiErrorRateLimited');
+  String get apiErrorServer => _t('apiErrorServer');
+  String get apiErrorInvalidCredentials => _t('apiErrorInvalidCredentials');
+  String get apiErrorAccountDisabled => _t('apiErrorAccountDisabled');
   String foremanGettingStartedProgress(int completed, int total) =>
       '$completed / $total';
   String foremanGettingStartedNext(String stepTitle) =>

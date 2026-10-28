@@ -16,10 +16,8 @@ class WorkerPhaseDetailPage extends ConsumerWidget {
     required this.phaseId,
   });
 
-  static String pathFor({
-    required String projectId,
-    required String phaseId,
-  }) => '/worker/project/$projectId/phase/$phaseId';
+  static String pathFor({required String projectId, required String phaseId}) =>
+      '/worker/project/$projectId/phase/$phaseId';
 
   final String projectId;
   final String phaseId;
@@ -27,13 +25,15 @@ class WorkerPhaseDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final session = ref.watch(sessionProvider);
-    final project = ref.watch(projectsProvider.select((list) {
-      for (final p in list) {
-        if (p.id == projectId) return p;
-      }
-      return null;
-    }));
+    final session = ref.watch(sessionProvider).value;
+    final project = ref.watch(
+      projectsProvider.select((list) {
+        for (final p in list) {
+          if (p.id == projectId) return p;
+        }
+        return null;
+      }),
+    );
     final assigned = ref.watch(workerAssignedProjectsProvider);
     final isAssignedProject =
         project != null && assigned.any((p) => p.id == project.id);
@@ -97,7 +97,9 @@ class WorkerPhaseDetailPage extends ConsumerWidget {
               phase.status != PhaseStatus.done)
             FilledButton.tonalIcon(
               onPressed: () {
-                ref.read(projectsProvider.notifier).submitPhaseForReview(
+                ref
+                    .read(projectsProvider.notifier)
+                    .submitPhaseForReview(
                       projectId: project.id,
                       phaseId: phase.id,
                       employeeId: session.employeeId,

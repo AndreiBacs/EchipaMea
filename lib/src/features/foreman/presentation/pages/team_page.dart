@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/auth/worker_ticket_api.dart';
 import '../../../../core/config/app_env.dart';
 import '../../../../core/domain/entities/worker_role.dart';
@@ -402,8 +401,6 @@ class _EmployeeQrDialog extends ConsumerStatefulWidget {
 }
 
 class _EmployeeQrDialogState extends ConsumerState<_EmployeeQrDialog> {
-  final WorkerTicketApi _api = WorkerTicketApi();
-
   IssuedWorkerTicket? _ticket;
   Object? _error;
   bool _loading = true;
@@ -429,11 +426,12 @@ class _EmployeeQrDialogState extends ConsumerState<_EmployeeQrDialog> {
     });
 
     try {
-      final ticket = await _api.issue(
-        employeeId: widget.employee.id,
-        employeeName: widget.employee.name,
-        accessToken: ref.read(authSessionProvider).asData?.value?.token ?? '',
-      );
+      final ticket = await ref
+          .read(workerTicketApiProvider)
+          .issue(
+            employeeId: widget.employee.id,
+            employeeName: widget.employee.name,
+          );
       if (!mounted) return;
       setState(() {
         _ticket = ticket;

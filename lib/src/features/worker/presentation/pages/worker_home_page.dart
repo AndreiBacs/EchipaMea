@@ -16,7 +16,7 @@ class WorkerHomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final assigned = ref.watch(workerAssignedProjectsProvider);
-    final session = ref.watch(sessionProvider);
+    final session = ref.watch(sessionProvider).value;
     final projectsNotifier = ref.read(projectsProvider.notifier);
     final today = DateTime.now();
 

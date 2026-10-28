@@ -30,8 +30,13 @@ class AppEnv {
   static String workerReportsApiUrl = '';
   static String foremanNotificationsWsUrl = '';
 
-  /// True when a backend is configured and the app should talk to it.
-  static bool get hasBackend => authApiBaseUrl.trim().isNotEmpty;
+  /// True when a backend is configured and the app should talk to it. This is
+  /// the one mock-mode switch; nothing else should test the URL itself.
+  static bool get hasBackend => apiBaseUrl.isNotEmpty;
+
+  /// [authApiBaseUrl] trimmed, without trailing slashes, ready for `'$base/x'`.
+  static String get apiBaseUrl =>
+      authApiBaseUrl.trim().replaceAll(RegExp(r'/+$'), '');
 
   static void initialize() {
     stitchApiKey = dotenv.env[_stitchApiKeyField] ?? '';

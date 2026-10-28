@@ -22,13 +22,15 @@ class WorkerProjectDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final session = ref.watch(sessionProvider);
-    final project = ref.watch(projectsProvider.select((list) {
-      for (final p in list) {
-        if (p.id == projectId) return p;
-      }
-      return null;
-    }));
+    final session = ref.watch(sessionProvider).value;
+    final project = ref.watch(
+      projectsProvider.select((list) {
+        for (final p in list) {
+          if (p.id == projectId) return p;
+        }
+        return null;
+      }),
+    );
     final assigned = ref.watch(workerAssignedProjectsProvider);
     final isAssigned =
         project != null && assigned.any((p) => p.id == project.id);
@@ -49,10 +51,7 @@ class WorkerProjectDetailPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            project.name,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text(project.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(
             '${l10n.statusLabel}: ${_statusLabel(l10n, project.status)}',
@@ -70,20 +69,20 @@ class WorkerProjectDetailPage extends ConsumerWidget {
               '${project.latitude!.toStringAsFixed(5)}, '
               '${project.longitude!.toStringAsFixed(5)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: project.latitude != null && project.longitude != null
                 ? () => _openMaps(
-                      context,
-                      l10n,
-                      project.name,
-                      project.latitude!,
-                      project.longitude!,
-                    )
+                    context,
+                    l10n,
+                    project.name,
+                    project.latitude!,
+                    project.longitude!,
+                  )
                 : null,
             icon: const Icon(Icons.navigation),
             label: Text(l10n.workerOpenNavigation),
@@ -91,15 +90,17 @@ class WorkerProjectDetailPage extends ConsumerWidget {
           const SizedBox(height: 12),
           FilledButton.tonalIcon(
             onPressed: () {
-              ref.read(workerForemanInboxProvider.notifier).announceArrival(
+              ref
+                  .read(workerForemanInboxProvider.notifier)
+                  .announceArrival(
                     projectId: project.id,
                     projectName: project.name,
                     employeeId: session.employeeId,
                     employeeName: session.employeeName,
                   );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.workerArrivalSent)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l10n.workerArrivalSent)));
             },
             icon: const Icon(Icons.place),
             label: Text(l10n.workerAnnounceArrival),
@@ -110,8 +111,8 @@ class WorkerProjectDetailPage extends ConsumerWidget {
               child: Text(
                 l10n.workerLocationMissing,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ),
           const SizedBox(height: 32),
@@ -158,16 +159,16 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                                   children: [
                                     Text(
                                       phase.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '${l10n.statusLabel}: ${_phaseStatusLabel(l10n, phase.status)}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
                                     ),
                                   ],
                                 ),
@@ -191,7 +192,7 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                                       ),
                                     );
                                   },
-                                child: Text(l10n.workerSubmitForReview),
+                                  child: Text(l10n.workerSubmitForReview),
                                 ),
                             ],
                           ),
@@ -209,10 +210,7 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                               label: Text(l10n.workerViewDetails),
                             ),
                           ),
-                          PhaseWorkInstructionsPanel(
-                            l10n: l10n,
-                            phase: phase,
-                          ),
+                          PhaseWorkInstructionsPanel(l10n: l10n, phase: phase),
                         ],
                       ),
                     ),
@@ -259,12 +257,7 @@ class WorkerProjectDetailPage extends ConsumerWidget {
       if (!context.mounted) return;
 
       if (maps.isEmpty) {
-        await _openMapsInBrowser(
-          messenger,
-          l10n,
-          lat,
-          lng,
-        );
+        await _openMapsInBrowser(messenger, l10n, lat, lng);
         return;
       }
 

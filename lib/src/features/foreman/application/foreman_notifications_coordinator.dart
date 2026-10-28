@@ -21,7 +21,6 @@ final foremanNotificationsProvider =
 class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
   WebSocketChannel? _channel;
   bool _connecting = false;
-  final RealtimeTicketApi _tickets = RealtimeTicketApi();
 
   @override
   ForemanNotificationsState build() {
@@ -32,7 +31,7 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
         state = const ForemanNotificationsState.empty();
         return;
       }
-      unawaited(_connect(session));
+      unawaited(_connect());
     }, fireImmediately: true);
     ref.onDispose(_disconnect);
     return const ForemanNotificationsState.empty();
@@ -47,19 +46,21 @@ class ForemanNotificationsNotifier extends Notifier<ForemanNotificationsState> {
   /// This channel used to be opened with no credentials at all, which meant the
   /// server had to admit anonymous readers to make it work -- and an anonymous
   /// reader on a company's report feed is a stranger reading it. A ticket is
-  /// fetched with the stored foreman token and passed as `?ticket=`, because
+  /// fetched with the foreman's token and passed as `?ticket=`, because
   /// Dart cannot set headers on a WebSocket from Flutter web.
   ///
   /// Without a ticket we simply do not connect. Failing closed costs a
   /// notification badge; failing open costs the company's data.
-  Future<void> _connect(AuthSession session) async {
+  Future<void> _connect() async {
     if (_channel != null || _connecting) return;
     final endpoint = AppEnv.foremanNotificationsWsUrl.trim();
     if (endpoint.isEmpty) return;
 
     _connecting = true;
     try {
-      final ticket = await _tickets.fetchTicket(accessToken: session.token);
+      final ticket = await ref
+          .read(foremanRealtimeTicketApiProvider)
+          .fetchTicket();
       if (ticket == null) return;
 
       // The session may have ended while the ticket request was in flight.

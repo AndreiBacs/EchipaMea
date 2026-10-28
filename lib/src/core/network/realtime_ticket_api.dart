@@ -1,8 +1,20 @@
-import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:http/http.dart' as http;
-
+import '../auth/auth_session_controller.dart';
+import '../auth/session_controller.dart';
 import '../config/app_env.dart';
+import 'api_client.dart';
+import 'api_exception.dart';
+
+/// Tickets for the foreman notification socket, minted with the foreman's token.
+final foremanRealtimeTicketApiProvider = Provider<RealtimeTicketApi>(
+  (ref) => RealtimeTicketApi(ref.watch(foremanApiProvider)),
+);
+
+/// Tickets for the worker telemetry socket, minted with the worker's token.
+final workerRealtimeTicketApiProvider = Provider<RealtimeTicketApi>(
+  (ref) => RealtimeTicketApi(ref.watch(workerApiProvider)),
+);
 
 /// Fetches a single-use ticket for a WebSocket handshake.
 ///
@@ -14,45 +26,25 @@ import '../config/app_env.dart';
 ///
 /// Single-use means one fetch per connection attempt, reconnects included.
 class RealtimeTicketApi {
-  RealtimeTicketApi({http.Client? client}) : _client = client ?? http.Client();
+  RealtimeTicketApi(this._api);
 
-  final http.Client _client;
-
-  static const _timeout = Duration(seconds: 15);
+  final ApiClient _api;
 
   /// Returns a ticket, or null when one cannot be obtained.
   ///
-  /// Null is a normal outcome, not an error to surface: the base URL may be
-  /// unset (mock mode), the device may be offline, or the token may have
-  /// expired. Callers treat it as "do not connect" rather than as a failure to
-  /// show the user -- a missing notification badge is not worth a dialog.
-  Future<String?> fetchTicket({required String accessToken}) async {
-    final base = AppEnv.authApiBaseUrl.trim();
-    if (base.isEmpty || accessToken.isEmpty) return null;
-
-    final uri = Uri.tryParse(
-      '${base.replaceAll(RegExp(r'/+$'), '')}/realtime/tickets',
-    );
-    if (uri == null) return null;
-
+  /// Null is a normal outcome, not an error to surface: there may be no backend
+  /// (mock mode), the device may be offline, or the session may have ended.
+  /// Callers treat it as "do not connect" rather than as a failure to show the
+  /// user -- a missing notification badge is not worth a dialog. An expired
+  /// access token is refreshed by the client first, like any other call.
+  Future<String?> fetchTicket() async {
+    if (!AppEnv.hasBackend) return null;
     try {
-      final response = await _client
-          .post(
-            uri,
-            headers: {
-              'Authorization': 'Bearer $accessToken',
-              'Accept': 'application/json',
-            },
-          )
-          .timeout(_timeout);
-
-      if (response.statusCode < 200 || response.statusCode >= 300) return null;
-
-      final decoded = jsonDecode(response.body);
+      final decoded = await _api.post('/realtime/tickets');
       if (decoded is! Map<String, dynamic>) return null;
       final ticket = decoded['ticket'];
       return ticket is String && ticket.isNotEmpty ? ticket : null;
-    } catch (_) {
+    } on ApiException {
       return null;
     }
   }

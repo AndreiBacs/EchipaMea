@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/network/api_error_messages.dart';
 import '../../../foreman/presentation/pages/foreman_shell_page.dart';
 import '../../../legal/presentation/pages/terms_page.dart';
 import '../../../worker/presentation/pages/worker_connect_page.dart';
@@ -98,16 +99,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         if (nextState.hasError) {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(nextState.error.toString())),
+                            SnackBar(
+                              content: Text(
+                                apiErrorMessage(l10n, nextState.error),
+                              ),
+                            ),
                           );
                           return;
                         }
                         if (!context.mounted) return;
                         context.go(ForemanShellPage.dashboardPath);
                       },
-                child: Text(
-                  isLoading ? l10n.signingIn : l10n.loginAsForeman,
-                ),
+                child: Text(isLoading ? l10n.signingIn : l10n.loginAsForeman),
               ),
             ),
             const SizedBox(height: 24),

@@ -12,6 +12,7 @@ import 'package:record/record.dart';
 
 import '../../../../core/auth/session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/network/api_error_messages.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../../application/worker_reports_api_provider.dart';
 import '../providers/worker_assigned_projects_provider.dart';
@@ -88,7 +89,7 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
         return null;
       }),
     );
-    final session = ref.watch(sessionProvider);
+    final session = ref.watch(sessionProvider).value;
     final assigned = ref.watch(workerAssignedProjectsProvider);
     final phase = project?.phases
         .where((p) => p.id == widget.phaseId)
@@ -413,7 +414,6 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
             description: description,
             submittedAt: DateTime.now(),
             photos: _photos,
-            accessToken: session.sessionToken,
             memoPath: _memoPath,
           );
 
@@ -450,7 +450,11 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${l10n.workerReportSubmitFailed}: $error')),
+        SnackBar(
+          content: Text(
+            '${l10n.workerReportSubmitFailed}: ${apiErrorMessage(l10n, error)}',
+          ),
+        ),
       );
     } finally {
       if (mounted) {

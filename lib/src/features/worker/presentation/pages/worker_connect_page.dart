@@ -47,7 +47,7 @@ class _WorkerConnectPageState extends ConsumerState<WorkerConnectPage> {
 
   @override
   Widget build(BuildContext context) {
-    final session = ref.watch(sessionProvider);
+    final session = ref.watch(sessionProvider).value;
     final l10n = context.l10n;
 
     return Scaffold(

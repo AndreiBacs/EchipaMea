@@ -8,7 +8,7 @@ import 'worker_completed_projects_provider.dart';
 /// Projects assigned to the signed-in worker (by roster employee ID when set on
 /// the project, otherwise by display name on the worker list).
 final workerAssignedProjectsProvider = Provider<List<Project>>((ref) {
-  final session = ref.watch(sessionProvider);
+  final session = ref.watch(sessionProvider).value;
   if (session == null) return const [];
 
   final team = ref.watch(teamProvider);

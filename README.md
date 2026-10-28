@@ -195,6 +195,9 @@ FOREMAN_NOTIFICATIONS_WS_URL=ws://localhost:3000/ws/foreman-notifications
   - The foreman's QR dialog asks the server for a single-use ticket that lives 90 seconds.
   - The worker's scan redeems it at `/worker/login-tickets/redeem` for a real worker token. Expired, already-used and disabled-account codes each get their own message.
   - Sockets connect with a single-use ticket from `POST /realtime/tickets`, passed as `?ticket=`, never with a raw token.
+  - Expired access tokens are refreshed automatically. If the server refuses the refresh (signed out elsewhere, password changed, worker deactivated), the app returns to the sign-in screen; being offline never signs anyone out.
+
+Both sessions are kept in the platform keystore (`flutter_secure_storage`: Keychain, Android Keystore, Windows Credential Manager, encrypted browser storage), never in plain preferences. A worker stays signed in across app restarts until the 7-day refresh token runs out or the foreman deactivates them; signing out revokes the session on the server as well. A token saved by an older build is moved into the keystore on first launch, and a demo-mode token is discarded once a backend is configured.
 
 ## Build
 
