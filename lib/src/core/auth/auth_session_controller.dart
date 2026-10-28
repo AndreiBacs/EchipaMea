@@ -24,6 +24,19 @@ final foremanApiProvider = Provider<ApiClient>(
   ),
 );
 
+/// Foreman data providers await this first in `build()`. With a backend it
+/// waits for the session to be restored, then watches who is signed in, so the
+/// provider rebuilds when a different foreman signs in and one company's data
+/// is never served to another; a token refresh does not rebuild it. Returns
+/// false when there is nothing to load: no foreman is signed in.
+Future<bool> watchForemanScope(Ref ref) async {
+  if (!AppEnv.hasBackend) return true;
+  final userId = await ref.watch(
+    authSessionProvider.selectAsync((session) => session?.userId),
+  );
+  return userId != null;
+}
+
 const _mockForemanTokenPrefix = 'mock-foreman-token';
 
 class AuthSessionNotifier extends AsyncNotifier<AuthSession?>

@@ -415,6 +415,9 @@ class AppLocalizations {
       'apiErrorServer': 'Serverul a intampinat o problema. Incearca din nou.',
       'apiErrorInvalidCredentials': 'Email sau parola incorecta.',
       'apiErrorAccountDisabled': 'Acest cont a fost dezactivat.',
+      'retry': 'Reincearca',
+      'employeeActiveHint':
+          'Daca il dezactivezi, angajatul este deconectat din aplicatie.',
     },
     'hu': {
       'appTitle': 'EchipaMea',
@@ -815,6 +818,9 @@ class AppLocalizations {
       'apiErrorServer': 'Hiba tortent a szerveren. Probald ujra.',
       'apiErrorInvalidCredentials': 'Hibas e-mail-cim vagy jelszo.',
       'apiErrorAccountDisabled': 'Ezt a fiokot letiltottak.',
+      'retry': 'Ujra',
+      'employeeActiveHint':
+          'Ha kikapcsolod, a dolgozo kijelentkezik az alkalmazasbol.',
     },
     'en': {
       'appTitle': 'EchipaMea',
@@ -1213,6 +1219,8 @@ class AppLocalizations {
       'apiErrorServer': 'The server ran into a problem. Please try again.',
       'apiErrorInvalidCredentials': 'Incorrect email or password.',
       'apiErrorAccountDisabled': 'This account has been disabled.',
+      'retry': 'Retry',
+      'employeeActiveHint': 'Turning this off signs the worker out of the app.',
     },
   };
 
@@ -1601,6 +1609,8 @@ class AppLocalizations {
   String get apiErrorServer => _t('apiErrorServer');
   String get apiErrorInvalidCredentials => _t('apiErrorInvalidCredentials');
   String get apiErrorAccountDisabled => _t('apiErrorAccountDisabled');
+  String get retry => _t('retry');
+  String get employeeActiveHint => _t('employeeActiveHint');
   String foremanGettingStartedProgress(int completed, int total) =>
       '$completed / $total';
   String foremanGettingStartedNext(String stepTitle) =>

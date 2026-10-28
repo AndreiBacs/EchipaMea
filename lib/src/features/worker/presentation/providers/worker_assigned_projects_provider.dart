@@ -11,7 +11,7 @@ final workerAssignedProjectsProvider = Provider<List<Project>>((ref) {
   final session = ref.watch(sessionProvider).value;
   if (session == null) return const [];
 
-  final team = ref.watch(teamProvider);
+  final team = ref.watch(teamProvider).value ?? const <Employee>[];
   Employee? employee;
   for (final e in team) {
     if (e.id == session.employeeId) {

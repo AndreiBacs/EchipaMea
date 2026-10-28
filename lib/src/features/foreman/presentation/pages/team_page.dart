@@ -10,6 +10,7 @@ import '../../../../core/auth/worker_ticket_api.dart';
 import '../../../../core/config/app_env.dart';
 import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/ui/async_status_view.dart';
 import 'employee_form_page.dart';
 import '../providers/team_controller.dart';
 
@@ -18,7 +19,14 @@ class TeamPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final employees = ref.watch(teamProvider);
+    final teamState = ref.watch(teamProvider);
+    final employees = teamState.current;
+    if (employees == null) {
+      return AsyncStatusView(
+        teamState,
+        onRetry: () => ref.invalidate(teamProvider),
+      );
+    }
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;
 
@@ -115,6 +123,15 @@ class TeamPage extends ConsumerWidget {
                                     ).colorScheme.primary,
                                   ),
                                   Text(employee.role.localizedLabel(l10n)),
+                                  if (!employee.isActive)
+                                    Text(
+                                      l10n.statusInactive,
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.error,
+                                      ),
+                                    ),
                                 ],
                               ),
                               const SizedBox(height: 6),

@@ -43,6 +43,7 @@ class Client {
   }
 
   Client copyWith({
+    String? id,
     String? name,
     int? activeProjects,
     ClientType? type,
@@ -58,7 +59,7 @@ class Client {
     String? contactPerson,
   }) {
     return Client(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       activeProjects: activeProjects ?? this.activeProjects,
       type: type ?? this.type,

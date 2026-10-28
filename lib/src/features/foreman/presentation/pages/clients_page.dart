@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/ui/async_status_view.dart';
 import 'client_form_page.dart';
 import 'client_projects_page.dart';
 import '../providers/clients_controller.dart';
@@ -15,7 +16,14 @@ class ClientsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clients = ref.watch(clientsProvider);
+    final clientsState = ref.watch(clientsProvider);
+    final clients = clientsState.current;
+    if (clients == null) {
+      return AsyncStatusView(
+        clientsState,
+        onRetry: () => ref.invalidate(clientsProvider),
+      );
+    }
     final projects = ref.watch(projectsProvider);
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;
@@ -99,7 +107,9 @@ class ClientsPage extends ConsumerWidget {
                                   Icon(
                                     Icons.work_outline,
                                     size: 16,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                   Text(
                                     allocatedProjects.length == 1
@@ -112,8 +122,12 @@ class ClientsPage extends ConsumerWidget {
                               Text(
                                 '${l10n.contactPersonLabel}: ${client.contactPerson}',
                               ),
-                              Text('${l10n.profileEmailLabel}: ${client.email}'),
-                              Text('${l10n.profilePhoneLabel}: ${client.phone}'),
+                              Text(
+                                '${l10n.profileEmailLabel}: ${client.email}',
+                              ),
+                              Text(
+                                '${l10n.profilePhoneLabel}: ${client.phone}',
+                              ),
                               Text(
                                 '${l10n.typeLabel}: ${_clientTypeLabel(client.type, l10n)}',
                               ),
@@ -123,7 +137,9 @@ class ClientsPage extends ConsumerWidget {
                               Text(
                                 '${l10n.preferredContactMethodLabel}: ${_contactMethodLabel(client.preferredContactMethod, l10n)}',
                               ),
-                              Text('${l10n.addressLabel}: ${client.fullAddress}'),
+                              Text(
+                                '${l10n.addressLabel}: ${client.fullAddress}',
+                              ),
                               if (client.notes.trim().isNotEmpty)
                                 Text('${l10n.notesLabel}: ${client.notes}'),
                               const SizedBox(height: 6),
@@ -163,7 +179,9 @@ class ClientsPage extends ConsumerWidget {
                                     tooltip: l10n.copyClientPhoneTooltip,
                                     onPressed: () =>
                                         _copyToClipboard(context, client.phone),
-                                    icon: const Icon(Icons.content_copy_outlined),
+                                    icon: const Icon(
+                                      Icons.content_copy_outlined,
+                                    ),
                                   ),
                                   IconButton(
                                     tooltip: l10n.copyClientEmailTooltip,
@@ -188,8 +206,9 @@ class ClientsPage extends ConsumerWidget {
                             IconButton(
                               icon: const Icon(Icons.edit_outlined),
                               tooltip: l10n.editClientTooltip,
-                              onPressed: () =>
-                                  context.push('/foreman/clients/${client.id}/edit'),
+                              onPressed: () => context.push(
+                                '/foreman/clients/${client.id}/edit',
+                              ),
                             ),
                             IconButton(
                               icon: const Icon(Icons.list_alt_outlined),
@@ -312,7 +331,9 @@ class ClientsPage extends ConsumerWidget {
   static Future<void> _openMap(BuildContext context, String address) async {
     final l10n = context.l10n;
     final query = Uri.encodeComponent(address);
-    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$query',
+    );
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!context.mounted || launched) return;
     ScaffoldMessenger.of(
@@ -320,7 +341,10 @@ class ClientsPage extends ConsumerWidget {
     ).showSnackBar(SnackBar(content: Text(l10n.couldNotOpenMapApp)));
   }
 
-  static Future<void> _copyToClipboard(BuildContext context, String value) async {
+  static Future<void> _copyToClipboard(
+    BuildContext context,
+    String value,
+  ) async {
     final l10n = context.l10n;
     await Clipboard.setData(ClipboardData(text: value));
     if (!context.mounted) return;

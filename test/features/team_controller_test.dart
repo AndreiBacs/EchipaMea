@@ -3,28 +3,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:echipa_mea/src/core/domain/entities/worker_role.dart';
+import 'package:echipa_mea/src/core/network/api_exception.dart';
 import 'package:echipa_mea/src/features/foreman/presentation/providers/team_controller.dart';
 
 void main() {
   late ProviderContainer container;
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     container = ProviderContainer();
     addTearDown(container.dispose);
+    await container.read(teamProvider.future);
   });
 
   group('TeamNotifier initial state', () {
     test('starts with 3 demo employees', () {
-      expect(container.read(teamProvider).length, 3);
+      expect(container.read(teamProvider).requireValue.length, 3);
     });
 
     test('first demo employee has id e1', () {
-      expect(container.read(teamProvider).first.id, 'e1');
+      expect(container.read(teamProvider).requireValue.first.id, 'e1');
     });
 
     test('demo employees have required fields populated', () {
-      for (final emp in container.read(teamProvider)) {
+      for (final emp in container.read(teamProvider).requireValue) {
         expect(emp.id, isNotEmpty);
         expect(emp.name, isNotEmpty);
         expect(emp.role, isA<WorkerRole>());
@@ -36,8 +38,8 @@ void main() {
   });
 
   group('TeamNotifier.addEmployee', () {
-    test('increases employee count by one', () {
-      container
+    test('increases employee count by one', () async {
+      await container
           .read(teamProvider.notifier)
           .addEmployee(
             name: 'New Worker',
@@ -48,11 +50,11 @@ void main() {
             workEndHour: 17,
             workingDays: {1, 2, 3, 4, 5},
           );
-      expect(container.read(teamProvider).length, 4);
+      expect(container.read(teamProvider).requireValue.length, 4);
     });
 
-    test('added employee is appended to the end', () {
-      container
+    test('added employee is appended to the end', () async {
+      await container
           .read(teamProvider.notifier)
           .addEmployee(
             name: 'Last Employee',
@@ -63,11 +65,14 @@ void main() {
             workEndHour: 18,
             workingDays: {1},
           );
-      expect(container.read(teamProvider).last.name, 'Last Employee');
+      expect(
+        container.read(teamProvider).requireValue.last.name,
+        'Last Employee',
+      );
     });
 
-    test('added employee has all fields set correctly', () {
-      container
+    test('added employee has all fields set correctly', () async {
+      await container
           .read(teamProvider.notifier)
           .addEmployee(
             name: 'Full Fields',
@@ -80,7 +85,7 @@ void main() {
             latitude: 46.0,
             longitude: 23.0,
           );
-      final added = container.read(teamProvider).last;
+      final added = container.read(teamProvider).requireValue.last;
       expect(added.name, 'Full Fields');
       expect(added.role, WorkerRole.welder);
       expect(added.email, 'ff@example.com');
@@ -92,8 +97,8 @@ void main() {
       expect(added.longitude, 23.0);
     });
 
-    test('added employee without coordinates has null lat/long', () {
-      container
+    test('added employee without coordinates has null lat/long', () async {
+      await container
           .read(teamProvider.notifier)
           .addEmployee(
             name: 'No Coords',
@@ -104,13 +109,13 @@ void main() {
             workEndHour: 17,
             workingDays: {1},
           );
-      final added = container.read(teamProvider).last;
+      final added = container.read(teamProvider).requireValue.last;
       expect(added.latitude, isNull);
       expect(added.longitude, isNull);
     });
 
-    test('generated ids are unique for successive adds', () {
-      container
+    test('generated ids are unique for successive adds', () async {
+      await container
           .read(teamProvider.notifier)
           .addEmployee(
             name: 'A',
@@ -121,7 +126,7 @@ void main() {
             workEndHour: 16,
             workingDays: {1},
           );
-      container
+      await container
           .read(teamProvider.notifier)
           .addEmployee(
             name: 'B',
@@ -132,15 +137,15 @@ void main() {
             workEndHour: 16,
             workingDays: {1},
           );
-      final employees = container.read(teamProvider);
+      final employees = container.read(teamProvider).requireValue;
       final ids = employees.map((e) => e.id).toSet();
       expect(ids.length, employees.length);
     });
   });
 
   group('TeamNotifier.updateEmployee', () {
-    test('updates name for existing employee', () {
-      container
+    test('updates name for existing employee', () async {
+      await container
           .read(teamProvider.notifier)
           .updateEmployee(
             id: 'e1',
@@ -154,12 +159,13 @@ void main() {
           );
       final updated = container
           .read(teamProvider)
+          .requireValue
           .firstWhere((e) => e.id == 'e1');
       expect(updated.name, 'Updated Name');
     });
 
-    test('updates role for existing employee', () {
-      container
+    test('updates role for existing employee', () async {
+      await container
           .read(teamProvider.notifier)
           .updateEmployee(
             id: 'e2',
@@ -173,12 +179,13 @@ void main() {
           );
       final updated = container
           .read(teamProvider)
+          .requireValue
           .firstWhere((e) => e.id == 'e2');
       expect(updated.role, WorkerRole.electrician);
     });
 
-    test('updates working hours for existing employee', () {
-      container
+    test('updates working hours for existing employee', () async {
+      await container
           .read(teamProvider.notifier)
           .updateEmployee(
             id: 'e1',
@@ -192,13 +199,14 @@ void main() {
           );
       final updated = container
           .read(teamProvider)
+          .requireValue
           .firstWhere((e) => e.id == 'e1');
       expect(updated.workStartHour, 9);
       expect(updated.workEndHour, 18);
     });
 
-    test('updates working days for existing employee', () {
-      container
+    test('updates working days for existing employee', () async {
+      await container
           .read(teamProvider.notifier)
           .updateEmployee(
             id: 'e1',
@@ -212,13 +220,14 @@ void main() {
           );
       final updated = container
           .read(teamProvider)
+          .requireValue
           .firstWhere((e) => e.id == 'e1');
       expect(updated.workingDays, {6, 7});
     });
 
-    test('does not change total count on update', () {
-      final before = container.read(teamProvider).length;
-      container
+    test('does not change total count on update', () async {
+      final before = container.read(teamProvider).requireValue.length;
+      await container
           .read(teamProvider.notifier)
           .updateEmployee(
             id: 'e1',
@@ -230,11 +239,11 @@ void main() {
             workEndHour: 16,
             workingDays: {1},
           );
-      expect(container.read(teamProvider).length, before);
+      expect(container.read(teamProvider).requireValue.length, before);
     });
 
-    test('does not affect other employees when updating one', () {
-      container
+    test('does not affect other employees when updating one', () async {
+      await container
           .read(teamProvider.notifier)
           .updateEmployee(
             id: 'e1',
@@ -246,13 +255,20 @@ void main() {
             workEndHour: 16,
             workingDays: {1},
           );
-      final e2 = container.read(teamProvider).firstWhere((e) => e.id == 'e2');
+      final e2 = container
+          .read(teamProvider)
+          .requireValue
+          .firstWhere((e) => e.id == 'e2');
       expect(e2.name, 'Mihai S.');
     });
 
-    test('unknown id does not change state', () {
-      final before = container.read(teamProvider).map((e) => e.name).toList();
-      container
+    test('unknown id throws NOT_FOUND and does not change state', () async {
+      final before = container
+          .read(teamProvider)
+          .requireValue
+          .map((e) => e.name)
+          .toList();
+      final update = container
           .read(teamProvider.notifier)
           .updateEmployee(
             id: 'nonexistent',
@@ -264,7 +280,15 @@ void main() {
             workEndHour: 16,
             workingDays: {1},
           );
-      final after = container.read(teamProvider).map((e) => e.name).toList();
+      await expectLater(
+        update,
+        throwsA(isA<ApiException>().having((e) => e.code, 'code', 'NOT_FOUND')),
+      );
+      final after = container
+          .read(teamProvider)
+          .requireValue
+          .map((e) => e.name)
+          .toList();
       expect(after, before);
     });
   });

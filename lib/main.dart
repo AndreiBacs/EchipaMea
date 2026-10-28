@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/app.dart';
 import 'src/core/config/app_env.dart';
+import 'src/core/network/api_client.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   AppEnv.initialize();
-  runApp(const ProviderScope(child: EchipaMeaApp()));
+  runApp(const ProviderScope(retry: apiRetry, child: EchipaMeaApp()));
 }

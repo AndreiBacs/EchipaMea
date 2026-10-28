@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
+import '../../../../core/ui/async_status_view.dart';
 import '../providers/projects_controller.dart';
 import '../providers/team_controller.dart';
 import '../widgets/phase_work_instructions_editor.dart';
@@ -95,7 +96,7 @@ class _ProjectPhaseFormPageState extends ConsumerState<ProjectPhaseFormPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final team = ref.watch(teamProvider);
+    final team = ref.watch(teamProvider).current ?? const <Employee>[];
     final projects = ref.watch(projectsProvider);
     final phase = widget.isNew ? null : _findPhase(projects);
 

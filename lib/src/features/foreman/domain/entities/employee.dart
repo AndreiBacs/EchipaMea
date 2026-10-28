@@ -12,6 +12,7 @@ class Employee {
     required this.workingDays,
     this.latitude,
     this.longitude,
+    this.isActive = true,
   });
 
   final String id;
@@ -25,6 +26,10 @@ class Employee {
   final double? latitude;
   final double? longitude;
 
+  /// False once the foreman deactivates them; the server then refuses their
+  /// sessions.
+  final bool isActive;
+
   String get initials {
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty) return '?';
@@ -34,6 +39,7 @@ class Employee {
   }
 
   Employee copyWith({
+    String? id,
     String? name,
     WorkerRole? role,
     String? email,
@@ -43,9 +49,10 @@ class Employee {
     Set<int>? workingDays,
     double? latitude,
     double? longitude,
+    bool? isActive,
   }) {
     return Employee(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       role: role ?? this.role,
       email: email ?? this.email,
@@ -55,6 +62,7 @@ class Employee {
       workingDays: workingDays ?? this.workingDays,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

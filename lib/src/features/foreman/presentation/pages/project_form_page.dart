@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
+import '../../../../core/ui/async_status_view.dart';
 import 'foreman_shell_page.dart';
 import 'project_phase_form_page.dart';
 import '../providers/clients_controller.dart';
@@ -74,6 +75,14 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     if (_useClientAddress) {
       _syncAddressFromClient();
     }
+    // The client list may still be loading when the form opens.
+    ref.listenManual(clientsProvider, (previous, next) {
+      if (_useClientAddress &&
+          previous?.current == null &&
+          next.current != null) {
+        _syncAddressFromClient();
+      }
+    });
 
     final tabIndex = widget.initialTabIndex.clamp(0, 1);
     _tabController = TabController(
@@ -91,7 +100,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
 
   void _onAddPhaseFabPressed() {
     final l10n = context.l10n;
-    final team = ref.read(teamProvider);
+    final team = ref.read(teamProvider).current ?? const <Employee>[];
     final projectId = widget.projectId;
     if (projectId != null) {
       context.push(ProjectPhaseFormPage.pathNew(projectId));
@@ -117,7 +126,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     final isEdit = widget.projectId != null;
     final lockClientSelection = !isEdit && widget.initialClientId != null;
     final l10n = context.l10n;
-    final clients = ref.watch(clientsProvider);
+    final clients = ref.watch(clientsProvider).current ?? const <Client>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -295,7 +304,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     AppLocalizations l10n,
     bool isEdit,
   ) {
-    final team = ref.watch(teamProvider);
+    final team = ref.watch(teamProvider).current ?? const <Employee>[];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -653,7 +662,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
       return;
     }
 
-    final team = ref.read(teamProvider);
+    final team = ref.read(teamProvider).current ?? const <Employee>[];
     final phases = isEdit
         ? ref
                   .read(projectsProvider.notifier)
@@ -705,7 +714,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     final clientId = _selectedClientId;
     if (clientId == null) return;
     Client? client;
-    for (final c in ref.read(clientsProvider)) {
+    for (final c in ref.read(clientsProvider).current ?? const <Client>[]) {
       if (c.id == clientId) {
         client = c;
         break;

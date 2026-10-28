@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'package:echipa_mea/src/core/auth/auth_session_controller.dart';
 import 'package:echipa_mea/src/core/auth/token_store.dart';
 import 'package:echipa_mea/src/core/config/app_env.dart';
 import 'package:echipa_mea/src/core/network/api_client.dart';
@@ -71,10 +72,26 @@ ProviderContainer makeApiContainer({FakeServer? server, TokenStore? store}) {
       if (server != null) httpClientProvider.overrideWithValue(server.client),
       tokenStoreProvider.overrideWithValue(store ?? MemoryTokenStore()),
     ],
+    // A failed load stays failed, so a test sees exactly the requests it made.
+    retry: (_, _) => null,
   );
   addTearDown(container.dispose);
   return container;
 }
+
+/// A store holding a signed-in foreman, as if restored at startup.
+MemoryTokenStore foremanStore({
+  String userId = 'foreman_local',
+  String access = 'access-1',
+}) => MemoryTokenStore({
+  'foreman_session': AuthSession(
+    token: access,
+    email: 'foreman@echipamea.local',
+    refreshToken: 'refresh-1',
+    userId: userId,
+    companyId: 'demo-company',
+  ).encode(),
+});
 
 /// A login/refresh response as the server shapes it.
 Map<String, dynamic> loginBody({

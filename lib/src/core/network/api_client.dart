@@ -221,6 +221,16 @@ final httpClientProvider = Provider<http.Client>((ref) {
   return client;
 });
 
+/// Riverpod's retry policy for providers that load from the API. A failure
+/// that may be transient (no response, 5xx) retries with Riverpod's default
+/// backoff; a 4xx answer will not change by asking again.
+Duration? apiRetry(int retryCount, Object error) {
+  if (error is ApiException && !error.isNetwork && error.status < 500) {
+    return null;
+  }
+  return ProviderContainer.defaultRetry(retryCount, error);
+}
+
 /// For the few unauthenticated calls: login, token refresh, ticket redeem.
 final publicApiProvider = Provider<ApiClient>(
   (ref) => ApiClient(

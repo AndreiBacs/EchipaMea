@@ -271,4 +271,21 @@ void main() {
       expect(built, 2);
     });
   });
+
+  group('apiRetry', () {
+    test('retries what may be transient', () {
+      expect(apiRetry(0, const ApiException.network()), isNotNull);
+      expect(apiRetry(0, const ApiException(status: 503)), isNotNull);
+      expect(apiRetry(0, Exception('boom')), isNotNull);
+    });
+
+    test('does not retry a 4xx answer', () {
+      expect(apiRetry(0, const ApiException(status: 404)), isNull);
+      expect(apiRetry(0, const ApiException(status: 401)), isNull);
+    });
+
+    test('gives up after Riverpod default limit', () {
+      expect(apiRetry(10, const ApiException.network()), isNull);
+    });
+  });
 }

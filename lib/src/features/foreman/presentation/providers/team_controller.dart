@@ -2,60 +2,32 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/domain/entities/worker_role.dart';
 import '../../application/foreman_workflow_progress_controller.dart';
+import '../../data/employees_repository.dart';
 import '../../domain/entities/foreman_workflow_step.dart';
 import '../../domain/entities/employee.dart';
 export '../../domain/entities/employee.dart';
 
-final teamProvider = NotifierProvider<TeamNotifier, List<Employee>>(
+final teamProvider = AsyncNotifierProvider<TeamNotifier, List<Employee>>(
   TeamNotifier.new,
 );
 
-class TeamNotifier extends Notifier<List<Employee>> {
+/// The company's crew. Saves wait for the server and then replace the local
+/// copy with what it returned; a failed save throws and leaves the list as it
+/// was.
+class TeamNotifier extends AsyncNotifier<List<Employee>> {
+  EmployeesRepository get _repository => ref.read(employeesRepositoryProvider);
+
   @override
-  List<Employee> build() {
-    return const [
-      Employee(
-        id: 'e1',
-        name: 'Andrei D.',
-        role: WorkerRole.electrician,
-        email: 'andrei@example.com',
-        phone: '+40 721 000 111',
-        latitude: 46.7729,
-        longitude: 23.6243,
-        workStartHour: 7,
-        workEndHour: 16,
-        workingDays: {1, 2, 3, 4, 5},
-      ),
-      Employee(
-        id: 'e2',
-        name: 'Mihai S.',
-        role: WorkerRole.plumber,
-        email: 'mihai@example.com',
-        phone: '+40 722 000 222',
-        latitude: 46.7686,
-        longitude: 23.6041,
-        workStartHour: 8,
-        workEndHour: 17,
-        workingDays: {1, 2, 3, 4, 5},
-      ),
-      Employee(
-        id: 'e3',
-        name: 'Ioana R.',
-        role: WorkerRole.generalWorker,
-        email: 'ioana@example.com',
-        phone: '+40 723 000 333',
-        latitude: 46.7614,
-        longitude: 23.5918,
-        workStartHour: 9,
-        workEndHour: 18,
-        workingDays: {1, 2, 3, 4, 5, 6},
-      ),
-    ];
+  Future<List<Employee>> build() async {
+    final repository = ref.watch(employeesRepositoryProvider);
+    if (!await watchForemanScope(ref)) return const [];
+    return repository.list();
   }
 
-  void addEmployee({
+  Future<Employee> addEmployee({
     required String name,
     required WorkerRole role,
     required String email,
@@ -65,13 +37,10 @@ class TeamNotifier extends Notifier<List<Employee>> {
     required Set<int> workingDays,
     double? latitude,
     double? longitude,
-  }) {
-    final nextId =
-        'e${state.length + 1}_${DateTime.now().millisecondsSinceEpoch}';
-    state = [
-      ...state,
+  }) async {
+    final created = await _repository.create(
       Employee(
-        id: nextId,
+        id: '',
         name: name,
         role: role,
         email: email,
@@ -82,15 +51,18 @@ class TeamNotifier extends Notifier<List<Employee>> {
         latitude: latitude,
         longitude: longitude,
       ),
-    ];
+    );
+    _upsert(created);
     unawaited(
       ref
           .read(foremanWorkflowProgressProvider.notifier)
           .markComplete(ForemanWorkflowStep.addEmployee),
     );
+    return created;
   }
 
-  void updateEmployee({
+  /// A null [latitude], [longitude] or [isActive] keeps the current value.
+  Future<Employee> updateEmployee({
     required String id,
     required String name,
     required WorkerRole role,
@@ -101,28 +73,52 @@ class TeamNotifier extends Notifier<List<Employee>> {
     required Set<int> workingDays,
     double? latitude,
     double? longitude,
-  }) {
-    state = [
-      for (final employee in state)
-        if (employee.id == id)
-          employee.copyWith(
-            name: name,
-            role: role,
-            email: email,
-            phone: phone,
-            workStartHour: workStartHour,
-            workEndHour: workEndHour,
-            workingDays: workingDays,
-            latitude: latitude,
-            longitude: longitude,
-          )
-        else
-          employee,
-    ];
+    bool? isActive,
+  }) async {
+    final base =
+        findById(id) ??
+        Employee(
+          id: id,
+          name: name,
+          role: role,
+          email: email,
+          phone: phone,
+          workStartHour: workStartHour,
+          workEndHour: workEndHour,
+          workingDays: workingDays,
+        );
+    final updated = await _repository.update(
+      base.copyWith(
+        name: name,
+        role: role,
+        email: email,
+        phone: phone,
+        workStartHour: workStartHour,
+        workEndHour: workEndHour,
+        workingDays: workingDays,
+        latitude: latitude,
+        longitude: longitude,
+        isActive: isActive,
+      ),
+    );
+    _upsert(updated);
+    return updated;
+  }
+
+  /// Puts [employee] into the list in place of the one with its id. If the
+  /// list has not loaded yet, reloads it instead; the reload includes
+  /// [employee].
+  void _upsert(Employee employee) {
+    final current = state.value;
+    if (current == null) return ref.invalidateSelf();
+    final index = current.indexWhere((e) => e.id == employee.id);
+    state = AsyncData(
+      index < 0 ? [...current, employee] : ([...current]..[index] = employee),
+    );
   }
 
   Employee? findById(String id) {
-    for (final employee in state) {
+    for (final employee in state.value ?? const <Employee>[]) {
       if (employee.id == id) return employee;
     }
     return null;

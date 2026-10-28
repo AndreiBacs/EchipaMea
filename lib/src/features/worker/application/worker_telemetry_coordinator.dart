@@ -19,8 +19,8 @@ final workerTelemetryCoordinatorProvider = Provider<WorkerTelemetryCoordinator>(
     ref.listen<AsyncValue<WorkerSession?>>(sessionProvider, (_, next) {
       coordinator.updateSession(next.value);
     }, fireImmediately: true);
-    ref.listen<List<Employee>>(teamProvider, (_, next) {
-      coordinator.updateEmployees(next);
+    ref.listen<AsyncValue<List<Employee>>>(teamProvider, (_, next) {
+      coordinator.updateEmployees(next.value ?? const []);
     }, fireImmediately: true);
     ref.onDispose(coordinator.dispose);
     return coordinator;
