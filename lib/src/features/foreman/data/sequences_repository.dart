@@ -49,14 +49,8 @@ class ApiSequencesRepository implements SequencesRepository {
 
   @override
   Future<DaySequences> forDay(String dayKey) async {
-    final json = await _api.get('/sequences', query: {'day': dayKey}) as Json;
-    return DaySequences(
-      dayKey: json['dayKey'] as String? ?? dayKey,
-      sequences: [
-        for (final item in json['sequences'] as List? ?? const [])
-          _sequenceFromJson(item as Json),
-      ],
-    );
+    final json = await _api.get('/sequences', query: {'day': dayKey});
+    return daySequencesFromJson(json as Json, dayKey);
   }
 
   @override
@@ -76,20 +70,28 @@ class ApiSequencesRepository implements SequencesRepository {
     required String workerId,
     required String dayKey,
   }) => _api.delete(_path(projectId, workerId, dayKey));
+}
 
-  static DailyWorkerSequence _sequenceFromJson(Json json) =>
-      DailyWorkerSequence(
-        projectId: json['projectId'] as String,
-        dayKey: json['dayKey'] as String,
-        workerId: json['workerId'] as String,
-        orderedPhaseIds: _strings(json['orderedPhaseIds']),
-        suggestedPhaseIds: _strings(json['suggestedPhaseIds']),
-        isManual: json['isManual'] as bool? ?? false,
-      );
-
-  static List<String> _strings(Object? value) => [
+/// Parses the server's `DaySequencesDto`, which both the company-wide day and
+/// one worker's day use.
+DaySequences daySequencesFromJson(Json json, String dayKey) {
+  List<String> strings(Object? value) => [
     for (final item in value as List? ?? const []) item as String,
   ];
+  return DaySequences(
+    dayKey: json['dayKey'] as String? ?? dayKey,
+    sequences: [
+      for (final item in json['sequences'] as List? ?? const [])
+        DailyWorkerSequence(
+          projectId: (item as Json)['projectId'] as String,
+          dayKey: item['dayKey'] as String,
+          workerId: item['workerId'] as String,
+          orderedPhaseIds: strings(item['orderedPhaseIds']),
+          suggestedPhaseIds: strings(item['suggestedPhaseIds']),
+          isManual: item['isManual'] as bool? ?? false,
+        ),
+    ],
+  );
 }
 
 /// Mock mode: manual orders kept for as long as the app runs, with

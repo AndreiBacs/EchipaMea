@@ -8,7 +8,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../core/auth/session_controller.dart';
 import '../../../core/config/app_env.dart';
 import '../../../core/network/realtime_ticket_api.dart';
-import '../../foreman/presentation/providers/team_controller.dart';
+import '../../foreman/domain/entities/employee.dart';
+import '../presentation/providers/worker_me_provider.dart';
 
 final workerTelemetryCoordinatorProvider = Provider<WorkerTelemetryCoordinator>(
   (ref) {
@@ -19,8 +20,8 @@ final workerTelemetryCoordinatorProvider = Provider<WorkerTelemetryCoordinator>(
     ref.listen<AsyncValue<WorkerSession?>>(sessionProvider, (_, next) {
       coordinator.updateSession(next.value);
     }, fireImmediately: true);
-    ref.listen<AsyncValue<List<Employee>>>(teamProvider, (_, next) {
-      coordinator.updateEmployees(next.value ?? const []);
+    ref.listen<AsyncValue<Employee?>>(workerMeProvider, (_, next) {
+      coordinator.updateEmployee(next.value);
     }, fireImmediately: true);
     ref.onDispose(coordinator.dispose);
     return coordinator;
@@ -35,7 +36,9 @@ class WorkerTelemetryCoordinator {
   static const Duration _pollInterval = Duration(minutes: 30);
 
   WorkerSession? _session;
-  Map<String, Employee> _employeesById = const {};
+
+  /// The worker's own record, for their working schedule.
+  Employee? _employee;
   Timer? _timer;
   WebSocketChannel? _channel;
   bool _locationDeniedForever = false;
@@ -54,8 +57,8 @@ class WorkerTelemetryCoordinator {
     _start();
   }
 
-  void updateEmployees(List<Employee> employees) {
-    _employeesById = {for (final employee in employees) employee.id: employee};
+  void updateEmployee(Employee? employee) {
+    _employee = employee;
   }
 
   void dispose() {
@@ -79,8 +82,8 @@ class WorkerTelemetryCoordinator {
       return;
     }
 
-    final employee = _employeesById[session.employeeId];
-    if (employee == null) {
+    final employee = _employee;
+    if (employee == null || employee.id != session.employeeId) {
       _disconnectSocket();
       return;
     }

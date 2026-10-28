@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/network/api_error_messages.dart';
+import '../../../../core/ui/async_status_view.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../providers/worker_assigned_projects_provider.dart';
 import '../widgets/phase_work_instructions_panel.dart';
@@ -27,26 +28,23 @@ class WorkerPhaseDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final session = ref.watch(sessionProvider).value;
-    final project = ref.watch(
-      projectsProvider.select((state) {
-        for (final p in state.value ?? const <Project>[]) {
-          if (p.id == projectId) return p;
-        }
-        return null;
-      }),
-    );
-    final assigned = ref.watch(workerAssignedProjectsProvider);
-    final isAssignedProject =
-        project != null && assigned.any((p) => p.id == project.id);
+    final assignedState = ref.watch(workerAssignedProjectsProvider);
+    final assigned = assignedState.current;
+    final project = assigned?.where((p) => p.id == projectId).firstOrNull;
 
     if (session == null) {
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    if (project == null || !isAssignedProject) {
+    if (project == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.workerProjectDetails)),
-        body: Center(child: Text(l10n.workerProjectNotFound)),
+        body: assigned == null
+            ? AsyncStatusView(
+                assignedState,
+                onRetry: () => ref.invalidate(workerAssignedProjectsProvider),
+              )
+            : Center(child: Text(l10n.workerProjectNotFound)),
       );
     }
 
@@ -101,12 +99,8 @@ class WorkerPhaseDetailPage extends ConsumerWidget {
                 final messenger = ScaffoldMessenger.of(context);
                 try {
                   await ref
-                      .read(projectsProvider.notifier)
-                      .submitPhaseForReview(
-                        projectId: project.id,
-                        phaseId: phase.id,
-                        employeeId: session.employeeId,
-                      );
+                      .read(workerAssignedProjectsProvider.notifier)
+                      .submitPhase(projectId: project.id, phaseId: phase.id);
                   messenger.showSnackBar(
                     SnackBar(content: Text(l10n.phaseSubmittedForReview)),
                   );

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:echipa_mea/src/core/auth/auth_session_controller.dart';
+import 'package:echipa_mea/src/core/auth/session_controller.dart';
 import 'package:echipa_mea/src/core/auth/token_store.dart';
 import 'package:echipa_mea/src/core/config/app_env.dart';
 import 'package:echipa_mea/src/core/network/api_client.dart';
@@ -89,6 +90,22 @@ MemoryTokenStore foremanStore({
     email: 'foreman@echipamea.local',
     refreshToken: 'refresh-1',
     userId: userId,
+    companyId: 'demo-company',
+  ).encode(),
+});
+
+/// A store holding a connected worker, as if restored at startup. A
+/// `mock-worker-session…` token makes it a mock-mode session.
+MemoryTokenStore workerStore({
+  String employeeId = 'e1',
+  String employeeName = 'Andrei D.',
+  String access = 'worker-access-1',
+}) => MemoryTokenStore({
+  'worker_session': WorkerSession(
+    employeeId: employeeId,
+    employeeName: employeeName,
+    sessionToken: access,
+    refreshToken: 'worker-refresh-1',
     companyId: 'demo-company',
   ).encode(),
 });

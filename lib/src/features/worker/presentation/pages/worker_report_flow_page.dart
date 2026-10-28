@@ -16,7 +16,7 @@ import '../../../../core/network/api_error_messages.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../../application/worker_reports_api_provider.dart';
 import '../providers/worker_assigned_projects_provider.dart';
-import '../../application/worker_foreman_inbox_controller.dart';
+import '../../../../core/ui/async_status_view.dart';
 import 'worker_shell_page.dart';
 
 class WorkerReportFlowPage extends ConsumerStatefulWidget {
@@ -81,16 +81,12 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final project = ref.watch(
-      projectsProvider.select((state) {
-        for (final p in state.value ?? const <Project>[]) {
-          if (p.id == widget.projectId) return p;
-        }
-        return null;
-      }),
-    );
+    final assignedState = ref.watch(workerAssignedProjectsProvider);
+    final assigned = assignedState.current;
+    final project = assigned
+        ?.where((p) => p.id == widget.projectId)
+        .firstOrNull;
     final session = ref.watch(sessionProvider).value;
-    final assigned = ref.watch(workerAssignedProjectsProvider);
     final phase = project?.phases
         .where((p) => p.id == widget.phaseId)
         .firstOrNull;
@@ -98,16 +94,17 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
         session != null &&
         phase != null &&
         phase.assignedEmployeeIds.contains(session.employeeId);
-    final ok =
-        project != null &&
-        session != null &&
-        assigned.any((p) => p.id == project.id) &&
-        workerAssignedToPhase;
+    final ok = project != null && session != null && workerAssignedToPhase;
 
     if (!ok) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.workerReportTitle)),
-        body: Center(child: Text(l10n.workerProjectNotFound)),
+        body: assigned == null
+            ? AsyncStatusView(
+                assignedState,
+                onRetry: () => ref.invalidate(workerAssignedProjectsProvider),
+              )
+            : Center(child: Text(l10n.workerProjectNotFound)),
       );
     }
 
@@ -417,22 +414,8 @@ class _WorkerReportFlowPageState extends ConsumerState<WorkerReportFlowPage> {
             memoPath: _memoPath,
           );
 
-      ref
-          .read(workerForemanInboxProvider.notifier)
-          .submitReport(
-            WorkerReportSubmittedEvent(
-              at: DateTime.now().toUtc(),
-              projectId: project.id,
-              projectName: project.name,
-              phaseId: phase.id,
-              phaseName: phase.name,
-              employeeId: session.employeeId,
-              employeeName: session.employeeName,
-              description: description,
-              photoCount: _photos.length,
-              hasVoiceMemo: _memoPath != null,
-            ),
-          );
+      // The server moved the phase to pending review; show it.
+      ref.invalidate(workerAssignedProjectsProvider);
       await _memoPlayer.stop();
       await _deleteMemoFile(_memoPath);
       if (mounted) {

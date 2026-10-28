@@ -9,7 +9,8 @@ import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/network/api_error_messages.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../providers/worker_assigned_projects_provider.dart';
-import '../../application/worker_foreman_inbox_controller.dart';
+import '../../../../core/ui/async_status_view.dart';
+import '../../data/worker_repository.dart';
 import '../widgets/phase_work_instructions_panel.dart';
 import 'worker_phase_detail_page.dart';
 
@@ -24,26 +25,25 @@ class WorkerProjectDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final session = ref.watch(sessionProvider).value;
-    final project = ref.watch(
-      projectsProvider.select((state) {
-        for (final p in state.value ?? const <Project>[]) {
-          if (p.id == projectId) return p;
-        }
-        return null;
-      }),
-    );
-    final assigned = ref.watch(workerAssignedProjectsProvider);
-    final isAssigned =
-        project != null && assigned.any((p) => p.id == project.id);
+    // Only the worker's own projects are listed, so one missing from the
+    // list is not theirs.
+    final assignedState = ref.watch(workerAssignedProjectsProvider);
+    final assigned = assignedState.current;
+    final project = assigned?.where((p) => p.id == projectId).firstOrNull;
 
     if (session == null) {
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    if (project == null || !isAssigned) {
+    if (project == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.workerProjectDetails)),
-        body: Center(child: Text(l10n.workerProjectNotFound)),
+        body: assigned == null
+            ? AsyncStatusView(
+                assignedState,
+                onRetry: () => ref.invalidate(workerAssignedProjectsProvider),
+              )
+            : Center(child: Text(l10n.workerProjectNotFound)),
       );
     }
 
@@ -90,18 +90,20 @@ class WorkerProjectDetailPage extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           FilledButton.tonalIcon(
-            onPressed: () {
-              ref
-                  .read(workerForemanInboxProvider.notifier)
-                  .announceArrival(
-                    projectId: project.id,
-                    projectName: project.name,
-                    employeeId: session.employeeId,
-                    employeeName: session.employeeName,
-                  );
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(l10n.workerArrivalSent)));
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                await ref
+                    .read(workerRepositoryProvider)
+                    .announceArrival(session, project.id);
+                messenger.showSnackBar(
+                  SnackBar(content: Text(l10n.workerArrivalSent)),
+                );
+              } catch (error) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text(apiErrorMessage(l10n, error))),
+                );
+              }
             },
             icon: const Icon(Icons.place),
             label: Text(l10n.workerAnnounceArrival),
@@ -183,11 +185,13 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                                     );
                                     try {
                                       await ref
-                                          .read(projectsProvider.notifier)
-                                          .submitPhaseForReview(
+                                          .read(
+                                            workerAssignedProjectsProvider
+                                                .notifier,
+                                          )
+                                          .submitPhase(
                                             projectId: project.id,
                                             phaseId: phase.id,
-                                            employeeId: session.employeeId,
                                           );
                                       messenger.showSnackBar(
                                         SnackBar(

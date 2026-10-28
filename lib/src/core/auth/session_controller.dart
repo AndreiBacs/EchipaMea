@@ -25,6 +25,18 @@ final workerApiProvider = Provider<ApiClient>(
   ),
 );
 
+/// Worker data providers await this first in `build()`. It waits for the
+/// session to be restored, then watches who is connected, so the provider
+/// rebuilds when a different worker signs in on this phone; a token refresh
+/// does not rebuild it. Null means no worker is signed in: load nothing.
+Future<WorkerSession?> watchWorkerSession(Ref ref) async {
+  final employeeId = await ref.watch(
+    sessionProvider.selectAsync((session) => session?.employeeId),
+  );
+  if (employeeId == null) return null;
+  return ref.read(sessionProvider).value;
+}
+
 const _mockWorkerTokenPrefix = 'mock-worker-session';
 
 class SessionNotifier extends AsyncNotifier<WorkerSession?>
