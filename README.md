@@ -220,7 +220,7 @@ scripts/e2e_app.sh            # Windows desktop (from Git Bash) or Linux desktop
 CHROMEDRIVER=/path/to/chromedriver scripts/e2e_app.sh chrome
 ```
 
-A browser run needs a ChromeDriver matching your Chrome; the script starts it on port 4444. Windows desktop builds need the Visual Studio C++ workload with CMake 3.23 or newer: Visual Studio 2019's bundled CMake 3.20 is too old for the `record` plugin. CI runs the suite on Linux desktop under `xvfb` (`.github/workflows/app-e2e.yml`).
+A browser run needs a ChromeDriver matching your Chrome; the script starts it on port 4444. Windows desktop builds need Visual Studio 2022 or newer with the "Desktop development with C++" workload: Visual Studio 2019's bundled CMake 3.20 is too old for the `record` plugin. After switching Visual Studio versions, delete `build/windows` once, because CMake will not change generators in place. CI runs the suite on Linux desktop under `xvfb` (`.github/workflows/app-e2e.yml`).
 
 ## Build
 
