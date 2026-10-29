@@ -60,6 +60,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Same SDK as development, so CI checks what runs locally; bump both together.
+          flutter-version: 3.41.6
           cache: true
 
       - run: flutter pub get
