@@ -8,8 +8,8 @@ coverage/
 .env.*.local
 
 # Local storage driver output
-storage/
-uploads/
+/storage/
+/uploads/
 
 # Generated Prisma client (regenerated via `npm run prisma:generate`)
 src/generated/
