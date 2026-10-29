@@ -60,6 +60,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Device builds need a Development Team even with --no-codesign; simulator does not.
+      # Device builds need a Development Team even with --no-codesign; simulator
+      # builds do not, but they must be debug: Flutter refuses --release with
+      # --simulator. It still compiles the app and every plugin's native code.
       - name: Build iOS (simulator)
-        run: flutter build ios --release --no-codesign --simulator
+        run: flutter build ios --debug --simulator --no-codesign
