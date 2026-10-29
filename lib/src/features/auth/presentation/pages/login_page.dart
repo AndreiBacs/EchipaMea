@@ -95,9 +95,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         await ref
                             .read(authSessionProvider.notifier)
                             .loginForeman(email: email, password: password);
+                        // On success the router has usually left this page
+                        // already (it redirects once a session exists), and a
+                        // disposed page must not touch `ref`.
+                        if (!context.mounted) return;
                         final nextState = ref.read(authSessionProvider);
                         if (nextState.hasError) {
-                          if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
