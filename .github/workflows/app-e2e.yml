@@ -1,0 +1,68 @@
+name: App end-to-end
+
+# The real app (Linux desktop, under a virtual display) driven through its UI
+# against the real server on a freshly seeded database. See
+# integration_test/app_e2e_test.dart and scripts/e2e_app.sh.
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+
+jobs:
+  app-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: echipamea
+          POSTGRES_PASSWORD: echipamea
+          POSTGRES_DB: echipamea_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U echipamea -d echipamea_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      TEST_DATABASE_URL: postgresql://echipamea:echipamea@localhost:5432/echipamea_test?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux desktop build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev xvfb
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Server dependencies
+        working-directory: server
+        run: |
+          npm ci
+          npx prisma generate
+
+      - name: Create .env for CI
+        run: cp .env.example .env
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: End-to-end suite
+        run: xvfb-run -a bash scripts/e2e_app.sh linux

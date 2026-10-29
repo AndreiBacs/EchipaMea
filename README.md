@@ -200,6 +200,28 @@ FOREMAN_NOTIFICATIONS_WS_URL=ws://localhost:3000/ws/foreman-notifications
 
 Both sessions are kept in the platform keystore (`flutter_secure_storage`: Keychain, Android Keystore, Windows Credential Manager, encrypted browser storage), never in plain preferences. A worker stays signed in across app restarts until the 7-day refresh token runs out or the foreman deactivates them; signing out revokes the session on the server as well. A token saved by an older build is moved into the keystore on first launch, and a demo-mode token is discarded once a backend is configured.
 
+## End-to-end app tests
+
+`integration_test/app_e2e_test.dart` drives the real app through its UI against the real server, on a freshly reset and seeded e2e test database. In one journey:
+
+- The foreman signs in and creates a client, an employee and a project.
+- The foreman shows a worker's login code, and the worker signs in with it.
+- The worker announces arrival and sends a report.
+- The foreman's notification badge updates live, and approving the phase finishes the project.
+- The foreman's socket is dropped by the server and recovers.
+- Both sessions survive a restart.
+- An expired access token refreshes on its own.
+- A deactivated worker is signed out.
+
+`scripts/e2e_app.sh` runs it in one go. It starts the server from `server/` (`npm run e2e:app-server`) on port 3100, with 15-second foreman access tokens and the test-only `/__e2e` hooks switched on (`E2E_TEST_HOOKS=true`; they answer 404 otherwise). It then runs the suite and stops the server. It needs `TEST_DATABASE_URL` (in `server/.env`) naming a database whose name ends in `_test`, and `npm ci` done in `server/`.
+
+```bash
+scripts/e2e_app.sh            # Windows desktop (from Git Bash) or Linux desktop
+CHROMEDRIVER=/path/to/chromedriver scripts/e2e_app.sh chrome
+```
+
+A browser run needs a ChromeDriver matching your Chrome; the script starts it on port 4444. Windows desktop builds need the Visual Studio C++ workload with CMake 3.23 or newer: Visual Studio 2019's bundled CMake 3.20 is too old for the `record` plugin. CI runs the suite on Linux desktop under `xvfb` (`.github/workflows/app-e2e.yml`).
+
 ## Build
 
 - Android APK (release): `flutter build apk`

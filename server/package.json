@@ -28,7 +28,8 @@
     "spec:generate": "ts-node --transpile-only scripts/generate-openapi.ts",
     "spec:check": "ts-node --transpile-only scripts/check-specs.ts",
     "dev:up": "docker compose up -d",
-    "dev:down": "docker compose down"
+    "dev:down": "docker compose down",
+    "e2e:app-server": "ts-node scripts/e2e-app-server.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.731.1",

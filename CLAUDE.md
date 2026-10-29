@@ -17,6 +17,7 @@ flutter test --plain-name 'addProject adds project'               # single test 
 dart format .                    # formatter
 flutter build apk --release      # Android build (CI gate)
 flutter run -d windows|chrome|<device-id>
+scripts/e2e_app.sh [windows|linux|chrome]   # end-to-end: real app + real server (see README)
 ```
 
 `.env` must exist before any run/build/test — `pubspec.yaml` declares it as a bundled asset and `main.dart` loads it at startup. Copy `.env.example` to `.env` (this is what CI does).
@@ -85,7 +86,13 @@ Worker login is a real QR redeem. The foreman asks the server for a ticket (`POS
 
 Tests use plain `ProviderContainer()` from `flutter_riverpod` and read notifiers directly; widget tests exist for the heavier forms. Always call `SharedPreferences.setMockInitialValues({})` in `setUp` — several controllers read prefs during `build()` and will hang or throw otherwise. Tests depend on the seeded demo IDs (`p1`, `p2`, `c1`, `e1`, …), so changing the seed data in the in-memory repositories breaks tests elsewhere. Async notifiers report loading for at least a microtask even in mock mode, so a test awaits `container.read(xProvider.future)` before reading or mutating, and widget code must not assume the list is there on the first frame.
 
-[test/flutter_test_config.dart](test/flutter_test_config.dart) gives every test an empty in-memory `flutter_secure_storage`. Tests that talk to the API use [test/support/fake_api.dart](test/support/fake_api.dart): `useFakeBackend()` leaves mock mode for one test, `FakeServer` scripts responses by `METHOD /path` and records requests, and `makeApiContainer(server:, store:)` overrides `httpClientProvider` and `tokenStoreProvider` and turns off Riverpod's retry. Pass `store: foremanStore()` for a signed-in foreman. No real network, no new dependencies — it is `package:http/testing.dart`.
+[test/flutter_test_config.dart](test/flutter_test_config.dart) gives every test an empty in-memory `flutter_secure_storage`. Tests that talk to the API use [test/support/fake_api.dart](test/support/fake_api.dart): `useFakeBackend()` leaves mock mode for one test, `FakeServer` scripts responses by `METHOD /path` and records requests, and `makeApiContainer(server:, store:)` overrides `httpClientProvider` and `tokenStoreProvider` and turns off Riverpod's retry. Pass `store: foremanStore()` for a signed-in foreman, or `workerStore()` for a connected worker. No real network, no new dependencies — it is `package:http/testing.dart`.
+
+[integration_test/app_e2e_test.dart](integration_test/app_e2e_test.dart) is the opposite: one ordered journey through the real UI against the real server, run by `scripts/e2e_app.sh`.
+- **Server:** `npm run e2e:app-server` resets and seeds the `_test` database and serves with `E2E_TEST_HOOKS=true`.
+- **When to touch it:** a change to sign-in, routing, the QR code dialog or the connect page, notifications or sessions should keep it passing. Each step logs `e2e step N`, so a hang shows where it stopped.
+- **Waiting:** wait with `pumpUntil`/`pumpUntilFound` in real time, never `pumpAndSettle`, because spinners and sockets never settle. `pumpUntilFound` also waits out the page transition and clears snack bars, which otherwise cover the bottom of the next page.
+- **Desktop sign-in:** `mobile_scanner` has no camera on Windows or Linux, so the connect page offers a typed login code (`worker-login-code-field`), and the foreman's QR dialog can show and copy it (`employee-login-code`).
 
 ## Platform notes
 
