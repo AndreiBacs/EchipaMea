@@ -79,40 +79,34 @@ Behavior:
 
 ## Backend contract docs
 
-Use these docs for BE implementation handoff:
+- `docs/backend-openapi.yaml`: the REST contract, **generated from the server code** (`npm run spec:generate` in `server/`). Request bodies come from the same zod schemas that validate them; do not edit it by hand.
+- `docs/websockets-asyncapi-draft.yaml`: the realtime/WebSocket contract (channels, operations, payload schemas for worker telemetry and foreman notification events). Hand-written, because its prose explains choices a generator cannot; `npm run spec:check` verifies its channels, message types, inbound fields and error codes against the code.
 
-- `docs/backend-openapi-draft.yaml`: REST/HTTP contract draft (auth, reports, clients, employees, projects, phases, sequences, notification endpoints) plus shared schemas/enums.
-- `docs/websockets-asyncapi-draft.yaml`: dedicated realtime/WebSocket contract draft with channels, operations, and payload schemas for worker telemetry and foreman notification events.
-
-Recommended workflow:
-
-1. Start with `docs/backend-openapi-draft.yaml` for CRUD and upload endpoints.
-2. Implement realtime channels from `docs/websockets-asyncapi-draft.yaml`.
-3. Keep message payload fields (`worker_location`, `worker_report_submitted`) identical across both specs and runtime events.
+When you change a route, DTO or frame: update the code, run `npm run spec:generate`, and commit the regenerated spec with the change. CI runs `npm run spec:check` and fails on drift.
 
 ## API standards (draft)
 
 Use these conventions when implementing backend endpoints from the contract docs:
 
 - **Auth:** all REST endpoints require bearer token auth by default.
-- **Public endpoint:** `POST /foreman/login` is intentionally public (no bearer token required).
+- **Public endpoints:** `POST /foreman/login`, `POST /auth/refresh`, `POST /worker/login-tickets/redeem` and `GET /health/*` are intentionally public (no bearer token required). Everything else needs a token that names a company.
 - **Auth scheme:** send `Authorization: Bearer <token>` header.
 - **Standard error envelope:** non-2xx responses should use:
   - `error.code` (machine-readable string)
   - `error.message` (human-readable message)
   - optional `error.field` (input field tied to validation error)
   - optional `traceId` (for cross-service debugging)
-- **Common status mapping:** `400` validation, `401` unauthenticated, `403` unauthorized, `404` not found, `500` unexpected server error.
+- **Common status mapping:** `400` validation, `401` unauthenticated, `403` unauthorized, `404` not found (also for another company's ids — never `403`, which would confirm the id exists), `429` rate limited, `500` unexpected server error.
 
-Reference schemas/responses live in `docs/backend-openapi-draft.yaml` under:
+Reference schemas/responses live in `docs/backend-openapi.yaml` under:
 
-- `components.schemas.ErrorDetail`
-- `components.schemas.ErrorResponse`
+- `components.schemas.ErrorResponse` (with every `error.code` enumerated)
 - `components.responses.BadRequest`
 - `components.responses.Unauthorized`
 - `components.responses.Forbidden`
 - `components.responses.NotFound`
-- `components.responses.InternalServerError`
+- `components.responses.TooManyRequests`
+
 ## Worker flow diagram (QA)
 
 ```mermaid
@@ -147,14 +141,60 @@ Check available targets with:
 
 - `flutter devices`
 
+## Run the backend (`server/`)
+
+NestJS + Prisma + PostgreSQL 16. Every command below runs from `server/`.
+
+1. **Database.** Either `npm run dev:up` (Docker: Postgres on 5432, a throwaway test Postgres on 5433, MinIO), or a local Postgres 16 with a database for dev and one for tests.
+2. **Config.** `cp .env.example .env`. Every value is validated at boot (`src/common/config/env.schema.ts`); a bad config refuses to start.
+3. **Install and migrate.** `npm ci`, then `npm run prisma:deploy`.
+4. **Demo data.** `npm run seed`, or set `SEED_DEMO=true` to seed at boot. This creates two companies:
+   - `demo-company`: foreman `foreman@echipamea.local` / `foreman123`, plus the ids the app's demo data uses (`c1`–`c3`, `e1`–`e3`, `p1`–`p3`).
+   - `other-company`: `rival@echipamea.local` / `foreman123`, which exists to prove one company can never see another's data.
+5. **Run.** `npm run start:dev` serves on `http://localhost:3000` (`GET /health/ready` checks the database).
+
+Checks, all of which CI runs (`.github/workflows/server.yml`):
+
+- `npm run typecheck`, `npm run lint`, `npm run format:check`
+- `npm test`: unit tests.
+- `npm run test:e2e`: boots the real app against `TEST_DATABASE_URL`.
+  - Every suite truncates every table, so the harness refuses a database whose name does not end in `_test`.
+  - The database must already exist unless the Postgres role may create databases.
+- `npm run spec:check`: fails when `docs/backend-openapi.yaml` or the AsyncAPI draft disagrees with the code. Regenerate the OpenAPI file with `npm run spec:generate`.
+
+Defaults worth knowing:
+
+- **Phase transitions are strict.** An illegal move answers `409 PHASE_INVALID_TRANSITION`. `PHASE_TRANSITIONS_LENIENT=true` relaxes this, and production refuses to boot with it unless explicitly acknowledged.
+- **A nightly job at 01:00 UTC prunes:**
+  - location samples older than `LOCATION_SAMPLE_RETENTION_DAYS`
+  - spent tickets and refresh tokens
+  - old read notifications
+  - orphaned uploads
+
+  With more than one API instance, set `RETENTION_JOBS_ENABLED=false` on all but one.
+- **The Docker image runs `prisma migrate deploy` on start.**
+
+To point the app at a local server, set these in the app's `.env`. On the Android emulator, use `10.0.2.2` instead of `localhost`.
+
+```
+AUTH_API_BASE_URL=http://localhost:3000
+WORKER_REPORTS_API_URL=http://localhost:3000/worker/reports
+WORKER_TELEMETRY_WS_URL=ws://localhost:3000/ws/worker-telemetry
+FOREMAN_NOTIFICATIONS_WS_URL=ws://localhost:3000/ws/foreman-notifications
+```
+
 ## Authentication during development
 
-- If `AUTH_API_BASE_URL` is not set, foreman login runs in mock mode.
-- In mock mode, any valid-looking email (contains `@`) and password with at least 3 characters will log in.
-- Worker login uses local mock delegated tickets (no API call yet):
-  - Foreman QR contains `type=foreman_worker_login_ticket`, `ticketId`, worker identity, and `expiresAt`.
-  - Worker scan accepts only non-expired tickets and creates a mock worker session token in memory.
-  - This mirrors the planned backend consume-ticket flow, but all validation is local for now.
+`AUTH_API_BASE_URL` decides the mode.
+
+- **Empty (mock mode, what CI runs):**
+  - Foreman login accepts any email containing `@` with a password of at least 3 characters.
+  - Worker QR codes are minted locally, so no server is needed.
+- **Set (server mode):**
+  - Foreman login posts to `/foreman/login`; use the seeded credentials above.
+  - The foreman's QR dialog asks the server for a single-use ticket that lives 90 seconds.
+  - The worker's scan redeems it at `/worker/login-tickets/redeem` for a real worker token. Expired, already-used and disabled-account codes each get their own message.
+  - Sockets connect with a single-use ticket from `POST /realtime/tickets`, passed as `?ticket=`, never with a raw token.
 
 ## Build
 

@@ -7,6 +7,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../core/auth/session_controller.dart';
 import '../../../core/config/app_env.dart';
+import '../../../core/network/realtime_ticket_api.dart';
 import '../../foreman/presentation/providers/team_controller.dart';
 
 final workerTelemetryCoordinatorProvider = Provider<WorkerTelemetryCoordinator>(
@@ -32,6 +33,8 @@ class WorkerTelemetryCoordinator {
   Timer? _timer;
   WebSocketChannel? _channel;
   bool _locationDeniedForever = false;
+  bool _connecting = false;
+  final RealtimeTicketApi _tickets = RealtimeTicketApi();
 
   void updateSession(WorkerSession? next) {
     _session = next;
@@ -97,7 +100,7 @@ class WorkerTelemetryCoordinator {
       return;
     }
 
-    final channel = _ensureSocket();
+    final channel = await _ensureSocket(session);
     if (channel == null) {
       return;
     }
@@ -156,16 +159,42 @@ class WorkerTelemetryCoordinator {
         permission == LocationPermission.whileInUse;
   }
 
-  WebSocketChannel? _ensureSocket() {
+  /// Opens the telemetry socket, proving who we are first.
+  ///
+  /// The server takes no unauthenticated sockets, so a ticket is fetched with
+  /// the worker's session token and passed as `?ticket=` -- Dart cannot set
+  /// headers on a WebSocket from Flutter web. Without one we do not connect;
+  /// telemetry is best-effort by design and a missed 30-minute sample is a far
+  /// smaller problem than an unidentified position in someone's database.
+  Future<WebSocketChannel?> _ensureSocket(WorkerSession session) async {
     final existing = _channel;
     if (existing != null) {
       return existing;
     }
-    final uri = Uri.tryParse(AppEnv.workerTelemetryWsUrl.trim());
-    if (uri == null || !(uri.scheme == 'ws' || uri.scheme == 'wss')) {
-      return null;
-    }
+    if (_connecting) return null;
 
+    _connecting = true;
+    try {
+      final ticket = await _tickets.fetchTicket(
+        accessToken: session.sessionToken,
+      );
+      if (ticket == null) return null;
+
+      final uri = socketUriWithTicket(AppEnv.workerTelemetryWsUrl, ticket);
+      if (uri == null) return null;
+
+      // The session may have ended while the ticket request was in flight.
+      if (_session == null) return null;
+
+      return _openSocket(uri);
+    } catch (_) {
+      return null;
+    } finally {
+      _connecting = false;
+    }
+  }
+
+  WebSocketChannel _openSocket(Uri uri) {
     final created = WebSocketChannel.connect(uri);
     created.stream.listen(
       (_) {},

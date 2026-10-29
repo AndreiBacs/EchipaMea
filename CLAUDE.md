@@ -21,6 +21,21 @@ flutter run -d windows|chrome|<device-id>
 
 `.env` must exist before any run/build/test — `pubspec.yaml` declares it as a bundled asset and `main.dart` loads it at startup. Copy `.env.example` to `.env` (this is what CI does).
 
+Backend (`server/`, NestJS + Prisma + Postgres), run from `server/`:
+
+```bash
+npm run start:dev                # API on :3000 (needs server/.env and a migrated DB)
+npm run typecheck && npm run lint && npm run format:check
+npm test                         # unit tests (src/**/*.spec.ts)
+npm run test:e2e                 # real app + Postgres; TEST_DATABASE_URL must name a *_test DB
+npx jest --config ./test/jest-e2e.json --runInBand test/auth.e2e-spec.ts   # one e2e suite
+npm run spec:generate            # regenerate docs/backend-openapi.yaml after route/DTO changes
+npm run spec:check               # CI gate: specs must match the code
+npm run prisma:deploy && npm run seed
+```
+
+e2e suites each truncate every table and re-seed (`test/support/db.ts`); new suites should use `createTestApp()` / `loginForeman()` / `workerSession()` from `test/support/`. `POST /foreman/login` is throttled to 5/min per app instance, so log in once per role in `beforeAll`.
+
 ## Repo conventions (from `.cursor/rules/`, all still in force)
 
 - **Build after significant changes**: run a real build (`flutter build apk` or `flutter run`) before reporting completion on multi-file, routing, state, dependency, or platform-integration changes — not just `flutter analyze`.
@@ -32,11 +47,17 @@ flutter run -d windows|chrome|<device-id>
 
 **Layering** — `lib/src/core/` holds cross-cutting concerns (routing, i18n, theme, auth/session, env, adaptive breakpoints); `lib/src/features/<feature>/` follows `domain/entities` → `application` (coordinators, API clients) → `presentation/{pages,providers,widgets}`.
 
-**State: Riverpod, in-memory demo data.** There is no backend yet and no persistence layer for domain data. `projectsProvider`, `teamProvider`, `clientsProvider` are `NotifierProvider`s that seed hardcoded demo objects in `build()`. Only a few things persist, via SharedPreferences: foreman auth token, selected locale, theme mode, setup-flow completion, foreman getting-started checklist progress. Photos and voice memos are held as **local file paths**, not uploaded, until a backend stores binaries.
+**State: Riverpod, in-memory demo data.** `server/` implements the full API, but the app only calls it for auth, QR tickets, socket tickets and report upload; domain data has no client-side API wiring or persistence yet. `projectsProvider`, `teamProvider`, `clientsProvider` are `NotifierProvider`s that seed hardcoded demo objects in `build()`. Only a few things persist, via SharedPreferences: foreman auth token, selected locale, theme mode, setup-flow completion, foreman getting-started checklist progress. Photos and voice memos are held as **local file paths**, not uploaded, until a backend stores binaries.
 
 **Two parallel session models.** `authSessionProvider` (`AsyncNotifier`, SharedPreferences-backed) is the *foreman* session; `sessionProvider` (`Notifier`, memory only) is the *worker* session created by scanning a QR ticket. Both can exist on the same device at once, and [app_router.dart](lib/src/core/routing/app_router.dart) `redirect` arbitrates between them — that redirect is the single source of truth for who may reach `/foreman/*` vs `/worker/*`, and it also gates the first-run `/setup` flow. Route changes almost always mean touching that redirect.
 
-**Login modes.** With `AUTH_API_BASE_URL` empty, foreman login is mocked in `AuthSessionNotifier._mockTokenForEmail` (any `@`-containing email + 3+ char password). Worker login is *always* local right now: the foreman generates a QR ticket (`type: foreman_worker_login_ticket`, `ticketId`, employee identity, `expiresAt`), and `SessionNotifier.connectFromQrPayload` validates expiry locally and mints a mock token. It accepts raw JSON, `?payload=<json>`, and base64 payloads — mirroring the planned backend consume-ticket endpoint.
+**Login modes.** `AUTH_API_BASE_URL` decides everything: empty means mock mode (no network, seeded demo data, what CI runs); set means the app talks to `server/`.
+
+Foreman login is mocked in `AuthSessionNotifier._mockTokenForEmail` when the base URL is empty (any `@`-containing email + 3+ char password), and posts to `/foreman/login` otherwise.
+
+Worker login is a real QR redeem. The foreman asks the server for a ticket (`POST /employees/{id}/login-ticket`) and shows `qrPayload`; the worker scans it and `SessionNotifier.connectFromQrPayload` POSTs to `/worker/login-tickets/redeem`, receiving a real worker JWT. The local expiry check survives as a fast fail, but the server decides. Payload parsing lives in [qr_ticket_payload.dart](lib/src/core/auth/qr_ticket_payload.dart) and still accepts raw JSON, `?payload=<json>` and base64. Mock mode falls back to a locally minted ticket and a `mock-worker-session-…` token — `WorkerSession.isAuthenticated` is how you tell the two apart.
+
+**There is no anonymous access.** Every request and every socket must present a token naming a company; the server has no `AnonymousPrincipal` and no flag that can reintroduce one. Sockets authenticate with a single-use ticket from `POST /realtime/tickets` passed as `?ticket=` — Dart cannot set headers on a WebSocket from Flutter web, and a raw access token in a query string would land in every access log.
 
 **Project/phase status is derived, not set.** `ProjectStatus` (`planned`/`inProgress`/`done`) is computed from the phases by `projectStatusFromPhases` in [project.dart:177](lib/src/features/foreman/domain/entities/project.dart#L177): all phases `done` → project done; any phase started → in progress. `PhaseStatus` (`notStarted`/`inProgress`/`pendingReview`/`done`) is what actually moves, via `submitPhaseForReview` / approval on `ProjectsNotifier`. Never assign `ProjectStatus` directly when mutating phases — recompute it. Likewise the project-level worker list is derived from phase assignments, not entered separately.
 
@@ -48,7 +69,7 @@ flutter run -d windows|chrome|<device-id>
 - `foremanNotificationsProvider` — connects to `FOREMAN_NOTIFICATIONS_WS_URL` while a foreman session exists, and turns `worker_report_submitted` events into the app-bar notification badge and phase status changes.
 - Report submit posts multipart/form-data to `WORKER_REPORTS_API_URL`, then opens a short-lived socket, waits for ready, sends one `worker_report_submitted` frame and awaits the sink close so the frame flushes. All of this is best-effort — an unset or unreachable endpoint must not break the flow.
 
-**Backend contracts** are drafted in [docs/backend-openapi-draft.yaml](docs/backend-openapi-draft.yaml) (REST) and [docs/websockets-asyncapi-draft.yaml](docs/websockets-asyncapi-draft.yaml) (realtime). When changing a payload shape, keep the runtime frame, the OpenAPI draft, and the AsyncAPI draft in sync. REST endpoints assume `Authorization: Bearer <token>` (except the public `POST /foreman/login`) and the `error.code`/`error.message`/`error.field`/`traceId` envelope.
+**Backend contracts:** [docs/backend-openapi.yaml](docs/backend-openapi.yaml) (REST) is **generated** from the server code — after changing a route or DTO, run `npm run spec:generate` in `server/` and commit the result; never hand-edit it. [docs/websockets-asyncapi-draft.yaml](docs/websockets-asyncapi-draft.yaml) (realtime) is hand-written; when changing a frame, update it and the Dart client together. `npm run spec:check` (CI) fails if either spec disagrees with the code. REST endpoints assume `Authorization: Bearer <token>` (except the public `POST /foreman/login`) and the `error.code`/`error.message`/`error.field`/`traceId` envelope.
 
 ## Testing
 

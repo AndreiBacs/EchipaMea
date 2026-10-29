@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'dart:math';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../../core/auth/auth_session_controller.dart';
+import '../../../../core/auth/worker_ticket_api.dart';
 import '../../../../core/config/app_env.dart';
 import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
@@ -15,8 +16,6 @@ import '../providers/team_controller.dart';
 
 class TeamPage extends ConsumerWidget {
   const TeamPage({super.key});
-
-  static const _workerLoginTicketType = 'foreman_worker_login_ticket';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -191,91 +190,17 @@ class TeamPage extends ConsumerWidget {
     return '$dayLabels • $start:00-$end:00';
   }
 
+  /// The QR dialog is its own widget now: the ticket comes from the server, so
+  /// it has a loading state, an expiry countdown and a regenerate button. A
+  /// 90-second lifetime was free when the code was minted on the device; it is
+  /// worth showing once someone has to carry a phone across a site to scan it.
   Future<void> _showEmployeeQrDialog(
     BuildContext context,
     Employee employee,
   ) async {
-    final now = DateTime.now().toUtc();
-    final expiresAt = now.add(const Duration(seconds: 90));
-    // Use a platform-safe random source for mock ticket IDs.
-    // Keep max under web integer edge-cases (avoid 1 << 32).
-    final random = Random().nextInt(0x7fffffff).toRadixString(16);
-    final ticketId =
-        'ticket-${employee.id}-${now.microsecondsSinceEpoch}-$random';
-    final payload = jsonEncode({
-      'type': _workerLoginTicketType,
-      'ticketId': ticketId,
-      'employeeId': employee.id,
-      'employeeName': employee.name,
-      'issuedAt': now.toIso8601String(),
-      'expiresAt': expiresAt.toIso8601String(),
-    });
-
     await showDialog<void>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(context.l10n.employeeLoginQrTitle),
-          content: SizedBox(
-            width: 280,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  employee.name,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                SizedBox.square(
-                  dimension: 236,
-                  child: ColoredBox(
-                    color: Colors.white,
-                    child: Center(
-                      child: QrImageView(
-                        data: payload,
-                        size: 220,
-                        backgroundColor: Colors.white,
-                        eyeStyle: const QrEyeStyle(
-                          eyeShape: QrEyeShape.square,
-                          color: Colors.black,
-                        ),
-                        dataModuleStyle: const QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.square,
-                          color: Colors.black,
-                        ),
-                        errorStateBuilder: (context, error) {
-                          return SizedBox(
-                            width: 220,
-                            height: 220,
-                            child: Center(
-                              child: Text(
-                                '${context.l10n.qrRenderError}:\n$error',
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.l10n.workerScansToConnect,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(context.l10n.close),
-            ),
-          ],
-        );
-      },
+      builder: (context) => _EmployeeQrDialog(employee: employee),
     );
   }
 
@@ -457,6 +382,203 @@ class _SwipeActionBackground extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Shows a worker login QR code, fetched from the server.
+///
+/// Stateful because the ticket now has a lifecycle: request it, wait, render it,
+/// watch it expire, ask for another. The previous version built the payload
+/// inline and rendered it synchronously, which was possible only because the
+/// device was inventing the ticket itself.
+class _EmployeeQrDialog extends ConsumerStatefulWidget {
+  const _EmployeeQrDialog({required this.employee});
+
+  final Employee employee;
+
+  @override
+  ConsumerState<_EmployeeQrDialog> createState() => _EmployeeQrDialogState();
+}
+
+class _EmployeeQrDialogState extends ConsumerState<_EmployeeQrDialog> {
+  final WorkerTicketApi _api = WorkerTicketApi();
+
+  IssuedWorkerTicket? _ticket;
+  Object? _error;
+  bool _loading = true;
+  Timer? _countdown;
+  Duration _remaining = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _countdown?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final ticket = await _api.issue(
+        employeeId: widget.employee.id,
+        employeeName: widget.employee.name,
+        accessToken: ref.read(authSessionProvider).asData?.value?.token ?? '',
+      );
+      if (!mounted) return;
+      setState(() {
+        _ticket = ticket;
+        _remaining = ticket.remaining;
+        _loading = false;
+      });
+      _startCountdown();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _loading = false;
+      });
+    }
+  }
+
+  void _startCountdown() {
+    _countdown?.cancel();
+    _countdown = Timer.periodic(const Duration(seconds: 1), (_) {
+      final ticket = _ticket;
+      if (ticket == null) return;
+      if (!mounted) return;
+      setState(() => _remaining = ticket.remaining);
+      if (_remaining == Duration.zero) _countdown?.cancel();
+    });
+  }
+
+  String get _countdownLabel {
+    final seconds = _remaining.inSeconds;
+    final minutes = seconds ~/ 60;
+    final rest = seconds % 60;
+    return '$minutes:${rest.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final expired = _ticket != null && _remaining == Duration.zero;
+
+    return AlertDialog(
+      title: Text(l10n.employeeLoginQrTitle),
+      content: SizedBox(
+        width: 280,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.employee.name,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            SizedBox.square(
+              dimension: 236,
+              child: ColoredBox(
+                color: Colors.white,
+                child: Center(child: _buildQrArea(context, l10n, expired)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (_ticket != null && !expired)
+              Text(
+                l10n.workerQrExpiresIn(_countdownLabel),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            const SizedBox(height: 4),
+            Text(l10n.workerScansToConnect, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+      actions: [
+        if (_ticket != null || _error != null)
+          TextButton(
+            onPressed: _loading ? null : _load,
+            child: Text(l10n.workerQrRegenerate),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.close),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQrArea(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool expired,
+  ) {
+    if (_loading) return const CircularProgressIndicator();
+
+    if (_error != null) {
+      return Padding(
+        padding: const EdgeInsets.all(12),
+        child: Text(
+          l10n.workerQrCreateFailed,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      );
+    }
+
+    final ticket = _ticket;
+    if (ticket == null) return const SizedBox.shrink();
+
+    if (expired) {
+      // Do not keep a dead code on screen: someone would scan it and be told
+      // the code is invalid, which sounds like their app is broken.
+      return Padding(
+        padding: const EdgeInsets.all(12),
+        child: Text(
+          l10n.workerQrExpired,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      );
+    }
+
+    return QrImageView(
+      data: ticket.qrPayload,
+      size: 220,
+      backgroundColor: Colors.white,
+      eyeStyle: const QrEyeStyle(
+        eyeShape: QrEyeShape.square,
+        color: Colors.black,
+      ),
+      dataModuleStyle: const QrDataModuleStyle(
+        dataModuleShape: QrDataModuleShape.square,
+        color: Colors.black,
+      ),
+      errorStateBuilder: (context, error) {
+        return SizedBox(
+          width: 220,
+          height: 220,
+          child: Center(
+            child: Text(
+              '${context.l10n.qrRenderError}:\n$error',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        );
+      },
     );
   }
 }

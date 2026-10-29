@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+
+# Local storage driver output
+/storage/
+/uploads/
+
+# Generated Prisma client (regenerated via `npm run prisma:generate`)
+src/generated/
+
+logs/
+*.log
+npm-debug.log*

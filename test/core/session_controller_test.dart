@@ -4,7 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:echipa_mea/src/core/auth/session_controller.dart';
+import 'package:echipa_mea/src/core/auth/worker_login_api.dart';
 
+/// Payload parsing is covered exhaustively in `qr_ticket_payload_test.dart`.
+/// What is left here is the session behaviour around it: mock mode, expiry, and
+/// who the resulting session says you are.
+///
+/// Note these run with an empty `AUTH_API_BASE_URL` (nothing calls
+/// `AppEnv.initialize`), which is the mock-mode path — the same one CI takes.
 void main() {
   late ProviderContainer container;
   late SessionNotifier notifier;
@@ -15,21 +22,30 @@ void main() {
     notifier = container.read(sessionProvider.notifier);
   });
 
+  String payload({
+    String ticketId = 't1',
+    String employeeId = 'emp1',
+    String employeeName = 'John Doe',
+    Duration expiresIn = const Duration(minutes: 1),
+  }) {
+    return jsonEncode({
+      'type': 'foreman_worker_login_ticket',
+      'ticketId': ticketId,
+      'employeeId': employeeId,
+      'employeeName': employeeName,
+      'expiresAt': DateTime.now().toUtc().add(expiresIn).toIso8601String(),
+    });
+  }
+
   group('SessionNotifier initial state', () {
     test('starts with null session', () {
       expect(container.read(sessionProvider), isNull);
     });
   });
 
-  group('SessionNotifier.connectFromQrPayload – direct JSON', () {
-    test('returns true and sets state for valid direct JSON payload', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final payload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"t1","employeeId":"emp1","employeeName":"John Doe","expiresAt":"$expiresAt"}';
-      final result = notifier.connectFromQrPayload(payload);
+  group('connectFromQrPayload in mock mode', () {
+    test('signs in from a valid payload', () async {
+      final result = await notifier.connectFromQrPayload(payload());
 
       expect(result, isTrue);
       final session = container.read(sessionProvider);
@@ -39,180 +55,63 @@ void main() {
       expect(session.sessionToken, startsWith('mock-worker-session-'));
     });
 
-    test('returns false for wrong type field', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final payload =
-          '{"type":"other_type","ticketId":"t1","employeeId":"emp1","employeeName":"John","expiresAt":"$expiresAt"}';
-      expect(notifier.connectFromQrPayload(payload), isFalse);
+    test('the mock session does not claim to be authenticated', () async {
+      // The distinction matters: a mock token proves nothing, and anything
+      // deciding whether to open an authenticated socket must be able to tell.
+      await notifier.connectFromQrPayload(payload());
+      expect(container.read(sessionProvider)!.isAuthenticated, isFalse);
     });
 
-    test('returns false when employeeId is missing', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final payload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"t1","employeeName":"John","expiresAt":"$expiresAt"}';
-      expect(notifier.connectFromQrPayload(payload), isFalse);
+    test('returns false for a code that is not one of ours', () async {
+      expect(await notifier.connectFromQrPayload('not-json'), isFalse);
+      expect(container.read(sessionProvider), isNull);
     });
 
-    test('returns false when employeeId is empty', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final payload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"t1","employeeId":"","employeeName":"John","expiresAt":"$expiresAt"}';
-      expect(notifier.connectFromQrPayload(payload), isFalse);
-    });
-
-    test('returns false when employeeName is missing', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final payload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"t1","employeeId":"emp1","expiresAt":"$expiresAt"}';
-      expect(notifier.connectFromQrPayload(payload), isFalse);
-    });
-
-    test('returns false when employeeName is empty', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final payload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"t1","employeeId":"emp1","employeeName":"","expiresAt":"$expiresAt"}';
-      expect(notifier.connectFromQrPayload(payload), isFalse);
-    });
-
-    test('returns false for invalid JSON', () {
-      expect(notifier.connectFromQrPayload('not-json'), isFalse);
-    });
-
-    test('returns false for empty string', () {
-      expect(notifier.connectFromQrPayload(''), isFalse);
-    });
-
-    test('returns false for JSON array (not a map)', () {
-      expect(notifier.connectFromQrPayload('[1,2,3]'), isFalse);
-    });
-
-    test('returns false when ticketId is missing', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final payload =
-          '{"type":"foreman_worker_login_ticket","employeeId":"emp1","employeeName":"John","expiresAt":"$expiresAt"}';
-      expect(notifier.connectFromQrPayload(payload), isFalse);
-    });
-
-    test('returns false when ticket is expired', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .subtract(const Duration(seconds: 1))
-          .toIso8601String();
-      final payload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"expired-1","employeeId":"emp1","employeeName":"John","expiresAt":"$expiresAt"}';
-      expect(notifier.connectFromQrPayload(payload), isFalse);
-    });
-  });
-
-  group('SessionNotifier.connectFromQrPayload – URL-wrapped JSON', () {
-    test('parses JSON payload from https URL query parameter', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final jsonPayload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"t2","employeeId":"emp2","employeeName":"Jane","expiresAt":"$expiresAt"}';
-      final encoded = Uri.encodeComponent(jsonPayload);
-      final url = 'https://example.com/login?payload=$encoded';
-
-      final result = notifier.connectFromQrPayload(url);
-
-      expect(result, isTrue);
-      final session = container.read(sessionProvider);
-      expect(session!.employeeId, 'emp2');
-      expect(session.employeeName, 'Jane');
-    });
-
-    test('parses JSON payload from custom scheme URL query parameter', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final jsonPayload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"t3","employeeId":"emp3","employeeName":"Bob","expiresAt":"$expiresAt"}';
-      final encoded = Uri.encodeComponent(jsonPayload);
-      final url = 'echipamea://worker-login?payload=$encoded';
-
-      final result = notifier.connectFromQrPayload(url);
-
-      expect(result, isTrue);
-      final session = container.read(sessionProvider);
-      expect(session!.employeeId, 'emp3');
-      expect(session.employeeName, 'Bob');
-    });
-
-    test('parses Base64-encoded JSON from URL query parameter', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final jsonPayload =
-          '{"type":"foreman_worker_login_ticket","ticketId":"t4","employeeId":"emp4","employeeName":"Alice","expiresAt":"$expiresAt"}';
-      final base64Payload = base64Encode(utf8.encode(jsonPayload));
-      // URL-encode so that any base64 characters (+, /, =) are preserved.
-      final url =
-          'https://example.com/login?payload=${Uri.encodeComponent(base64Payload)}';
-
-      final result = notifier.connectFromQrPayload(url);
-
-      expect(result, isTrue);
-      final session = container.read(sessionProvider);
-      expect(session!.employeeId, 'emp4');
-      expect(session.employeeName, 'Alice');
-    });
-
-    test('returns false when URL has no payload query parameter', () {
-      const url = 'https://example.com/login';
-      expect(notifier.connectFromQrPayload(url), isFalse);
-    });
-
-    test('returns false when URL payload query parameter is empty', () {
-      const url = 'https://example.com/login?payload=';
-      expect(notifier.connectFromQrPayload(url), isFalse);
-    });
-  });
-
-  group('SessionNotifier.connectFromQrPayload – whitespace handling', () {
-    test('trims whitespace around JSON payload', () {
-      final expiresAt = DateTime.now()
-          .toUtc()
-          .add(const Duration(minutes: 1))
-          .toIso8601String();
-      final payload =
-          '  {"type":"foreman_worker_login_ticket","ticketId":"t5","employeeId":"emp5","employeeName":"Sam","expiresAt":"$expiresAt"}  ';
-      final result = notifier.connectFromQrPayload(payload);
-      expect(result, isTrue);
-    });
-  });
-
-  group('WorkerSession model', () {
-    test('stores employeeId and employeeName', () {
-      const session = WorkerSession(
-        employeeId: 'e42',
-        employeeName: 'Test Worker',
-        sessionToken: 'mock-worker-session-e42',
+    test('throws expired rather than returning a plain false', () async {
+      // "Expired" and "not a valid code" send someone to different places, so
+      // the caller gets told which one happened.
+      await expectLater(
+        notifier.connectFromQrPayload(
+          payload(expiresIn: const Duration(minutes: -1)),
+        ),
+        throwsA(
+          isA<WorkerLoginException>().having(
+            (e) => e.failure,
+            'failure',
+            WorkerLoginFailure.expired,
+          ),
+        ),
       );
-      expect(session.employeeId, 'e42');
-      expect(session.employeeName, 'Test Worker');
-      expect(session.sessionToken, 'mock-worker-session-e42');
+      expect(container.read(sessionProvider), isNull);
+    });
+
+    test('disconnect clears the session', () async {
+      await notifier.connectFromQrPayload(payload());
+      expect(container.read(sessionProvider), isNotNull);
+
+      notifier.disconnect();
+      expect(container.read(sessionProvider), isNull);
+    });
+  });
+
+  group('WorkerSession.isAuthenticated', () {
+    test('is true for a server-issued token', () {
+      const session = WorkerSession(
+        employeeId: 'e1',
+        employeeName: 'Andrei D.',
+        sessionToken: 'eyJhbGciOiJIUzI1NiJ9.real.token',
+        companyId: 'demo-company',
+      );
+      expect(session.isAuthenticated, isTrue);
+    });
+
+    test('is false for an empty token', () {
+      const session = WorkerSession(
+        employeeId: 'e1',
+        employeeName: 'Andrei D.',
+        sessionToken: '',
+      );
+      expect(session.isAuthenticated, isFalse);
     });
   });
 }

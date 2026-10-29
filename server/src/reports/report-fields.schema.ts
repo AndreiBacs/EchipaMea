@@ -1,0 +1,105 @@
+import { z } from 'zod';
+import { parseFlexibleIso } from '../common/util/iso';
+
+/**
+ * The exact multipart shape the Flutter worker app sends.
+ *
+ * From `worker_reports_api.dart`, text fields in insertion order:
+ *   projectId, projectName, phaseId, phaseName, employeeId, employeeName,
+ *   description, submittedAt, then photoNames[0], photoNames[1], ...
+ *
+ * File parts:
+ *   photos[]   -- repeated once per photo, the field name literally contains
+ *                 the square brackets
+ *   voiceMemo  -- optional, single
+ *
+ * Both are sent as application/octet-stream, so part content types are ignored
+ * and the bytes are sniffed instead.
+ */
+
+export const PHOTOS_FIELD = 'photos[]';
+export const VOICE_MEMO_FIELD = 'voiceMemo';
+
+/**
+ * `submittedAt` is kept as a raw string as well as a parsed instant.
+ *
+ * Dart emits `toIso8601String()` on a UTC DateTime: six fractional digits on
+ * mobile, three on web. JavaScript `Date` truncates to milliseconds, so
+ * re-serialising it would produce a different string -- and the idempotency key
+ * is a hash of that string. Hashing the raw text is what lets the HTTP upload
+ * and the worker's follow-up WebSocket frame agree on one key.
+ */
+export const reportFieldsSchema = z.object({
+  projectId: z.string().trim().min(1, 'projectId is required.'),
+  projectName: z.string().trim().default(''),
+  phaseId: z.string().trim().min(1, 'phaseId is required.'),
+  phaseName: z.string().trim().default(''),
+  employeeId: z.string().trim().default(''),
+  employeeName: z.string().trim().default(''),
+  description: z.string().default(''),
+  submittedAt: z
+    .string()
+    .trim()
+    .min(1, 'submittedAt is required.')
+    .refine((value) => parseFlexibleIso(value) !== undefined, {
+      message: 'submittedAt must be an ISO-8601 timestamp.',
+    }),
+});
+
+export type ReportFields = z.infer<typeof reportFieldsSchema>;
+
+/**
+ * Collects `photoNames[0]`, `photoNames[1]`, ... into a positional array.
+ *
+ * OpenAPI cannot express indexed form fields, which is why the draft spec had
+ * the placeholder `photoNames[index]`. Sparse or out-of-order indices are
+ * tolerated: the array is filled by position and gaps become empty strings, so
+ * one missing name never shifts the rest out of alignment with the photos.
+ *
+ * Multer (via `append-field`) expands the brackets before this runs:
+ * `photoNames[0]` arrives as `body.photoNames`, an array -- sparse when an
+ * index is missing -- or an object when an index is too large for an array.
+ * The raw `photoNames[N]` keys are still accepted, for parsers that leave
+ * them alone.
+ */
+export function collectPhotoNames(body: Record<string, unknown>): string[] {
+  const byIndex = new Map<number, string>();
+  const put = (rawIndex: string | number, value: unknown) => {
+    const index = Number(rawIndex);
+    if (!Number.isInteger(index) || index < 0) return;
+    if (typeof value === 'string') byIndex.set(index, value);
+    else if (typeof value === 'number' || typeof value === 'boolean') {
+      byIndex.set(index, String(value));
+    }
+  };
+
+  const nested = body.photoNames;
+  if (Array.isArray(nested)) {
+    nested.forEach((value, index) => put(index, value)); // forEach skips holes
+  } else if (typeof nested === 'object' && nested !== null) {
+    for (const [key, value] of Object.entries(nested)) put(key, value);
+  }
+
+  for (const [key, value] of Object.entries(body)) {
+    const match = /^photoNames\[(\d+)\]$/.exec(key);
+    if (match?.[1]) put(match[1], value);
+  }
+
+  if (byIndex.size === 0) return [];
+  const highest = Math.max(...byIndex.keys());
+  return Array.from({ length: highest + 1 }, (_, i) => byIndex.get(i) ?? '');
+}
+
+/**
+ * Normalises a multipart text body.
+ *
+ * Some parsers hand back repeated fields as arrays; the first value wins, which
+ * matches how the client sends each text field exactly once.
+ */
+export function flattenBody(body: Record<string, unknown>): Record<string, unknown> {
+  const flat: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body)) {
+    flat[key] = Array.isArray(value) ? value[0] : value;
+  }
+  return flat;
+}

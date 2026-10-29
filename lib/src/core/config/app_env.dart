@@ -1,5 +1,12 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// Environment-derived configuration.
+///
+/// The fields default to "unset" rather than being `late final`. Reading config
+/// before [initialize] used to throw a `LateInitializationError`, which meant a
+/// widget test that happened to touch a code path reading `AUTH_API_BASE_URL`
+/// crashed on the config lookup instead of taking the mock-mode branch. Empty is
+/// the honest answer for "no backend configured", and it is also what CI sets.
 class AppEnv {
   static const _stitchApiKeyField = 'STITCH_API_KEY';
   static const _stitchMcpUrlField = 'STITCH_MCP_URL';
@@ -11,15 +18,20 @@ class AppEnv {
   static const _workerReportsApiUrlField = 'WORKER_REPORTS_API_URL';
   static const _foremanNotificationsWsUrlField = 'FOREMAN_NOTIFICATIONS_WS_URL';
 
-  static late final String stitchApiKey;
-  static late final String stitchMcpUrl;
-  static late final String authApiBaseUrl;
-  static late final String appDownloadUrl;
-  static late final String appLandingUrl;
-  static late final String appIosTestflightUrl;
-  static late final String workerTelemetryWsUrl;
-  static late final String workerReportsApiUrl;
-  static late final String foremanNotificationsWsUrl;
+  static String stitchApiKey = '';
+  static String stitchMcpUrl = 'https://stitch.googleapis.com/mcp';
+
+  /// Root of the API. Empty means mock mode: no network, seeded demo data.
+  static String authApiBaseUrl = '';
+  static String appDownloadUrl = '';
+  static String appLandingUrl = '';
+  static String appIosTestflightUrl = '';
+  static String workerTelemetryWsUrl = '';
+  static String workerReportsApiUrl = '';
+  static String foremanNotificationsWsUrl = '';
+
+  /// True when a backend is configured and the app should talk to it.
+  static bool get hasBackend => authApiBaseUrl.trim().isNotEmpty;
 
   static void initialize() {
     stitchApiKey = dotenv.env[_stitchApiKeyField] ?? '';

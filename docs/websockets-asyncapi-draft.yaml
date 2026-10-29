@@ -1,50 +1,132 @@
 asyncapi: 3.0.0
 info:
   title: EchipaMea WebSocket Contracts (Draft)
-  version: 0.1.0
+  version: 0.2.0
   description: |
-    Draft websocket schema extracted from frontend expectations.
-    This is a BE handoff artifact for realtime contracts.
+    Realtime contracts as implemented by the NestJS backend (`server/src/realtime`).
+
+    Transport is **raw RFC-6455**, not socket.io and not Nest's default
+    `{event, data}` envelope. Every frame in both directions is a flat JSON
+    object discriminated by a top-level `type` field; `TypeFieldWsAdapter`
+    dispatches on it.
+
+    Authentication happens during the upgrade, and there is no unauthenticated
+    route. Every socket belongs to a company because its credential says so:
+      - `?ticket=` -- a single-use ticket from `POST /realtime/tickets`. The
+        normal path, and the only one available to Flutter web, where Dart
+        cannot set headers on a WebSocket.
+      - `Authorization: Bearer` -- native clients and tests, which can.
+
+    A raw access token in the query string is refused: query strings land in
+    proxy and access logs, and a ticket costs one HTTP round trip to avoid that.
+    An unauthenticated handshake is closed with 4401.
+
+    A failed handshake gets an `error` frame and then a close in the 4000 range.
+    Once a connection is established the server never closes it over a bad
+    message: a rejected frame is answered with an `error` frame and the socket
+    stays open, because both Flutter sockets listen with `cancelOnError: true`
+    and have no reconnect logic.
 
 servers:
   production:
     host: api.echipamea.example.com
     protocol: wss
     description: Example production websocket host
+    security:
+      - $ref: '#/components/securitySchemes/realtimeTicket'
+  local:
+    host: localhost:3000
+    protocol: ws
+    description: Local development
 
 channels:
   workerTelemetry:
     address: /ws/worker-telemetry
-    description: Worker sends periodic location telemetry.
+    description: |
+      Worker sends periodic location telemetry. Send-only; the worker app ignores
+      inbound frames. Worker role only -- a foreman token is closed with 4403.
     messages:
       workerLocation:
         $ref: '#/components/messages/WorkerLocationMessage'
+      connected:
+        $ref: '#/components/messages/ConnectedMessage'
+      ack:
+        $ref: '#/components/messages/AckMessage'
+      error:
+        $ref: '#/components/messages/ErrorMessage'
 
   foremanNotifications:
     address: /ws/foreman-notifications
-    description: Backend pushes worker report notifications to foreman clients.
+    description: |
+      Asymmetric by role.
+
+      Foremen join `company:<companyId>:foremen` and are **receive-only**: an
+      inbound frame is answered with an `error` frame carrying
+      `SEND_NOT_ALLOWED`, never a close.
+
+      Workers join no room and may send exactly one type,
+      `worker_report_submitted` -- the one-shot notice the app publishes after a
+      successful upload (connect, write, close, in milliseconds). It is deduped
+      against the HTTP upload on
+      `sha256(companyId|phaseId|employeeId|submittedAtRaw)`, so the normal case
+      is a no-op that answers `ack` with `duplicate: true`.
     messages:
       workerReportSubmitted:
         $ref: '#/components/messages/WorkerReportSubmittedMessage'
+      connected:
+        $ref: '#/components/messages/ConnectedMessage'
+      ack:
+        $ref: '#/components/messages/AckMessage'
+      error:
+        $ref: '#/components/messages/ErrorMessage'
 
 operations:
   sendWorkerLocation:
     action: send
     channel:
       $ref: '#/channels/workerTelemetry'
-    summary: Worker publishes location payload.
+    summary: Worker publishes a location fix.
     messages:
       - $ref: '#/channels/workerTelemetry/messages/workerLocation'
+    reply:
+      channel:
+        $ref: '#/channels/workerTelemetry'
+      messages:
+        - $ref: '#/channels/workerTelemetry/messages/ack'
+        - $ref: '#/channels/workerTelemetry/messages/error'
 
   receiveWorkerReportSubmitted:
     action: receive
     channel:
       $ref: '#/channels/foremanNotifications'
-    summary: Foreman client receives report-submitted notification.
+    summary: Foreman client receives a report-submitted notification.
     messages:
       - $ref: '#/channels/foremanNotifications/messages/workerReportSubmitted'
 
+  publishWorkerReportSubmitted:
+    action: send
+    channel:
+      $ref: '#/channels/foremanNotifications'
+    summary: |
+      Worker device announces an upload it already completed over HTTP.
+      Best-effort and normally redundant; deduped server-side.
+    messages:
+      - $ref: '#/channels/foremanNotifications/messages/workerReportSubmitted'
+    reply:
+      channel:
+        $ref: '#/channels/foremanNotifications'
+      messages:
+        - $ref: '#/channels/foremanNotifications/messages/ack'
+        - $ref: '#/channels/foremanNotifications/messages/error'
+
 components:
+  securitySchemes:
+    realtimeTicket:
+      type: httpApiKey
+      in: query
+      name: ticket
+      description: Single-use ticket from `POST /realtime/tickets`, valid for 60 seconds.
+
   messages:
     WorkerLocationMessage:
       name: WorkerLocationMessage
@@ -56,28 +138,47 @@ components:
     WorkerReportSubmittedMessage:
       name: WorkerReportSubmittedMessage
       title: Worker Report Submitted Event
-      summary: Notification event published when worker report upload succeeds.
+      summary: Published when a worker report upload succeeds.
       payload:
         $ref: '#/components/schemas/WorkerReportSubmittedPayload'
+
+    ConnectedMessage:
+      name: ConnectedMessage
+      title: Connection Established
+      summary: First frame after a successful handshake.
+      payload:
+        $ref: '#/components/schemas/ConnectedPayload'
+
+    AckMessage:
+      name: AckMessage
+      title: Frame Acknowledged
+      payload:
+        $ref: '#/components/schemas/AckPayload'
+
+    ErrorMessage:
+      name: ErrorMessage
+      title: Frame Rejected
+      summary: A rejected frame. Does not close the connection.
+      payload:
+        $ref: '#/components/schemas/ErrorPayload'
 
   schemas:
     WorkerLocationPayload:
       type: object
       required:
         - type
-        - employeeId
-        - employeeName
         - latitude
         - longitude
-        - accuracyMeters
-        - capturedAt
       properties:
         type:
           type: string
           const: worker_location
         employeeId:
           type: string
-          description: Internal employee identifier.
+          description: |
+            Ignored. The token's subject is authoritative; this field is only
+            compared against it, and a mismatch is logged. The app still sends
+            it, so it stays in the contract as accepted-and-ignored.
         employeeName:
           type: string
         latitude:
@@ -91,24 +192,22 @@ components:
         accuracyMeters:
           type: number
           minimum: 0
+          default: 0
+          description: Defaults to 0 rather than rejecting; some devices omit it.
         capturedAt:
           type: string
           format: date-time
-          description: UTC ISO-8601 timestamp.
+          description: |
+            UTC ISO-8601. This is the client's send-time wall clock, not the GPS
+            fix time. Six fractional digits on mobile, three on web; both are
+            accepted. Defaults to server time when absent.
 
     WorkerReportSubmittedPayload:
       type: object
       required:
         - type
         - projectId
-        - projectName
         - phaseId
-        - phaseName
-        - employeeId
-        - employeeName
-        - description
-        - photoCount
-        - hasVoiceMemo
         - submittedAt
       properties:
         type:
@@ -118,22 +217,101 @@ components:
           type: string
         projectName:
           type: string
+          default: ''
         phaseId:
           type: string
         phaseName:
           type: string
+          default: ''
         employeeId:
           type: string
+          description: Ignored — taken from the token, like every other identity here.
         employeeName:
           type: string
+          default: ''
         description:
           type: string
+          default: ''
         photoCount:
           type: integer
           minimum: 0
+          default: 0
         hasVoiceMemo:
           type: boolean
+          default: false
         submittedAt:
           type: string
           format: date-time
-          description: UTC ISO-8601 timestamp.
+          description: |
+            UTC ISO-8601, retained **verbatim**. It is hashed into the
+            idempotency key, and Dart emits six fractional digits on mobile
+            where JavaScript `Date` holds three -- re-serialising it would
+            produce a second key for one report.
+
+    ConnectedPayload:
+      type: object
+      required: [type, channel, role, serverTime, heartbeatIntervalMs]
+      properties:
+        type:
+          type: string
+          const: connected
+        channel:
+          type: string
+          enum: [workerTelemetry, foremanNotifications]
+        role:
+          type: string
+          enum: [admin, foreman, worker]
+        serverTime:
+          type: string
+          format: date-time
+        heartbeatIntervalMs:
+          type: integer
+          description: How often the server pings. Unanswered pings are reaped.
+
+    AckPayload:
+      type: object
+      required: [type, of, receivedAt]
+      properties:
+        type:
+          type: string
+          const: ack
+        of:
+          type: string
+          description: The `type` of the frame being acknowledged.
+        receivedAt:
+          type: string
+          format: date-time
+        duplicate:
+          type: boolean
+          description: True when the server already knew about this event.
+
+    ErrorPayload:
+      type: object
+      required: [type, code, message]
+      properties:
+        type:
+          type: string
+          const: error
+        code:
+          type: string
+          enum:
+            - UNAUTHENTICATED
+            - FORBIDDEN
+            - TICKET_NOT_FOUND
+            - TICKET_EXPIRED
+            - TICKET_ALREADY_REDEEMED
+            - ACCOUNT_DISABLED
+            - NOT_AUTHENTICATED_YET
+            - SEND_NOT_ALLOWED
+            - UNKNOWN_MESSAGE_TYPE
+            - MALFORMED_FRAME
+            - VALIDATION_FAILED
+            - NOT_FOUND
+            - INTERNAL_ERROR
+        message:
+          type: string
+
+  # Close codes, for reference. 4000-4999 is the application range.
+  #   4401 UNAUTHENTICATED -- handshake failed; a new ticket is needed
+  #   4403 FORBIDDEN       -- authenticated, but wrong role for this channel
+  #   1001 GOING_AWAY      -- graceful server shutdown

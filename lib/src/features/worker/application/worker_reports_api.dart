@@ -1,12 +1,16 @@
-import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../core/config/app_env.dart';
 
 class WorkerReportsApi {
+  /// Uploads an end-of-day report.
+  ///
+  /// [accessToken] is the worker's session token and is required: the server no
+  /// longer accepts unauthenticated uploads, and it takes the submitting
+  /// employee from the token rather than from `employeeId` in the body. The
+  /// field is still sent because the wire format is shared with older builds,
+  /// but it is not what decides whose work this was.
   Future<void> submitReport({
     required String projectId,
     required String projectName,
@@ -17,15 +21,20 @@ class WorkerReportsApi {
     required String description,
     required DateTime submittedAt,
     required List<XFile> photos,
+    required String accessToken,
     String? memoPath,
   }) async {
     final endpoint = AppEnv.workerReportsApiUrl.trim();
     if (endpoint.isEmpty) {
       throw Exception('WORKER_REPORTS_API_URL is not configured.');
     }
+    if (accessToken.isEmpty) {
+      throw Exception('A worker session is required to submit a report.');
+    }
 
     final uri = Uri.parse(endpoint);
     final request = http.MultipartRequest('POST', uri);
+    request.headers['Authorization'] = 'Bearer $accessToken';
     request.fields['projectId'] = projectId;
     request.fields['projectName'] = projectName;
     request.fields['phaseId'] = phaseId;
@@ -48,10 +57,7 @@ class WorkerReportsApi {
 
     if (memoPath != null && memoPath.trim().isNotEmpty) {
       request.files.add(
-        await http.MultipartFile.fromPath(
-          'voiceMemo',
-          memoPath,
-        ),
+        await http.MultipartFile.fromPath('voiceMemo', memoPath),
       );
     }
 
@@ -67,64 +73,21 @@ class WorkerReportsApi {
     // Read body to fully complete and release stream resources.
     await streamed.stream.drain<List<int>>();
 
-    // Best-effort one-shot websocket ping so the backend can fan out to foremen.
-    // Delivery is not guaranteed; the HTTP upload above is the source of truth.
-    await _notifyForemanReportSubmitted(
-      projectId: projectId,
-      projectName: projectName,
-      phaseId: phaseId,
-      phaseName: phaseName,
-      employeeId: employeeId,
-      employeeName: employeeName,
-      description: description,
-      submittedAt: submittedAt,
-      photoCount: photos.length,
-      hasVoiceMemo: memoPath != null && memoPath.trim().isNotEmpty,
-    );
-  }
-
-  Future<void> _notifyForemanReportSubmitted({
-    required String projectId,
-    required String projectName,
-    required String phaseId,
-    required String phaseName,
-    required String employeeId,
-    required String employeeName,
-    required String description,
-    required DateTime submittedAt,
-    required int photoCount,
-    required bool hasVoiceMemo,
-  }) async {
-    final wsEndpoint = AppEnv.foremanNotificationsWsUrl.trim();
-    if (wsEndpoint.isEmpty) return;
-
-    final uri = Uri.tryParse(wsEndpoint);
-    if (uri == null || !(uri.scheme == 'ws' || uri.scheme == 'wss')) return;
-
-    WebSocketChannel? channel;
-    try {
-      channel = WebSocketChannel.connect(uri);
-      await channel.ready;
-      final payload = {
-        'type': 'worker_report_submitted',
-        'projectId': projectId,
-        'projectName': projectName,
-        'phaseId': phaseId,
-        'phaseName': phaseName,
-        'employeeId': employeeId,
-        'employeeName': employeeName,
-        'description': description,
-        'photoCount': photoCount,
-        'hasVoiceMemo': hasVoiceMemo,
-        'submittedAt': submittedAt.toUtc().toIso8601String(),
-      };
-      channel.sink.add(jsonEncode(payload));
-    } catch (_) {
-      // Non-blocking: report upload already succeeded.
-    } finally {
-      // Await close so the sink drains before we drop the channel.
-      await channel?.sink.close();
-    }
+    // The foreman notification is the server's job now.
+    //
+    // This used to open a one-shot websocket and publish a
+    // `worker_report_submitted` frame after the upload. Three reasons it is
+    // gone:
+    //
+    //  - It was unreliable in exactly the case it mattered. On a slow site
+    //    connection the 30s timeout above throws before this line runs, so the
+    //    report existed on the server with nobody told about it.
+    //  - The server now fans out on a successful upload, so the frame was
+    //    redundant; it resolved to the same idempotency key and did nothing.
+    //  - It was the only writer on the foreman notification channel. With it
+    //    gone that channel has readers only, so the server can require a
+    //    foreman ticket there instead of admitting anonymous connections --
+    //    which is what stopped anyone who could reach the port from reading a
+    //    company's report events.
   }
 }
-

@@ -1,0 +1,650 @@
+// EchipaMea data model.
+//
+// Guiding rule: values the Flutter app currently *stores* but which are really
+// functions of other data are NOT columns here. `Project.status`,
+// `Project.workers`, `Client.activeProjects`, a phase's submitted/reviewed
+// metadata and any non-manual daily sequence are all derived at read time.
+// See `src/projects/project-status.service.ts` and the mappers.
+
+generator client {
+  provider = "prisma-client-js"
+  // Default output (node_modules/.prisma/client), imported as `@prisma/client`.
+  // A custom output under src/ emits plain JS, which `tsc` does not copy into
+  // dist/ -- the built server then fails at startup with MODULE_NOT_FOUND.
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Wire enums. Values are verbatim Dart `.name` output so JSON needs no mapping.
+// ---------------------------------------------------------------------------
+enum ProjectStatus {
+  planned
+  inProgress
+  done
+}
+
+enum PhaseStatus {
+  notStarted
+  inProgress
+  pendingReview
+  done
+}
+
+enum ClientType {
+  individual
+  company
+  publicInstitution
+}
+
+enum ClientStatus {
+  active
+  inactive
+  blocked
+}
+
+enum ClientContactMethod {
+  phone
+  email
+  whatsApp
+}
+
+enum WorkerRole {
+  electrician
+  plumber
+  generalWorker
+  carpenter
+  welder
+  helper
+  painter
+  mason
+  hvacTechnician
+}
+
+// ---------------------------------------------------------------------------
+// Server-only enums
+// ---------------------------------------------------------------------------
+enum UserRole {
+  admin
+  foreman
+}
+
+enum MediaKind {
+  photo
+  audio
+  video
+  document
+}
+
+enum MediaSlot {
+  instructionPhoto
+  instructionAudio
+  reportPhoto
+  reportVoiceMemo
+}
+
+enum NotificationKind {
+  workerReportSubmitted
+  phaseApproved
+  phaseRejected
+  workerArrived
+}
+
+enum ReportSource {
+  http
+  websocket
+}
+
+// ===========================================================================
+// Tenancy root
+// ===========================================================================
+model Company {
+  id           String   @id @default(cuid())
+  name         String
+  addressLine1 String   @default("")
+  city         String   @default("")
+  state        String   @default("")
+  zipCode      String   @default("")
+  iban         String   @default("")
+  /// Romanian fiscal code (CUI).
+  cui          String   @default("")
+  vatNumber    String   @default("")
+  /// Romanian trade register number (Nr. Reg. Com.).
+  regCom       String   @default("")
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  users             User[]
+  clients           Client[]
+  employees         Employee[]
+  projects          Project[]
+  mediaAssets       MediaAsset[]
+  notifications     Notification[]
+  workerReports     WorkerReport[]
+  loginTickets      WorkerLoginTicket[]
+  locationSamples   WorkerLocationSample[]
+  sequenceOverrides DailySequenceOverride[]
+  arrivals          WorkerArrival[]
+
+  @@map("companies")
+}
+
+// ===========================================================================
+// Auth principals
+// ===========================================================================
+
+/// Foreman / admin. Password login.
+model User {
+  id           String    @id @default(cuid())
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  email        String
+  passwordHash String
+  role         UserRole  @default(foreman)
+  fullName     String    @default("")
+  phone        String    @default("")
+  jobTitle     String    @default("")
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime? @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt    DateTime? @db.Timestamptz(6)
+
+  refreshTokens  RefreshToken[]
+  issuedTickets  WorkerLoginTicket[] @relation("TicketIssuer")
+  phaseReviews   PhaseReview[]
+  notifications  Notification[]
+  uploadedMedia  MediaAsset[]        @relation("MediaUploaderUser")
+  realtimeTicket RealtimeTicket[]    @relation("RealtimeTicketUser")
+
+  /// Global unique: the email alone identifies the tenant at login time.
+  @@unique([email])
+  /// Enables tenant-scoped compound lookups (`where: { id_companyId: {...} }`).
+  @@unique([id, companyId])
+  @@index([companyId, deletedAt])
+  @@map("users")
+}
+
+/// Opaque, rotating refresh tokens. `userId` set for foremen, `employeeId` for workers.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  companyId    String
+  userId       String?
+  employeeId   String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employee     Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  /// sha256 of the opaque secret. The secret itself is never stored.
+  tokenHash    String    @unique
+  /// Rotation family. Reuse of a rotated token revokes the whole family.
+  familyId     String
+  issuedAt     DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt    DateTime  @db.Timestamptz(6)
+  revokedAt    DateTime? @db.Timestamptz(6)
+  replacedById String?
+  userAgent    String?
+  ip           String?
+
+  @@index([companyId, familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+/// Short-lived QR ticket a foreman generates so a worker can sign in by scanning.
+model WorkerLoginTicket {
+  id                String    @id @default(cuid())
+  companyId         String
+  company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  issuedByUserId    String
+  issuedBy          User      @relation("TicketIssuer", fields: [issuedByUserId], references: [id])
+  /// sha256 of the opaque `ticketId` secret carried in the QR payload.
+  ticketHash        String    @unique
+  issuedAt          DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt         DateTime  @db.Timestamptz(6)
+  redeemedAt        DateTime? @db.Timestamptz(6)
+  redeemedIp        String?
+  redeemedUserAgent String?
+
+  @@index([companyId, employeeId, expiresAt])
+  @@index([expiresAt])
+  @@map("worker_login_tickets")
+}
+
+/// Single-use, 60-second credential for opening a WebSocket. Preferred over
+/// putting an access token in the query string, which proxies log.
+model RealtimeTicket {
+  id         String    @id @default(cuid())
+  companyId  String
+  ticketHash String    @unique
+  role       String
+  userId     String?
+  user       User?     @relation("RealtimeTicketUser", fields: [userId], references: [id], onDelete: Cascade)
+  employeeId String?
+  employee   Employee? @relation("RealtimeTicketEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime  @db.Timestamptz(6)
+  usedAt     DateTime? @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("realtime_tickets")
+}
+
+// ===========================================================================
+// Domain
+// ===========================================================================
+model Client {
+  id                     String              @id @default(cuid())
+  companyId              String
+  company                Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name                   String
+  type                   ClientType
+  status                 ClientStatus
+  preferredContactMethod ClientContactMethod
+  notes                  String              @default("")
+  email                  String              @default("")
+  phone                  String              @default("")
+  addressLine1           String              @default("")
+  city                   String              @default("")
+  state                  String              @default("")
+  zipCode                String              @default("")
+  contactPerson          String              @default("")
+  createdAt              DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime            @updatedAt @db.Timestamptz(6)
+  deletedAt              DateTime?           @db.Timestamptz(6)
+
+  projects Project[]
+
+  /// NOTE: `activeProjects` is deliberately not a column. It is
+  /// count(projects where deletedAt is null and derived status != done).
+  @@unique([id, companyId])
+  @@index([companyId, deletedAt, name])
+  @@map("clients")
+}
+
+model Employee {
+  id            String     @id @default(cuid())
+  companyId     String
+  company       Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name          String
+  role          WorkerRole
+  email         String     @default("")
+  phone         String     @default("")
+  /// Hour of day, 0-23, in the employee's local wall clock. Gates telemetry.
+  workStartHour Int
+  workEndHour   Int
+  /// ISO-8601 weekdays, 1=Mon .. 7=Sun, matching Dart's `DateTime.weekday`.
+  workingDays   Int[]
+  latitude      Float?
+  longitude     Float?
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime   @updatedAt @db.Timestamptz(6)
+  deletedAt     DateTime?  @db.Timestamptz(6)
+
+  projectAssignments ProjectAssignment[]
+  phaseAssignments   PhaseAssignment[]
+  phaseSubmissions   PhaseSubmission[]
+  workerReports      WorkerReport[]
+  loginTickets       WorkerLoginTicket[]
+  refreshTokens      RefreshToken[]
+  locationSamples    WorkerLocationSample[]
+  sequenceOverrides  DailySequenceOverride[]
+  uploadedMedia      MediaAsset[]            @relation("MediaUploaderEmployee")
+  realtimeTickets    RealtimeTicket[]        @relation("RealtimeTicketEmployee")
+  arrivals           WorkerArrival[]
+
+  @@unique([id, companyId])
+  @@index([companyId, deletedAt, name])
+  @@map("employees")
+}
+
+model Project {
+  id               String    @id @default(cuid())
+  companyId        String
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clientId         String
+  client           Client    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  name             String
+  useClientAddress Boolean   @default(true)
+  addressLine1     String    @default("")
+  city             String    @default("")
+  state            String    @default("")
+  zipCode          String    @default("")
+  latitude         Float?
+  longitude        Float?
+  /// Manual "mark as done" override, set by POST /projects/{id}/done.
+  /// status = closedAt != null ? done : projectStatusFromPhases(phases)
+  closedAt         DateTime? @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt        DateTime? @db.Timestamptz(6)
+
+  phases            ProjectPhase[]
+  assignments       ProjectAssignment[]
+  reports           WorkerReport[]
+  sequenceOverrides DailySequenceOverride[]
+  arrivals          WorkerArrival[]
+
+  /// NOTE: `status` and `workers[]` are not columns -- both derived.
+  @@unique([id, companyId])
+  @@index([companyId, deletedAt])
+  @@index([companyId, clientId])
+  @@map("projects")
+}
+
+model ProjectAssignment {
+  projectId  String
+  employeeId String
+  companyId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([projectId, employeeId])
+  @@index([companyId, employeeId])
+  @@map("project_assignments")
+}
+
+model ProjectPhase {
+  id          String      @id @default(cuid())
+  companyId   String
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  /// Date-only in the domain; serialised as YYYY-MM-DD.
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
+  description String      @default("")
+  status      PhaseStatus @default(notStarted)
+  /// Explicit ordering, replacing Dart's implicit list position. Dense, and
+  /// rewritten wholesale by the reorder endpoint inside one transaction.
+  /// Deliberately not unique: Prisma emits per-row UPDATEs that would collide
+  /// mid-transaction against a unique constraint.
+  sortIndex   Int
+  createdAt   DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime    @updatedAt @db.Timestamptz(6)
+  deletedAt   DateTime?   @db.Timestamptz(6)
+
+  assignments      PhaseAssignment[]
+  workInstructions PhaseWorkInstruction[]
+  submissions      PhaseSubmission[]
+  reviews          PhaseReview[]
+  reports          WorkerReport[]
+
+  /// NOTE: submittedAt / submittedByEmployeeIds derive from `submissions`;
+  /// reviewedAt / reviewedByForemanId / reviewNotes from the latest `review`.
+  @@unique([id, companyId])
+  @@index([projectId, sortIndex])
+  @@index([companyId, status])
+  @@index([companyId, startDate, endDate])
+  @@map("project_phases")
+}
+
+model PhaseAssignment {
+  phaseId    String
+  employeeId String
+  companyId  String
+  projectId  String
+  phase      ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  employee   Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(6)
+
+  @@id([phaseId, employeeId])
+  @@index([companyId, employeeId])
+  /// Drives the suggested-sequence query.
+  @@index([projectId, employeeId])
+  @@map("phase_assignments")
+}
+
+model PhaseWorkInstruction {
+  id        String       @id @default(cuid())
+  companyId String
+  phaseId   String
+  phase     ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  text      String
+  sortIndex Int
+  createdAt DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime     @updatedAt @db.Timestamptz(6)
+
+  media WorkInstructionMedia[]
+
+  @@unique([id, companyId])
+  @@index([phaseId, sortIndex])
+  @@map("phase_work_instructions")
+}
+
+model PhaseSubmission {
+  id          String        @id @default(cuid())
+  companyId   String
+  phaseId     String
+  employeeId  String
+  phase       ProjectPhase  @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  employee    Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reportId    String?       @unique
+  report      WorkerReport? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  /// Instant reported by the client.
+  submittedAt DateTime      @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+
+  @@index([phaseId, submittedAt])
+  @@index([companyId, employeeId, submittedAt])
+  @@map("phase_submissions")
+}
+
+model PhaseReview {
+  id           String       @id @default(cuid())
+  companyId    String
+  phaseId      String
+  phase        ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  approved     Boolean
+  reviewedById String
+  reviewedBy   User         @relation(fields: [reviewedById], references: [id])
+  notes        String?
+  createdAt    DateTime     @default(now()) @db.Timestamptz(6)
+
+  @@index([phaseId, createdAt])
+  @@map("phase_reviews")
+}
+
+// ===========================================================================
+// Sequencing
+//
+// Only MANUAL overrides are rows. A suggested order is computed from phase
+// assignments and date windows, and is never persisted.
+// ===========================================================================
+model DailySequenceOverride {
+  companyId       String
+  projectId       String
+  employeeId      String
+  /// The dayKey, as a bare calendar date. Never timezone-converted: the client
+  /// derives it from local wall clock and the server must not reinterpret it.
+  day             DateTime @db.Date
+  orderedPhaseIds String[]
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdById     String?
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  @@id([projectId, employeeId, day])
+  @@index([companyId, day])
+  @@map("daily_sequence_overrides")
+}
+
+// ===========================================================================
+// Media
+// ===========================================================================
+model MediaAsset {
+  id           String    @id @default(cuid())
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// e.g. co/<companyId>/2026/08/<ulid>.jpg
+  storageKey   String    @unique
+  bucket       String
+  kind         MediaKind
+  /// Sniffed from the bytes. The Flutter client sends everything as
+  /// application/octet-stream, so the declared part type is never trusted.
+  contentType  String
+  byteSize     Int
+  sha256       String
+  originalName String    @default("")
+  width        Int?
+  height       Int?
+  durationMs   Int?
+
+  uploadedByUserId     String?
+  uploadedByUser       User?     @relation("MediaUploaderUser", fields: [uploadedByUserId], references: [id])
+  uploadedByEmployeeId String?
+  uploadedByEmployee   Employee? @relation("MediaUploaderEmployee", fields: [uploadedByEmployeeId], references: [id])
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6)
+
+  workInstructionLinks WorkInstructionMedia[]
+  reportLinks          WorkerReportMedia[]
+
+  @@unique([id, companyId])
+  @@index([companyId, sha256])
+  @@map("media_assets")
+}
+
+model WorkInstructionMedia {
+  instructionId String
+  mediaId       String
+  companyId     String
+  slot          MediaSlot
+  sortIndex     Int
+  instruction   PhaseWorkInstruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  media         MediaAsset           @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([instructionId, mediaId])
+  @@index([instructionId, slot, sortIndex])
+  @@map("work_instruction_media")
+}
+
+model WorkerReportMedia {
+  reportId   String
+  mediaId    String
+  companyId  String
+  slot       MediaSlot
+  sortIndex  Int
+  /// Verbatim value of the multipart `photoNames[i]` field, which may differ
+  /// from the uploaded part's filename.
+  clientName String       @default("")
+  report     WorkerReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  media      MediaAsset   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([reportId, mediaId])
+  @@index([reportId, slot, sortIndex])
+  @@map("worker_report_media")
+}
+
+// ===========================================================================
+// Worker reports
+// ===========================================================================
+model WorkerReport {
+  id          String       @id @default(cuid())
+  companyId   String
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseId     String
+  phase       ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  employeeId  String
+  employee    Employee     @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  description String       @default("")
+  submittedAt DateTime     @db.Timestamptz(6)
+  /// The client's `submittedAt` string verbatim: Dart emits 6 fractional digits
+  /// on mobile and 3 on web, while JS Date truncates to milliseconds. Keeping
+  /// the raw text is what makes the idempotency key stable.
+  submittedAtRaw String
+
+  /// Labels exactly as the worker device sent them. Audit only; may be stale.
+  projectNameSnapshot  String @default("")
+  phaseNameSnapshot    String @default("")
+  employeeNameSnapshot String @default("")
+
+  /// sha256(companyId|phaseId|employeeId|submittedAtRaw). Dedupes the HTTP
+  /// upload against the worker's best-effort WebSocket frame.
+  idempotencyKey String       @unique
+  source         ReportSource @default(http)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+
+  media      WorkerReportMedia[]
+  submission PhaseSubmission?
+
+  @@index([companyId, phaseId, submittedAt])
+  @@index([companyId, employeeId, submittedAt])
+  @@map("worker_reports")
+}
+
+/// Persists the currently client-only `announceArrival` event.
+model WorkerArrival {
+  id         String   @id @default(cuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  arrivedAt  DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([companyId, projectId, arrivedAt])
+  @@map("worker_arrivals")
+}
+
+// ===========================================================================
+// Notifications
+//
+// One row per recipient so read state is per-item. `payload` carries structured
+// data only -- titles are rendered client-side, because the app is ro/hu/en and
+// a server-rendered string would bypass localization.
+// ===========================================================================
+model Notification {
+  id              String           @id @default(cuid())
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  recipientUserId String
+  recipient       User             @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+  kind            NotificationKind
+  payload         Json
+  projectId       String?
+  phaseId         String?
+  employeeId      String?
+  reportId        String?
+  occurredAt      DateTime         @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  readAt          DateTime?        @db.Timestamptz(6)
+
+  @@index([recipientUserId, readAt, createdAt(sort: Desc)])
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ===========================================================================
+// Telemetry
+// ===========================================================================
+model WorkerLocationSample {
+  id             BigInt   @id @default(autoincrement())
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  latitude       Float
+  longitude      Float
+  accuracyMeters Float
+  /// The client sends send-time wall clock, NOT the GPS fix timestamp.
+  capturedAt     DateTime @db.Timestamptz(6)
+  receivedAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  employeeNameSnapshot String @default("")
+
+  @@index([companyId, employeeId, capturedAt(sort: Desc)])
+  /// Retention sweep.
+  @@index([receivedAt])
+  @@map("worker_location_samples")
+}
