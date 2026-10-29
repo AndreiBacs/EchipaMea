@@ -22,7 +22,7 @@ Mobile app for small contractor teams, built with Flutter.
   - **Profile** (`/worker/profile`): app language and worker logout.
 - Worker login flow:
   - Foreman generates a short-lived worker login QR ticket from Team
-  - Worker scans that QR ticket (no worker credentials required)
+  - Worker scans that QR ticket (no worker credentials required). Where there is no camera scanner (Windows and Linux desktop, or a browser without a camera), the worker pastes the code instead: the foreman's QR dialog has **Show code** and **Copy code**, and the connect page has a **Login code** field.
   - After a successful scan, the app opens the worker **Work** tab
   - Worker phone streams location to backend via WebSocket only during configured working hours
 - Localization:
@@ -75,7 +75,7 @@ Behavior:
 - Location events are sent only while local device time is inside that employee's configured schedule.
 - While in schedule, the app sends the worker's current position about **every 30 minutes** on the same WebSocket (`type`: `worker_location`, same JSON shape as before). The first send runs shortly after the session becomes active in working hours.
 - Outside working hours, the app does not send telemetry and closes the WebSocket connection.
-- When a worker report upload succeeds, the app opens a short-lived websocket, waits until the socket is **ready**, sends one `worker_report_submitted` JSON payload, then **closes the sink** (awaited) so the frame can flush before teardown—still best-effort if the server or network drops the connection.
+- When a worker report upload succeeds, the server moves the phase to pending review and announces it to the foremen on `FOREMAN_NOTIFICATIONS_WS_URL`; the worker app sends no socket frame of its own.
 
 ## Backend contract docs
 

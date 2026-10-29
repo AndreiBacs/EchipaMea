@@ -69,6 +69,9 @@ class AppLocalizations {
       'workerLoginTitle': 'Autentificare muncitor',
       'workerScanHint':
           'Scaneaza codul QR din panoul sefului de echipa pentru conectare automata.',
+      'workerEnterCodeHint': 'Nu ai camera? Introdu codul primit de la sef.',
+      'workerLoginCodeLabel': 'Cod de conectare',
+      'workerConnectWithCode': 'Conecteaza-te',
       'workerInvalidQr': 'Acesta nu este un cod QR valid pentru autentificare.',
       'workerQrExpired': 'Codul QR a expirat. Cere sefului de echipa unul nou.',
       'workerQrRegenerate': 'Genereaza alt cod',
@@ -230,6 +233,10 @@ class AppLocalizations {
       'statusInProgress': 'In progres',
       'statusDone': 'Finalizat',
       'employeeLoginQrTitle': 'QR login angajat',
+      'employeeLoginCodeShow': 'Arata codul',
+      'employeeLoginCodeHide': 'Ascunde codul',
+      'employeeLoginCodeCopy': 'Copiaza codul',
+      'employeeLoginCodeCopied': 'Cod copiat',
       'workerScansToConnect':
           'Muncitorul scaneaza acest cod pentru a se conecta automat.',
       'close': 'Inchide',
@@ -479,6 +486,9 @@ class AppLocalizations {
       'workerLoginTitle': 'Munkas bejelentkezes',
       'workerScanHint':
           'A munkavezeto feluleterol szkenneld be a QR kodot az automatikus csatlakozashoz.',
+      'workerEnterCodeHint': 'Nincs kamera? Ird be a vezetotol kapott kodot.',
+      'workerLoginCodeLabel': 'Belepesi kod',
+      'workerConnectWithCode': 'Csatlakozas',
       'workerInvalidQr': 'Ez nem ervenyes munkas bejelentkezo QR kod.',
       'workerQrExpired': 'A QR kod lejart. Kerj a munkavezetotol ujat.',
       'workerQrRegenerate': 'Uj kod generalasa',
@@ -641,6 +651,10 @@ class AppLocalizations {
       'statusInProgress': 'Folyamatban',
       'statusDone': 'Kesz',
       'employeeLoginQrTitle': 'Dolgozo bejelentkezo QR',
+      'employeeLoginCodeShow': 'Kod megjelenitese',
+      'employeeLoginCodeHide': 'Kod elrejtese',
+      'employeeLoginCodeCopy': 'Kod masolasa',
+      'employeeLoginCodeCopied': 'Kod masolva',
       'workerScansToConnect':
           'A munkas ezzel a koddal automatikusan tud csatlakozni.',
       'close': 'Bezaras',
@@ -888,6 +902,9 @@ class AppLocalizations {
       'workerLoginTitle': 'Worker Login',
       'workerScanHint':
           'Scan the QR code from foreman dashboard to connect automatically.',
+      'workerEnterCodeHint': 'No camera? Enter the code from your foreman.',
+      'workerLoginCodeLabel': 'Login code',
+      'workerConnectWithCode': 'Connect',
       'workerInvalidQr': 'This is not a valid worker login QR code.',
       'workerQrExpired':
           'This QR code has expired. Ask your foreman for a new one.',
@@ -1051,6 +1068,10 @@ class AppLocalizations {
       'statusInProgress': 'In Progress',
       'statusDone': 'Done',
       'employeeLoginQrTitle': 'Employee login QR',
+      'employeeLoginCodeShow': 'Show code',
+      'employeeLoginCodeHide': 'Hide code',
+      'employeeLoginCodeCopy': 'Copy code',
+      'employeeLoginCodeCopied': 'Copied',
       'workerScansToConnect':
           'Worker scans this code to connect automatically.',
       'close': 'Close',
@@ -1295,6 +1316,9 @@ class AppLocalizations {
   String get pleaseEnterEmailAndPassword => _t('pleaseEnterEmailAndPassword');
   String get workerLoginTitle => _t('workerLoginTitle');
   String get workerScanHint => _t('workerScanHint');
+  String get workerEnterCodeHint => _t('workerEnterCodeHint');
+  String get workerLoginCodeLabel => _t('workerLoginCodeLabel');
+  String get workerConnectWithCode => _t('workerConnectWithCode');
   String get workerInvalidQr => _t('workerInvalidQr');
   String get workerQrExpired => _t('workerQrExpired');
   String get workerQrRegenerate => _t('workerQrRegenerate');
@@ -1459,6 +1483,10 @@ class AppLocalizations {
   String get statusInProgress => _t('statusInProgress');
   String get statusDone => _t('statusDone');
   String get employeeLoginQrTitle => _t('employeeLoginQrTitle');
+  String get employeeLoginCodeShow => _t('employeeLoginCodeShow');
+  String get employeeLoginCodeHide => _t('employeeLoginCodeHide');
+  String get employeeLoginCodeCopy => _t('employeeLoginCodeCopy');
+  String get employeeLoginCodeCopied => _t('employeeLoginCodeCopied');
   String get workerScansToConnect => _t('workerScansToConnect');
   String get close => _t('close');
   String get appDownloadQrTitle => _t('appDownloadQrTitle');
