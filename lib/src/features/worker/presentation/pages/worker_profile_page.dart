@@ -14,7 +14,7 @@ class WorkerProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final session = ref.watch(sessionProvider);
+    final session = ref.watch(sessionProvider).value;
     final selectedLocale = ref.watch(localeProvider);
     final selectedThemeMode =
         ref.watch(themeModeProvider).asData?.value ?? ThemeMode.system;
@@ -95,8 +95,9 @@ class WorkerProfilePage extends ConsumerWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () {
-              ref.read(sessionProvider.notifier).disconnect();
+            onPressed: () async {
+              await ref.read(sessionProvider.notifier).disconnect();
+              if (!context.mounted) return;
               context.go(LoginPage.routePath);
             },
             icon: const Icon(Icons.logout),

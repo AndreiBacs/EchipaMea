@@ -9,20 +9,20 @@ Mobile app for small contractor teams, built with Flutter.
   - Dashboard (employees, active projects, assignment visibility, "Today's worker sequence" overview with swipe-to-plan rows, a "Finished projects" KPI card with period filters: this month/last month/custom range, and a bottom embedded map section)
   - Getting started checklist for first-time foreman workflows (add client, create project, configure a phase, add employee), with local progress persisted via SharedPreferences and a detailed checklist screen at `/foreman/getting-started`
   - Map (active projects in progress and worker positions in one live overview)
-  - Projects (list, add, edit, status, and required client assignment). List rows support horizontal swipe for quick actions (for example edit vs open the Phases tab on an existing project). On a project’s **Phases** tab, swipe a phase row horizontally to open the same edit flow as the edit icon (draft phases use the quick dialog; saved projects use the full-screen phase form). Each phase has a required date window (`From`/`To`) and assigned members, plus a local "Work sequence for day" planner that auto-suggests per-worker phase order from date windows and supports drag-and-drop/manual reordering and reset-to-auto for a selected day. The project-level worker summary is derived automatically from phase assignments (no separate manual workers input). Each **phase** can include **work instructions** for assigned workers: an ordered list of steps, where **each step** can have its own reference photos (gallery) and **voice memos** (same recording approach as the worker report flow). Attachments are stored as local paths in the in-memory demo until a backend stores binaries.
-  - Team (list, add, edit, contact data: phone/email, trade role chosen from a predefined list in a dropdown, employee QR login generation)
+  - Projects (list, add, edit, status, and required client assignment). List rows support horizontal swipe for quick actions (for example edit vs open the Phases tab on an existing project). On a project’s **Phases** tab, swipe a phase row horizontally to open the same edit flow as the edit icon (draft phases use the quick dialog; saved projects use the full-screen phase form). Each phase has a required date window (`From`/`To`) and assigned members, plus a "Work sequence for day" planner that auto-suggests per-worker phase order from date windows and supports drag-and-drop/manual reordering and reset-to-auto for a selected day (with a backend, a manual order is saved on the server). The project-level worker summary is derived automatically from phase assignments (no separate manual workers input). Each **phase** can include **work instructions** for assigned workers: an ordered list of steps, where **each step** can have its own reference photos (gallery) and **voice memos** (same recording approach as the worker report flow). Attachments are stored as local paths in the in-memory demo; with a backend they cannot be added yet (the editor says so), and any already stored on the server are kept when the phase is saved. A project's status follows its phases (planned, then in progress once a phase starts, done when all are approved); the status field only lets you close a project as done, or reopen a closed one.
+  - Team (list, add, edit, contact data: phone/email, trade role chosen from a predefined list in a dropdown, employee QR login generation). Editing an employee can switch them off with the **Active** switch: they stay in the list, marked inactive, and with a backend the server signs them out of the worker app at once.
   - Clients (list, add, edit, contact data: phone/email/split address fields/person of contact, plus client type/status/preferred contact method/notes and allocated projects per client, including a dedicated client-projects list page with direct "Add project" for that client)
-  - Profile (change app language and theme mode: Follow system/Light/Dark, edit personal data, manage foreman company data: name/address/IBAN/CUI/VAT/trade register number, and logout)
+  - Profile (change app language and theme mode: Follow system/Light/Dark, edit personal data, manage foreman company data: name, street address, city, county, zip code, IBAN/CUI/VAT/trade register number, and logout). With a backend the company record is shared by every foreman of the company, so saving sends only the part of the form that changed.
   - Phone fields on team, clients, and profile use `intl_phone_number_input`: country code is chosen from a short list (Romania +40 first), and the national number is formatted as you type.
-  - Realtime notifications badge in the app bar for new worker report submissions (via websocket events from backend)
+  - Notifications in the app bar: worker reports, phase reviews and worker arrivals. With a backend they are stored on the server, so the list and its unread badge survive restarts and are per foreman (one foreman opening the list does not clear a colleague's badge). The live WebSocket only announces new ones; after a drop it reconnects by itself, backing off from 2 seconds to a minute. Tapping a notification opens its project's phases.
 - Worker area (fewer screens than foreman: work + profile):
-  - **Work** (`/worker/work`): queue of jobs assigned to you. Projects store optional roster employee IDs (resolved from worker names when the foreman saves the project); assignment matches signed-in **employee ID** when those IDs are set, and otherwise falls back to your display name on the worker list. The next job is highlighted; tap for details. Each project card also shows a compact weather widget based on project coordinates.
+  - **Work** (`/worker/work`): queue of jobs assigned to you. Projects store optional roster employee IDs (resolved from worker names when the foreman saves the project); assignment matches the signed-in **employee ID** (in the offline demo it also falls back to your display name on the worker list). With a backend the list comes from the server and only ever contains your own unfinished projects. The next job is highlighted; tap for details. Each project card also shows a compact weather widget based on project coordinates.
   - **Job details** (`/worker/project/:id`): **Open navigation** lists installed map apps (Google Maps, Apple Maps, Waze, etc.) via `map_launcher` and starts directions to the site; falls back to Google Maps in the browser if none are detected. Requires coordinates on the project. Assigned **phases** show each instruction step in its own card with thumbnails and play/stop for that step’s voice notes where the platform supports it (voice playback is skipped on web with an on-screen hint), and each phase can be opened in a dedicated phase detail page (`/worker/project/:id/phase/:phaseId`).
-  - **Report** (`/worker/project/:id/phase/:phaseId/report`): report is now linked to a specific phase and should be submitted from the phase the worker worked on that day. The flow has three steps—optional site photos (up to 8) from gallery or camera capture, tappable photo thumbnails with enlarged preview, optional voice memo with replay/remove before submit, and required short description; then submit to backend with multipart/form-data including phase identifiers. The worker queue drops the job immediately after a successful submit; when a `worker_report_submitted` event is received on `FOREMAN_NOTIFICATIONS_WS_URL`, the relevant phase transitions to **Pending review** in the foreman flow. The overall project becomes **Done** only after all phases are approved (local demo stays consistent when that websocket is wired up).
+  - **Report** (`/worker/project/:id/phase/:phaseId/report`): report is now linked to a specific phase and should be submitted from the phase the worker worked on that day. The flow has three steps—optional site photos (up to 8) from gallery or camera capture, tappable photo thumbnails with enlarged preview, optional voice memo with replay/remove before submit, and required short description; then submit to backend with multipart/form-data including phase identifiers. The worker queue drops the job immediately after a successful submit; the server moves the phase to **Pending review** and notifies the foremen, whose app refreshes the project when the `worker_report_submitted` event arrives on `FOREMAN_NOTIFICATIONS_WS_URL`. The overall project becomes **Done** only after all phases are approved (local demo stays consistent when that websocket is wired up).
   - **Profile** (`/worker/profile`): app language and worker logout.
 - Worker login flow:
   - Foreman generates a short-lived worker login QR ticket from Team
-  - Worker scans that QR ticket (no worker credentials required)
+  - Worker scans that QR ticket (no worker credentials required). Where there is no camera scanner (Windows and Linux desktop, or a browser without a camera), the worker pastes the code instead: the foreman's QR dialog has **Show code** and **Copy code**, and the connect page has a **Login code** field.
   - After a successful scan, the app opens the worker **Work** tab
   - Worker phone streams location to backend via WebSocket only during configured working hours
 - Localization:
@@ -67,7 +67,7 @@ Add these variables to `.env` for worker location streaming:
 
 - `WORKER_TELEMETRY_WS_URL` = backend WebSocket endpoint (`ws://` or `wss://`)
 - `WORKER_REPORTS_API_URL` = backend HTTP endpoint for report submit (example: `https://api.example.com/worker/reports`)
-- `FOREMAN_NOTIFICATIONS_WS_URL` = backend WebSocket endpoint used after successful report upload to publish a `worker_report_submitted` event (example: `wss://api.example.com/ws/foreman-notifications`)
+- `FOREMAN_NOTIFICATIONS_WS_URL` = backend WebSocket endpoint the foreman app listens on for `worker_report_submitted` events (example: `wss://api.example.com/ws/foreman-notifications`)
 
 Behavior:
 
@@ -75,7 +75,7 @@ Behavior:
 - Location events are sent only while local device time is inside that employee's configured schedule.
 - While in schedule, the app sends the worker's current position about **every 30 minutes** on the same WebSocket (`type`: `worker_location`, same JSON shape as before). The first send runs shortly after the session becomes active in working hours.
 - Outside working hours, the app does not send telemetry and closes the WebSocket connection.
-- When a worker report upload succeeds, the app opens a short-lived websocket, waits until the socket is **ready**, sends one `worker_report_submitted` JSON payload, then **closes the sink** (awaited) so the frame can flush before teardown—still best-effort if the server or network drops the connection.
+- When a worker report upload succeeds, the server moves the phase to pending review and announces it to the foremen on `FOREMAN_NOTIFICATIONS_WS_URL`; the worker app sends no socket frame of its own.
 
 ## Backend contract docs
 
@@ -195,6 +195,32 @@ FOREMAN_NOTIFICATIONS_WS_URL=ws://localhost:3000/ws/foreman-notifications
   - The foreman's QR dialog asks the server for a single-use ticket that lives 90 seconds.
   - The worker's scan redeems it at `/worker/login-tickets/redeem` for a real worker token. Expired, already-used and disabled-account codes each get their own message.
   - Sockets connect with a single-use ticket from `POST /realtime/tickets`, passed as `?ticket=`, never with a raw token.
+  - Expired access tokens are refreshed automatically. If the server refuses the refresh (signed out elsewhere, password changed, worker deactivated), the app returns to the sign-in screen; being offline never signs anyone out.
+  - Clients, the team, projects and their phases (including approving or rejecting a phase), daily work sequences, notifications, your profile and the company details are loaded from and saved to the server. A save waits for the server and shows its error if refused; a list that fails to load shows the error with a **Retry** button. The worker's screens use the worker's own sign-in: the job list, today's sequence, **I've arrived** (which notifies the foremen) and **Submit for review**.
+
+Both sessions are kept in the platform keystore (`flutter_secure_storage`: Keychain, Android Keystore, Windows Credential Manager, encrypted browser storage), never in plain preferences. A worker stays signed in across app restarts until the 7-day refresh token runs out or the foreman deactivates them; signing out revokes the session on the server as well. A token saved by an older build is moved into the keystore on first launch, and a demo-mode token is discarded once a backend is configured.
+
+## End-to-end app tests
+
+`integration_test/app_e2e_test.dart` drives the real app through its UI against the real server, on a freshly reset and seeded e2e test database. In one journey:
+
+- The foreman signs in and creates a client, an employee and a project.
+- The foreman shows a worker's login code, and the worker signs in with it.
+- The worker announces arrival and sends a report.
+- The foreman's notification badge updates live, and approving the phase finishes the project.
+- The foreman's socket is dropped by the server and recovers.
+- Both sessions survive a restart.
+- An expired access token refreshes on its own.
+- A deactivated worker is signed out.
+
+`scripts/e2e_app.sh` runs it in one go. It starts the server from `server/` (`npm run e2e:app-server`) on port 3100, with 15-second foreman access tokens and the test-only `/__e2e` hooks switched on (`E2E_TEST_HOOKS=true`; they answer 404 otherwise). It then runs the suite and stops the server. It needs `TEST_DATABASE_URL` (in `server/.env`) naming a database whose name ends in `_test`, and `npm ci` done in `server/`.
+
+```bash
+scripts/e2e_app.sh            # Windows desktop (from Git Bash) or Linux desktop
+CHROMEDRIVER=/path/to/chromedriver scripts/e2e_app.sh chrome
+```
+
+A browser run needs a ChromeDriver matching your Chrome; the script starts it on port 4444. Windows desktop builds need Visual Studio 2022 or newer with the "Desktop development with C++" workload: Visual Studio 2019's bundled CMake 3.20 is too old for the `record` plugin. After switching Visual Studio versions, delete `build/windows` once, because CMake will not change generators in place. CI runs the suite on Linux desktop under `xvfb` (`.github/workflows/app-e2e.yml`).
 
 ## Build
 
@@ -209,7 +235,7 @@ FOREMAN_NOTIFICATIONS_WS_URL=ws://localhost:3000/ws/foreman-notifications
 - `lib/src/features/foreman/`
   - dashboard, projects, team, clients, form pages
 - `lib/src/features/worker/`
-  - worker QR connect page, work shell (work + profile), job detail, report wizard, assignment and foreman-inbox state (in-memory demo)
+  - worker QR connect page, work shell (work + profile), job detail, report wizard; `data/worker_repository.dart` for the worker endpoints
 - `lib/src/features/legal/`
   - terms page
 

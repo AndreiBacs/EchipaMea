@@ -69,6 +69,9 @@ class AppLocalizations {
       'workerLoginTitle': 'Autentificare muncitor',
       'workerScanHint':
           'Scaneaza codul QR din panoul sefului de echipa pentru conectare automata.',
+      'workerEnterCodeHint': 'Nu ai camera? Introdu codul primit de la sef.',
+      'workerLoginCodeLabel': 'Cod de conectare',
+      'workerConnectWithCode': 'Conecteaza-te',
       'workerInvalidQr': 'Acesta nu este un cod QR valid pentru autentificare.',
       'workerQrExpired': 'Codul QR a expirat. Cere sefului de echipa unul nou.',
       'workerQrRegenerate': 'Genereaza alt cod',
@@ -184,6 +187,8 @@ class AppLocalizations {
       'phaseWorkInstructionsTitle': 'Instructiuni pentru echipa',
       'phaseWorkInstructionsHint':
           'Fiecare pas poate avea fotografii si note vocale proprii; sunt vizibile muncitorilor alocati pe faza.',
+      'phaseInstructionAttachmentsUnavailable':
+          'Fotografiile si mesajele vocale pentru pasi nu pot fi inca adaugate cand aplicatia este conectata la server.',
       'phaseAddInstructionStep': 'Adauga pas',
       'phaseRemoveInstructionStep': 'Elimina pas',
       'phaseInstructionPhotosForStep': 'Fotografii pentru acest pas',
@@ -228,6 +233,10 @@ class AppLocalizations {
       'statusInProgress': 'In progres',
       'statusDone': 'Finalizat',
       'employeeLoginQrTitle': 'QR login angajat',
+      'employeeLoginCodeShow': 'Arata codul',
+      'employeeLoginCodeHide': 'Ascunde codul',
+      'employeeLoginCodeCopy': 'Copiaza codul',
+      'employeeLoginCodeCopied': 'Cod copiat',
       'workerScansToConnect':
           'Muncitorul scaneaza acest cod pentru a se conecta automat.',
       'close': 'Inchide',
@@ -381,6 +390,10 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Raport de la muncitor trimis',
       'foremanNotificationWorkerReportBodyFallback':
           'A fost incarcat un raport nou.',
+      'foremanNotificationPhaseApprovedTitle': 'Faza aprobata',
+      'foremanNotificationPhaseRejectedTitle': 'Faza trimisa inapoi',
+      'foremanNotificationWorkerArrivedTitle': 'Muncitor ajuns pe santier',
+      'foremanNotificationOtherTitle': 'Notificare',
       'foremanGettingStartedTitle': 'Primii pasi',
       'foremanGettingStartedDescription':
           'Invata fluxul principal pentru configurarea activitatii echipei.',
@@ -404,6 +417,20 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeDescription':
           'Completeaza echipa cu un angajat nou.',
       'genericErrorMessage': 'A aparut o eroare. Te rugam sa incerci din nou.',
+      'apiErrorNetwork':
+          'Serverul nu poate fi contactat. Verifica conexiunea si incearca din nou.',
+      'apiErrorSessionExpired': 'Sesiunea a expirat. Autentifica-te din nou.',
+      'apiErrorForbidden': 'Nu ai permisiunea pentru aceasta actiune.',
+      'apiErrorNotFound': 'Elementul nu mai exista.',
+      'apiErrorValidation': 'Unele date nu sunt valide. Verifica formularul.',
+      'apiErrorRateLimited':
+          'Prea multe incercari. Asteapta un minut si incearca din nou.',
+      'apiErrorServer': 'Serverul a intampinat o problema. Incearca din nou.',
+      'apiErrorInvalidCredentials': 'Email sau parola incorecta.',
+      'apiErrorAccountDisabled': 'Acest cont a fost dezactivat.',
+      'retry': 'Reincearca',
+      'employeeActiveHint':
+          'Daca il dezactivezi, angajatul este deconectat din aplicatie.',
     },
     'hu': {
       'appTitle': 'EchipaMea',
@@ -459,6 +486,9 @@ class AppLocalizations {
       'workerLoginTitle': 'Munkas bejelentkezes',
       'workerScanHint':
           'A munkavezeto feluleterol szkenneld be a QR kodot az automatikus csatlakozashoz.',
+      'workerEnterCodeHint': 'Nincs kamera? Ird be a vezetotol kapott kodot.',
+      'workerLoginCodeLabel': 'Belepesi kod',
+      'workerConnectWithCode': 'Csatlakozas',
       'workerInvalidQr': 'Ez nem ervenyes munkas bejelentkezo QR kod.',
       'workerQrExpired': 'A QR kod lejart. Kerj a munkavezetotol ujat.',
       'workerQrRegenerate': 'Uj kod generalasa',
@@ -575,6 +605,8 @@ class AppLocalizations {
       'phaseWorkInstructionsTitle': 'Utasitasok a csapatnak',
       'phaseWorkInstructionsHint':
           'Minden lepeshez kulon fotok es hangjegyzetek tartozhatnak; a fazishoz rendelt munkasok latjak.',
+      'phaseInstructionAttachmentsUnavailable':
+          'A lepesekhez meg nem adhatok hozza fotok es hangjegyzetek, amikor az alkalmazas a szerverhez csatlakozik.',
       'phaseAddInstructionStep': 'Lepes hozzaadasa',
       'phaseRemoveInstructionStep': 'Lepes torlese',
       'phaseInstructionPhotosForStep': 'Referenciafotok ehhez a lepeshez',
@@ -619,6 +651,10 @@ class AppLocalizations {
       'statusInProgress': 'Folyamatban',
       'statusDone': 'Kesz',
       'employeeLoginQrTitle': 'Dolgozo bejelentkezo QR',
+      'employeeLoginCodeShow': 'Kod megjelenitese',
+      'employeeLoginCodeHide': 'Kod elrejtese',
+      'employeeLoginCodeCopy': 'Kod masolasa',
+      'employeeLoginCodeCopied': 'Kod masolva',
       'workerScansToConnect':
           'A munkas ezzel a koddal automatikusan tud csatlakozni.',
       'close': 'Bezaras',
@@ -770,6 +806,11 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Munkas jelentes erkezett',
       'foremanNotificationWorkerReportBodyFallback':
           'Uj jelentes lett feltoltve.',
+      'foremanNotificationPhaseApprovedTitle': 'Fazis jovahagyva',
+      'foremanNotificationPhaseRejectedTitle': 'Fazis visszakuldve',
+      'foremanNotificationWorkerArrivedTitle':
+          'Munkas megerkezett a helyszinre',
+      'foremanNotificationOtherTitle': 'Ertesites',
       'foremanGettingStartedTitle': 'Elso lepesek',
       'foremanGettingStartedDescription':
           'Tanuld meg a fo folyamatot a csapatmunka beallitasaert.',
@@ -793,6 +834,20 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeDescription':
           'Bovitsd a csapatot egy uj dolgozoval.',
       'genericErrorMessage': 'Hiba tortent. Kerjuk, probald ujra.',
+      'apiErrorNetwork':
+          'A szerver nem erheto el. Ellenorizd a kapcsolatot, es probald ujra.',
+      'apiErrorSessionExpired': 'A munkamenet lejart. Jelentkezz be ujra.',
+      'apiErrorForbidden': 'Nincs jogosultsagod ehhez a muvelethez.',
+      'apiErrorNotFound': 'Ez az elem mar nem letezik.',
+      'apiErrorValidation': 'Nehany adat ervenytelen. Ellenorizd az urlapot.',
+      'apiErrorRateLimited':
+          'Tul sok probalkozas. Varj egy percet, es probald ujra.',
+      'apiErrorServer': 'Hiba tortent a szerveren. Probald ujra.',
+      'apiErrorInvalidCredentials': 'Hibas e-mail-cim vagy jelszo.',
+      'apiErrorAccountDisabled': 'Ezt a fiokot letiltottak.',
+      'retry': 'Ujra',
+      'employeeActiveHint':
+          'Ha kikapcsolod, a dolgozo kijelentkezik az alkalmazasbol.',
     },
     'en': {
       'appTitle': 'EchipaMea',
@@ -847,6 +902,9 @@ class AppLocalizations {
       'workerLoginTitle': 'Worker Login',
       'workerScanHint':
           'Scan the QR code from foreman dashboard to connect automatically.',
+      'workerEnterCodeHint': 'No camera? Enter the code from your foreman.',
+      'workerLoginCodeLabel': 'Login code',
+      'workerConnectWithCode': 'Connect',
       'workerInvalidQr': 'This is not a valid worker login QR code.',
       'workerQrExpired':
           'This QR code has expired. Ask your foreman for a new one.',
@@ -964,6 +1022,8 @@ class AppLocalizations {
       'phaseWorkInstructionsTitle': 'Instructions for the crew',
       'phaseWorkInstructionsHint':
           'Each step can include its own reference photos and voice memos; assigned workers see them on the job.',
+      'phaseInstructionAttachmentsUnavailable':
+          'Photos and voice memos can\'t be added to steps yet while the app is connected to the server.',
       'phaseAddInstructionStep': 'Add step',
       'phaseRemoveInstructionStep': 'Remove step',
       'phaseInstructionPhotosForStep': 'Photos for this step',
@@ -1008,6 +1068,10 @@ class AppLocalizations {
       'statusInProgress': 'In Progress',
       'statusDone': 'Done',
       'employeeLoginQrTitle': 'Employee login QR',
+      'employeeLoginCodeShow': 'Show code',
+      'employeeLoginCodeHide': 'Hide code',
+      'employeeLoginCodeCopy': 'Copy code',
+      'employeeLoginCodeCopied': 'Copied',
       'workerScansToConnect':
           'Worker scans this code to connect automatically.',
       'close': 'Close',
@@ -1156,6 +1220,10 @@ class AppLocalizations {
       'foremanNotificationWorkerReportTitle': 'Worker report submitted',
       'foremanNotificationWorkerReportBodyFallback':
           'A new report was uploaded.',
+      'foremanNotificationPhaseApprovedTitle': 'Phase approved',
+      'foremanNotificationPhaseRejectedTitle': 'Phase sent back',
+      'foremanNotificationWorkerArrivedTitle': 'Worker arrived on site',
+      'foremanNotificationOtherTitle': 'Notification',
       'foremanGettingStartedTitle': 'Getting started',
       'foremanGettingStartedDescription':
           'Learn the core workflow to set up your team operations.',
@@ -1179,6 +1247,20 @@ class AppLocalizations {
       'foremanWorkflowAddEmployeeDescription':
           'Grow your crew by adding a new employee.',
       'genericErrorMessage': 'Something went wrong. Please try again.',
+      'apiErrorNetwork':
+          'Could not reach the server. Check your connection and try again.',
+      'apiErrorSessionExpired':
+          'Your session has expired. Please sign in again.',
+      'apiErrorForbidden': 'You don\'t have permission to do that.',
+      'apiErrorNotFound': 'This item no longer exists.',
+      'apiErrorValidation':
+          'Some details are not valid. Please check the form.',
+      'apiErrorRateLimited': 'Too many attempts. Wait a minute and try again.',
+      'apiErrorServer': 'The server ran into a problem. Please try again.',
+      'apiErrorInvalidCredentials': 'Incorrect email or password.',
+      'apiErrorAccountDisabled': 'This account has been disabled.',
+      'retry': 'Retry',
+      'employeeActiveHint': 'Turning this off signs the worker out of the app.',
     },
   };
 
@@ -1234,6 +1316,9 @@ class AppLocalizations {
   String get pleaseEnterEmailAndPassword => _t('pleaseEnterEmailAndPassword');
   String get workerLoginTitle => _t('workerLoginTitle');
   String get workerScanHint => _t('workerScanHint');
+  String get workerEnterCodeHint => _t('workerEnterCodeHint');
+  String get workerLoginCodeLabel => _t('workerLoginCodeLabel');
+  String get workerConnectWithCode => _t('workerConnectWithCode');
   String get workerInvalidQr => _t('workerInvalidQr');
   String get workerQrExpired => _t('workerQrExpired');
   String get workerQrRegenerate => _t('workerQrRegenerate');
@@ -1349,6 +1434,8 @@ class AppLocalizations {
   String get phaseEditDoneHint => _t('phaseEditDoneHint');
   String get phaseWorkInstructionsTitle => _t('phaseWorkInstructionsTitle');
   String get phaseWorkInstructionsHint => _t('phaseWorkInstructionsHint');
+  String get phaseInstructionAttachmentsUnavailable =>
+      _t('phaseInstructionAttachmentsUnavailable');
   String get phaseAddInstructionStep => _t('phaseAddInstructionStep');
   String get phaseRemoveInstructionStep => _t('phaseRemoveInstructionStep');
   String get phaseInstructionPhotosForStep =>
@@ -1396,6 +1483,10 @@ class AppLocalizations {
   String get statusInProgress => _t('statusInProgress');
   String get statusDone => _t('statusDone');
   String get employeeLoginQrTitle => _t('employeeLoginQrTitle');
+  String get employeeLoginCodeShow => _t('employeeLoginCodeShow');
+  String get employeeLoginCodeHide => _t('employeeLoginCodeHide');
+  String get employeeLoginCodeCopy => _t('employeeLoginCodeCopy');
+  String get employeeLoginCodeCopied => _t('employeeLoginCodeCopied');
   String get workerScansToConnect => _t('workerScansToConnect');
   String get close => _t('close');
   String get appDownloadQrTitle => _t('appDownloadQrTitle');
@@ -1529,6 +1620,14 @@ class AppLocalizations {
       _t('foremanNotificationWorkerReportTitle');
   String get foremanNotificationWorkerReportBodyFallback =>
       _t('foremanNotificationWorkerReportBodyFallback');
+  String get foremanNotificationPhaseApprovedTitle =>
+      _t('foremanNotificationPhaseApprovedTitle');
+  String get foremanNotificationPhaseRejectedTitle =>
+      _t('foremanNotificationPhaseRejectedTitle');
+  String get foremanNotificationWorkerArrivedTitle =>
+      _t('foremanNotificationWorkerArrivedTitle');
+  String get foremanNotificationOtherTitle =>
+      _t('foremanNotificationOtherTitle');
   String get foremanGettingStartedTitle => _t('foremanGettingStartedTitle');
   String get foremanGettingStartedDescription =>
       _t('foremanGettingStartedDescription');
@@ -1558,6 +1657,17 @@ class AppLocalizations {
   String get foremanWorkflowAddEmployeeDescription =>
       _t('foremanWorkflowAddEmployeeDescription');
   String get genericErrorMessage => _t('genericErrorMessage');
+  String get apiErrorNetwork => _t('apiErrorNetwork');
+  String get apiErrorSessionExpired => _t('apiErrorSessionExpired');
+  String get apiErrorForbidden => _t('apiErrorForbidden');
+  String get apiErrorNotFound => _t('apiErrorNotFound');
+  String get apiErrorValidation => _t('apiErrorValidation');
+  String get apiErrorRateLimited => _t('apiErrorRateLimited');
+  String get apiErrorServer => _t('apiErrorServer');
+  String get apiErrorInvalidCredentials => _t('apiErrorInvalidCredentials');
+  String get apiErrorAccountDisabled => _t('apiErrorAccountDisabled');
+  String get retry => _t('retry');
+  String get employeeActiveHint => _t('employeeActiveHint');
   String foremanGettingStartedProgress(int completed, int total) =>
       '$completed / $total';
   String foremanGettingStartedNext(String stepTitle) =>

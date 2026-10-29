@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ReportsModule } from '../reports/reports.module';
 import { ForemanNotificationsGateway } from './foreman-notifications.gateway';
+import { E2eHooksController } from './e2e-hooks.controller';
 import { RealtimeController } from './realtime.controller';
 import { RealtimeCoreModule } from './realtime-core.module';
 import { RealtimeTicketService } from './realtime-ticket.service';
@@ -17,7 +18,7 @@ import { WsSessionService } from './ws-session.service';
  */
 @Module({
   imports: [RealtimeCoreModule, ReportsModule],
-  controllers: [RealtimeController],
+  controllers: [RealtimeController, E2eHooksController],
   providers: [
     RealtimeTicketService,
     WsAuthService,

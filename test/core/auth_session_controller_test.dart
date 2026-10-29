@@ -1,209 +1,318 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:echipa_mea/src/core/auth/auth_session_controller.dart';
-import 'package:echipa_mea/src/core/config/app_env.dart';
+import 'package:echipa_mea/src/core/auth/token_store.dart';
+import 'package:echipa_mea/src/core/network/api_exception.dart';
+
+import '../support/fake_api.dart';
 
 void main() {
-  setUpAll(() {
-    // Load an empty dotenv so AppEnv.initialize() resolves all fields to
-    // their defaults (authApiBaseUrl == '' → mock token path).
-    dotenv.loadFromString(envString: '', isOptional: true);
-    AppEnv.initialize();
-  });
-
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  ProviderContainer makeContainer() {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-    return container;
-  }
+  Future<String?> storedSession(MemoryTokenStore store) =>
+      store.read('foreman_session');
 
-  group('AuthSessionNotifier.build – initial load from SharedPreferences', () {
-    test('returns null when no token is stored', () async {
-      final container = makeContainer();
-      final session = await container.read(authSessionProvider.future);
-      expect(session, isNull);
+  group('build: restoring the session', () {
+    test('is null when nothing is stored', () async {
+      final container = makeApiContainer();
+      expect(await container.read(authSessionProvider.future), isNull);
     });
 
-    test('returns AuthSession when token and email are stored', () async {
-      SharedPreferences.setMockInitialValues({
-        'foreman_auth_token': 'saved-token',
-        'foreman_auth_email': 'user@example.com',
+    test('restores a session saved by an earlier run', () async {
+      final store = MemoryTokenStore({
+        'foreman_session': const AuthSession(
+          token: 'saved-token',
+          email: 'user@example.com',
+          refreshToken: 'saved-refresh',
+        ).encode(),
       });
-      final container = makeContainer();
+      final container = makeApiContainer(store: store);
+
       final session = await container.read(authSessionProvider.future);
-      expect(session, isNotNull);
       expect(session!.token, 'saved-token');
+      expect(session.refreshToken, 'saved-refresh');
       expect(session.email, 'user@example.com');
     });
 
-    test('returns null when token is empty string', () async {
+    test('moves a pre-upgrade token out of SharedPreferences', () async {
       SharedPreferences.setMockInitialValues({
-        'foreman_auth_token': '',
-        'foreman_auth_email': 'user@example.com',
+        'foreman_auth_token': 'legacy-token',
+        'foreman_auth_email': 'old@example.com',
       });
-      final container = makeContainer();
+      final store = MemoryTokenStore();
+      final container = makeApiContainer(store: store);
+
       final session = await container.read(authSessionProvider.future);
-      expect(session, isNull);
+      expect(session!.token, 'legacy-token');
+      expect(session.email, 'old@example.com');
+      expect(await storedSession(store), isNotNull);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('foreman_auth_token'), isNull);
+      expect(prefs.getString('foreman_auth_email'), isNull);
     });
 
-    test('returns session with empty email when email is not stored', () async {
-      SharedPreferences.setMockInitialValues({
-        'foreman_auth_token': 'some-token',
+    test('drops a demo-mode token once a backend is configured', () async {
+      useFakeBackend();
+      final store = MemoryTokenStore({
+        'foreman_session': const AuthSession(
+          token: 'mock-foreman-token-a-b-c',
+          email: 'a@b.c',
+        ).encode(),
       });
-      final container = makeContainer();
-      final session = await container.read(authSessionProvider.future);
-      expect(session, isNotNull);
-      expect(session!.email, '');
+      final container = makeApiContainer(store: store);
+
+      expect(await container.read(authSessionProvider.future), isNull);
+      expect(await storedSession(store), isNull);
     });
   });
 
-  group('AuthSessionNotifier.loginForeman – mock token path', () {
-    test('sets session with mock token for valid credentials', () async {
-      final container = makeContainer();
-      await container.read(authSessionProvider.future);
-
-      await container
-          .read(authSessionProvider.notifier)
-          .loginForeman(email: 'test@example.com', password: 'abc');
-
-      final session = container.read(authSessionProvider).value;
-      expect(session, isNotNull);
-      expect(session!.email, 'test@example.com');
-      expect(session.token, startsWith('mock-foreman-token-'));
-    });
-
-    test('mock token uses sanitised email characters', () async {
-      final container = makeContainer();
+  group('loginForeman in mock mode', () {
+    test('signs in with a mock token for plausible credentials', () async {
+      final store = MemoryTokenStore();
+      final container = makeApiContainer(store: store);
       await container.read(authSessionProvider.future);
 
       await container
           .read(authSessionProvider.notifier)
           .loginForeman(email: 'User@Example.Com', password: 'pass123');
 
-      final session = container.read(authSessionProvider).value;
-      expect(session, isNotNull);
-      expect(session!.token, 'mock-foreman-token-user-example-com');
+      final session = container.read(authSessionProvider).value!;
+      expect(session.token, 'mock-foreman-token-user-example-com');
+      expect(session.isMock, isTrue);
+      expect(await storedSession(store), isNotNull);
     });
 
-    test('persists token and email to SharedPreferences', () async {
-      final container = makeContainer();
-      await container.read(authSessionProvider.future);
+    for (final (email, password) in [
+      ('', 'pass'),
+      ('notanemail', 'pass123'),
+      ('valid@example.com', 'ab'),
+    ]) {
+      test('rejects "$email" / "$password" as invalid credentials', () async {
+        final container = makeApiContainer();
+        await container.read(authSessionProvider.future);
 
-      await container
-          .read(authSessionProvider.notifier)
-          .loginForeman(email: 'stored@example.com', password: 'pass');
+        await container
+            .read(authSessionProvider.notifier)
+            .loginForeman(email: email, password: password);
 
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('foreman_auth_token'), isNotNull);
-      expect(prefs.getString('foreman_auth_email'), 'stored@example.com');
-    });
-
-    test('sets error state for empty email', () async {
-      final container = makeContainer();
-      await container.read(authSessionProvider.future);
-
-      await container
-          .read(authSessionProvider.notifier)
-          .loginForeman(email: '', password: 'pass');
-
-      expect(container.read(authSessionProvider).hasError, isTrue);
-    });
-
-    test('sets error state for empty password', () async {
-      final container = makeContainer();
-      await container.read(authSessionProvider.future);
-
-      await container
-          .read(authSessionProvider.notifier)
-          .loginForeman(email: 'user@example.com', password: '');
-
-      expect(container.read(authSessionProvider).hasError, isTrue);
-    });
-
-    test('sets error state for email without @', () async {
-      final container = makeContainer();
-      await container.read(authSessionProvider.future);
-
-      await container
-          .read(authSessionProvider.notifier)
-          .loginForeman(email: 'notanemail', password: 'pass123');
-
-      expect(container.read(authSessionProvider).hasError, isTrue);
-    });
-
-    test('sets error state when password is shorter than 3 characters', () async {
-      final container = makeContainer();
-      await container.read(authSessionProvider.future);
-
-      await container
-          .read(authSessionProvider.notifier)
-          .loginForeman(email: 'valid@example.com', password: 'ab');
-
-      expect(container.read(authSessionProvider).hasError, isTrue);
-    });
-
-    test('restores previous session on login error when one existed', () async {
-      SharedPreferences.setMockInitialValues({
-        'foreman_auth_token': 'existing-token',
-        'foreman_auth_email': 'existing@example.com',
+        final state = container.read(authSessionProvider);
+        expect(
+          state.error,
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            'INVALID_CREDENTIALS',
+          ),
+        );
       });
-      final container = makeContainer();
+    }
+
+    test('keeps the previous session when a new login fails', () async {
+      final store = MemoryTokenStore({
+        'foreman_session': const AuthSession(
+          token: 'existing-token',
+          email: 'existing@example.com',
+        ).encode(),
+      });
+      final container = makeApiContainer(store: store);
       await container.read(authSessionProvider.future);
 
-      // Attempt bad login
       await container
           .read(authSessionProvider.notifier)
           .loginForeman(email: 'bad-email', password: 'x');
 
-      final session = container.read(authSessionProvider).value;
-      expect(session, isNotNull);
-      expect(session!.token, 'existing-token');
+      expect(
+        container.read(authSessionProvider).value!.token,
+        'existing-token',
+      );
     });
   });
 
-  group('AuthSessionNotifier.logout', () {
-    test('clears session state', () async {
-      SharedPreferences.setMockInitialValues({
-        'foreman_auth_token': 'tok',
-        'foreman_auth_email': 'u@e.com',
+  group('with a server', () {
+    late FakeServer server;
+    late MemoryTokenStore store;
+
+    setUp(() {
+      useFakeBackend();
+      server = FakeServer();
+      store = MemoryTokenStore();
+    });
+
+    test('login keeps the refresh token and who the user is', () async {
+      server.on('POST', '/foreman/login', (r) {
+        expect(jsonBodyOf(r), {'email': 'f@x.ro', 'password': 'secret'});
+        return jsonResponse(loginBody(access: 'a1', refresh: 'r1'));
       });
-      final container = makeContainer();
+      final container = makeApiContainer(server: server, store: store);
+      await container.read(authSessionProvider.future);
+
+      await container
+          .read(authSessionProvider.notifier)
+          .loginForeman(email: 'f@x.ro', password: 'secret');
+
+      final session = container.read(authSessionProvider).value!;
+      expect(session.token, 'a1');
+      expect(session.refreshToken, 'r1');
+      expect(session.companyId, 'demo-company');
+      expect(
+        AuthSession.tryDecode(await storedSession(store))!.refreshToken,
+        'r1',
+      );
+    });
+
+    test('a rejected login surfaces the server code', () async {
+      server.on(
+        'POST',
+        '/foreman/login',
+        (_) => errorResponse(401, 'INVALID_CREDENTIALS'),
+      );
+      final container = makeApiContainer(server: server, store: store);
+      await container.read(authSessionProvider.future);
+
+      await container
+          .read(authSessionProvider.notifier)
+          .loginForeman(email: 'f@x.ro', password: 'wrong');
+
+      expect(
+        container.read(authSessionProvider).error,
+        isA<ApiException>().having(
+          (e) => e.code,
+          'code',
+          'INVALID_CREDENTIALS',
+        ),
+      );
+    });
+
+    test('an expired token is refreshed transparently, and stored', () async {
+      store = MemoryTokenStore({
+        'foreman_session': const AuthSession(
+          token: 'old',
+          email: 'f@x.ro',
+          refreshToken: 'r-old',
+        ).encode(),
+      });
+      server
+        ..on('POST', '/auth/refresh', (r) {
+          expect(jsonBodyOf(r), {'refreshToken': 'r-old'});
+          return jsonResponse(loginBody(access: 'new', refresh: 'r-new'));
+        })
+        ..on(
+          'GET',
+          '/clients',
+          (r) => bearerOf(r) == 'new'
+              ? jsonResponse({'items': [], 'page': {}})
+              : errorResponse(401, 'TOKEN_EXPIRED'),
+        );
+      final container = makeApiContainer(server: server, store: store);
+      await container.read(authSessionProvider.future);
+
+      await container.read(foremanApiProvider).get('/clients');
+
+      expect(container.read(authSessionProvider).value!.token, 'new');
+      expect(
+        AuthSession.tryDecode(await storedSession(store))!.refreshToken,
+        'r-new',
+      );
+    });
+
+    test('concurrent 401s share one refresh', () async {
+      // Refresh tokens rotate: a second parallel refresh would replay the
+      // spent one, which the server treats as theft.
+      store = MemoryTokenStore({
+        'foreman_session': const AuthSession(
+          token: 'old',
+          email: 'f@x.ro',
+          refreshToken: 'r-old',
+        ).encode(),
+      });
+      server
+        ..on('POST', '/auth/refresh', (_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          return jsonResponse(loginBody(access: 'new', refresh: 'r-new'));
+        })
+        ..on(
+          'GET',
+          '/clients',
+          (r) => bearerOf(r) == 'new'
+              ? jsonResponse({'ok': true})
+              : errorResponse(401, 'TOKEN_EXPIRED'),
+        );
+      final container = makeApiContainer(server: server, store: store);
+      await container.read(authSessionProvider.future);
+      final api = container.read(foremanApiProvider);
+
+      await Future.wait([
+        api.get('/clients'),
+        api.get('/clients'),
+        api.get('/clients'),
+      ]);
+
+      expect(server.count('POST', '/auth/refresh'), 1);
+    });
+
+    test('a refused refresh signs the foreman out', () async {
+      store = MemoryTokenStore({
+        'foreman_session': const AuthSession(
+          token: 'old',
+          email: 'f@x.ro',
+          refreshToken: 'r-revoked',
+        ).encode(),
+      });
+      server
+        ..on('POST', '/auth/refresh', (_) => errorResponse(401, 'TOKEN_REUSED'))
+        ..on('GET', '/clients', (_) => errorResponse(401, 'TOKEN_EXPIRED'));
+      final container = makeApiContainer(server: server, store: store);
+      await container.read(authSessionProvider.future);
+
+      await expectLater(
+        container.read(foremanApiProvider).get('/clients'),
+        throwsA(isA<ApiException>()),
+      );
+
+      expect(container.read(authSessionProvider).value, isNull);
+      expect(await storedSession(store), isNull);
+    });
+
+    test('logout revokes on the server and clears the device', () async {
+      store = MemoryTokenStore({
+        'foreman_session': const AuthSession(
+          token: 'a1',
+          email: 'f@x.ro',
+          refreshToken: 'r1',
+        ).encode(),
+      });
+      server.on('POST', '/auth/logout', (_) => http204());
+      final container = makeApiContainer(server: server, store: store);
       await container.read(authSessionProvider.future);
 
       await container.read(authSessionProvider.notifier).logout();
 
-      final session = container.read(authSessionProvider).value;
-      expect(session, isNull);
+      expect(bearerOf(server.requests.single), 'a1');
+      expect(container.read(authSessionProvider).value, isNull);
+      expect(await storedSession(store), isNull);
     });
 
-    test('removes token and email from SharedPreferences', () async {
-      SharedPreferences.setMockInitialValues({
-        'foreman_auth_token': 'tok',
-        'foreman_auth_email': 'u@e.com',
-      });
-      final container = makeContainer();
-      await container.read(authSessionProvider.future);
+    test(
+      'logout still clears the device when the server is unreachable',
+      () async {
+        store = MemoryTokenStore({
+          'foreman_session': const AuthSession(
+            token: 'a1',
+            email: 'f@x.ro',
+          ).encode(),
+        });
+        server.on('POST', '/auth/logout', (_) => throw Exception('offline'));
+        final container = makeApiContainer(server: server, store: store);
+        await container.read(authSessionProvider.future);
 
-      await container.read(authSessionProvider.notifier).logout();
+        await container.read(authSessionProvider.notifier).logout();
 
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('foreman_auth_token'), isNull);
-      expect(prefs.getString('foreman_auth_email'), isNull);
-    });
-  });
-
-  group('AuthSession model', () {
-    test('stores token and email', () {
-      const session = AuthSession(token: 'tok', email: 'u@e.com');
-      expect(session.token, 'tok');
-      expect(session.email, 'u@e.com');
-    });
+        expect(container.read(authSessionProvider).value, isNull);
+      },
+    );
   });
 }

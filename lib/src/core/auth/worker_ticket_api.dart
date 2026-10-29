@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:http/http.dart' as http;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_env.dart';
+import '../network/api_client.dart';
+import '../network/api_exception.dart';
+import 'auth_session_controller.dart';
 import 'qr_ticket_payload.dart';
 
 /// A QR login ticket for one employee, ready to render.
@@ -20,6 +23,10 @@ class IssuedWorkerTicket {
   }
 }
 
+final workerTicketApiProvider = Provider<WorkerTicketApi>(
+  (ref) => WorkerTicketApi(ref.watch(foremanApiProvider)),
+);
+
 /// Asks the server for a worker login ticket.
 ///
 /// The foreman device used to mint these itself:
@@ -29,58 +36,33 @@ class IssuedWorkerTicket {
 /// Now the server generates the secret, stores only its hash, and is the one
 /// that decides whether redeeming it works.
 class WorkerTicketApi {
-  WorkerTicketApi({http.Client? client}) : _client = client ?? http.Client();
+  WorkerTicketApi(this._api);
 
-  final http.Client _client;
-
-  static const _timeout = Duration(seconds: 20);
+  final ApiClient _api;
 
   Future<IssuedWorkerTicket> issue({
     required String employeeId,
     required String employeeName,
-    required String accessToken,
   }) async {
-    final base = AppEnv.authApiBaseUrl.trim();
-
     // Mock mode: no backend, so fall back to a locally built payload. It is only
     // ever redeemed by the matching local path in SessionNotifier, which also
     // does nothing but seed demo data.
-    if (base.isEmpty || accessToken.isEmpty) {
+    if (!AppEnv.hasBackend) {
       return _localMockTicket(
         employeeId: employeeId,
         employeeName: employeeName,
       );
     }
 
-    final uri = Uri.parse(
-      '${base.replaceAll(RegExp(r'/+$'), '')}/employees/$employeeId/login-ticket',
-    );
-
-    final response = await _client
-        .post(
-          uri,
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-            'Accept': 'application/json',
-          },
-        )
-        .timeout(_timeout);
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Could not create a login code (${response.statusCode}).',
-      );
-    }
-
-    final decoded = jsonDecode(response.body);
+    final decoded = await _api.post('/employees/$employeeId/login-ticket');
     if (decoded is! Map<String, dynamic>) {
-      throw Exception('Unexpected response while creating a login code.');
+      throw const ApiException(status: 201, code: 'INVALID_RESPONSE');
     }
 
     final qrPayload = decoded['qrPayload'] as String?;
     final expiresAtRaw = decoded['expiresAt'] as String?;
     if (qrPayload == null || qrPayload.isEmpty) {
-      throw Exception('The server returned no QR payload.');
+      throw const ApiException(status: 201, code: 'INVALID_RESPONSE');
     }
 
     return IssuedWorkerTicket(

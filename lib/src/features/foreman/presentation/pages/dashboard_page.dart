@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/ui/async_status_view.dart';
+import '../../../../core/util/day_key.dart';
 import '../../application/foreman_workflow_progress_controller.dart';
 import '../../domain/entities/foreman_workflow_step.dart';
 import 'client_form_page.dart';
@@ -13,6 +15,7 @@ import 'foreman_map_page.dart';
 import 'foreman_shell_page.dart';
 import 'project_form_page.dart';
 import 'project_phase_form_page.dart';
+import '../providers/day_sequences_controller.dart';
 import '../providers/projects_controller.dart';
 import '../providers/team_controller.dart';
 
@@ -33,10 +36,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final now = DateTime.now();
     final initial =
         _customRange ??
-        DateTimeRange(
-          start: DateTime(now.year, now.month, 1),
-          end: now,
-        );
+        DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -46,7 +46,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     if (!mounted) return;
     if (picked == null) {
       if (_customRange == null) {
-        setState(() => _finishedProjectsPeriod = _FinishedProjectsPeriod.thisMonth);
+        setState(
+          () => _finishedProjectsPeriod = _FinishedProjectsPeriod.thisMonth,
+        );
       }
       return;
     }
@@ -57,23 +59,29 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           picked.start.month,
           picked.start.day,
         ),
-        end: DateTime(
-          picked.end.year,
-          picked.end.month,
-          picked.end.day,
-        ),
+        end: DateTime(picked.end.year, picked.end.month, picked.end.day),
       );
       _finishedProjectsPeriod = _FinishedProjectsPeriod.custom;
     });
   }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final team = ref.watch(teamProvider);
-    final projects = ref.watch(projectsProvider);
-    final projectsNotifier = ref.read(projectsProvider.notifier);
+    final team = ref.watch(teamProvider).current ?? const <Employee>[];
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current;
+    if (projects == null) {
+      return AsyncStatusView(
+        projectsState,
+        onRetry: () => ref.invalidate(projectsProvider),
+      );
+    }
     final employeesById = {for (final e in team) e.id: e};
     final today = DateTime.now();
+    final todaySequences = ref
+        .watch(daySequencesProvider(dayKey(today)))
+        .current;
 
     final employeeAssignments = <_EmployeeAssignment>[];
     for (final project in projects) {
@@ -273,12 +281,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   final sequenceRows = <String>[];
                   String? targetProjectId;
                   for (final project in projects) {
-                    final sequence = projectsNotifier.sequenceForDay(
+                    final sequence = todaySequences?.of(
                       projectId: project.id,
                       workerId: employee.id,
-                      day: today,
                     );
-                    if (sequence.orderedPhaseIds.isEmpty) continue;
+                    if (sequence == null || sequence.orderedPhaseIds.isEmpty) {
+                      continue;
+                    }
                     final namesById = {
                       for (final phase in project.phases) phase.id: phase.name,
                     };
@@ -540,7 +549,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       case ForemanWorkflowStep.createProject:
         context.push(ProjectFormPage.createPath);
       case ForemanWorkflowStep.configurePhase:
-        final projects = ref.read(projectsProvider);
+        final projects =
+            ref.read(projectsProvider).current ?? const <Project>[];
         if (projects.isEmpty) {
           final phaseHint = context.l10n.foremanGettingStartedPhaseHint;
           final rootNavigator = Navigator.of(context, rootNavigator: true);

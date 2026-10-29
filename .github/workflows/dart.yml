@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build-android:
@@ -20,6 +21,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Same SDK as development, so CI checks what runs locally; bump both together.
+          flutter-version: 3.41.6
 
       - name: Install dependencies
         run: flutter pub get
@@ -51,10 +54,14 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Same SDK as development, so CI checks what runs locally; bump both together.
+          flutter-version: 3.41.6
 
       - name: Install dependencies
         run: flutter pub get
 
-      # Device builds need a Development Team even with --no-codesign; simulator does not.
+      # Device builds need a Development Team even with --no-codesign; simulator
+      # builds do not, but they must be debug: Flutter refuses --release with
+      # --simulator. It still compiles the app and every plugin's native code.
       - name: Build iOS (simulator)
-        run: flutter build ios --release --no-codesign --simulator
+        run: flutter build ios --debug --simulator --no-codesign

@@ -2,30 +2,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:echipa_mea/src/core/network/api_exception.dart';
 import 'package:echipa_mea/src/features/foreman/presentation/providers/clients_controller.dart';
 
 void main() {
   late ProviderContainer container;
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     container = ProviderContainer();
     addTearDown(container.dispose);
+    await container.read(clientsProvider.future);
   });
 
   group('ClientsNotifier initial state', () {
     test('starts with 3 demo clients', () {
-      final clients = container.read(clientsProvider);
+      final clients = container.read(clientsProvider).requireValue;
       expect(clients.length, 3);
     });
 
     test('first demo client has id c1', () {
-      final clients = container.read(clientsProvider);
+      final clients = container.read(clientsProvider).requireValue;
       expect(clients.first.id, 'c1');
     });
 
     test('demo clients have required fields populated', () {
-      for (final client in container.read(clientsProvider)) {
+      for (final client in container.read(clientsProvider).requireValue) {
         expect(client.id, isNotEmpty);
         expect(client.name, isNotEmpty);
         expect(client.email, isNotEmpty);
@@ -41,8 +43,8 @@ void main() {
   });
 
   group('ClientsNotifier.addClient', () {
-    test('increases client count by one', () {
-      container
+    test('increases client count by one', () async {
+      await container
           .read(clientsProvider.notifier)
           .addClient(
             name: 'New Corp',
@@ -59,11 +61,11 @@ void main() {
             zipCode: '010101',
             contactPerson: 'Ion Pop',
           );
-      expect(container.read(clientsProvider).length, 4);
+      expect(container.read(clientsProvider).requireValue.length, 4);
     });
 
-    test('added client is appended to the end', () {
-      container
+    test('added client is appended to the end', () async {
+      await container
           .read(clientsProvider.notifier)
           .addClient(
             name: 'Appended Corp',
@@ -80,12 +82,12 @@ void main() {
             zipCode: '1000',
             contactPerson: 'Contact',
           );
-      final clients = container.read(clientsProvider);
+      final clients = container.read(clientsProvider).requireValue;
       expect(clients.last.name, 'Appended Corp');
     });
 
-    test('added client has all fields set correctly', () {
-      container
+    test('added client has all fields set correctly', () async {
+      await container
           .read(clientsProvider.notifier)
           .addClient(
             name: 'Field Test',
@@ -102,7 +104,7 @@ void main() {
             zipCode: '700100',
             contactPerson: 'Maria D.',
           );
-      final added = container.read(clientsProvider).last;
+      final added = container.read(clientsProvider).requireValue.last;
       expect(added.name, 'Field Test');
       expect(added.activeProjects, 5);
       expect(added.type, ClientType.individual);
@@ -118,8 +120,8 @@ void main() {
       expect(added.contactPerson, 'Maria D.');
     });
 
-    test('generated id is unique for successive adds', () {
-      container
+    test('generated id is unique for successive adds', () async {
+      await container
           .read(clientsProvider.notifier)
           .addClient(
             name: 'A',
@@ -136,7 +138,7 @@ void main() {
             zipCode: '1',
             contactPerson: 'A',
           );
-      container
+      await container
           .read(clientsProvider.notifier)
           .addClient(
             name: 'B',
@@ -153,15 +155,15 @@ void main() {
             zipCode: '2',
             contactPerson: 'B',
           );
-      final clients = container.read(clientsProvider);
+      final clients = container.read(clientsProvider).requireValue;
       final ids = clients.map((c) => c.id).toSet();
       expect(ids.length, clients.length);
     });
   });
 
   group('ClientsNotifier.updateClient', () {
-    test('updates name for existing client', () {
-      container
+    test('updates name for existing client', () async {
+      await container
           .read(clientsProvider.notifier)
           .updateClient(
             id: 'c1',
@@ -181,12 +183,13 @@ void main() {
           );
       final updated = container
           .read(clientsProvider)
+          .requireValue
           .firstWhere((c) => c.id == 'c1');
       expect(updated.name, 'Updated Name');
     });
 
-    test('updates activeProjects for existing client', () {
-      container
+    test('updates activeProjects for existing client', () async {
+      await container
           .read(clientsProvider.notifier)
           .updateClient(
             id: 'c2',
@@ -206,13 +209,14 @@ void main() {
           );
       final updated = container
           .read(clientsProvider)
+          .requireValue
           .firstWhere((c) => c.id == 'c2');
       expect(updated.activeProjects, 10);
     });
 
-    test('does not change total count on update', () {
-      final before = container.read(clientsProvider).length;
-      container
+    test('does not change total count on update', () async {
+      final before = container.read(clientsProvider).requireValue.length;
+      await container
           .read(clientsProvider.notifier)
           .updateClient(
             id: 'c1',
@@ -230,11 +234,11 @@ void main() {
             zipCode: '9',
             contactPerson: 'X',
           );
-      expect(container.read(clientsProvider).length, before);
+      expect(container.read(clientsProvider).requireValue.length, before);
     });
 
-    test('does not affect other clients when updating one', () {
-      container
+    test('does not affect other clients when updating one', () async {
+      await container
           .read(clientsProvider.notifier)
           .updateClient(
             id: 'c1',
@@ -254,16 +258,18 @@ void main() {
           );
       final c2 = container
           .read(clientsProvider)
+          .requireValue
           .firstWhere((c) => c.id == 'c2');
       expect(c2.name, 'SC BuildFast SRL');
     });
 
-    test('unknown id does not change state', () {
+    test('unknown id throws NOT_FOUND and does not change state', () async {
       final before = container
           .read(clientsProvider)
+          .requireValue
           .map((c) => c.name)
           .toList();
-      container
+      final update = container
           .read(clientsProvider.notifier)
           .updateClient(
             id: 'nonexistent',
@@ -281,7 +287,15 @@ void main() {
             zipCode: '0',
             contactPerson: 'G',
           );
-      final after = container.read(clientsProvider).map((c) => c.name).toList();
+      await expectLater(
+        update,
+        throwsA(isA<ApiException>().having((e) => e.code, 'code', 'NOT_FOUND')),
+      );
+      final after = container
+          .read(clientsProvider)
+          .requireValue
+          .map((c) => c.name)
+          .toList();
       expect(after, before);
     });
   });

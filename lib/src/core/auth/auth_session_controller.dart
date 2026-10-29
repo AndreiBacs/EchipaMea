@@ -1,109 +1,255 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_env.dart';
+import '../network/api_client.dart';
+import '../network/api_exception.dart';
+import '../network/single_flight.dart';
+import 'token_store.dart';
 
 final authSessionProvider =
     AsyncNotifierProvider<AuthSessionNotifier, AuthSession?>(
       AuthSessionNotifier.new,
     );
 
-class AuthSessionNotifier extends AsyncNotifier<AuthSession?> {
-  static const _tokenKey = 'foreman_auth_token';
-  static const _emailKey = 'foreman_auth_email';
-  static const _mockTokenPrefix = 'mock-foreman-token';
+/// The foreman's API client: sends the foreman's token, refreshes it on 401,
+/// and signs the foreman out when the server ends the session.
+final foremanApiProvider = Provider<ApiClient>(
+  (ref) => ApiClient(
+    httpClient: ref.watch(httpClientProvider),
+    baseUrl: AppEnv.apiBaseUrl,
+    tokens: ref.watch(authSessionProvider.notifier),
+  ),
+);
+
+/// Foreman data providers await this first in `build()`. With a backend it
+/// waits for the session to be restored, then watches who is signed in, so the
+/// provider rebuilds when a different foreman signs in and one company's data
+/// is never served to another; a token refresh does not rebuild it. Returns
+/// false when there is nothing to load: no foreman is signed in.
+Future<bool> watchForemanScope(Ref ref) async {
+  if (!AppEnv.hasBackend) return true;
+  final userId = await ref.watch(
+    authSessionProvider.selectAsync((session) => session?.userId),
+  );
+  return userId != null;
+}
+
+const _mockForemanTokenPrefix = 'mock-foreman-token';
+
+class AuthSessionNotifier extends AsyncNotifier<AuthSession?>
+    implements SessionTokens {
+  static const _sessionKey = 'foreman_session';
+
+  // Where the token lived before it moved to secure storage. Read once, then
+  // deleted, so an upgrade does not sign anyone out.
+  static const _legacyTokenKey = 'foreman_auth_token';
+  static const _legacyEmailKey = 'foreman_auth_email';
+
+  final _refreshFlight = SingleFlight<bool>();
+
+  TokenStore get _store => ref.read(tokenStoreProvider);
 
   @override
   Future<AuthSession?> build() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_tokenKey);
-    final email = prefs.getString(_emailKey);
-    if (token == null || token.isEmpty) return null;
-    return AuthSession(token: token, email: email ?? '');
+    await _migrateLegacyToken();
+    final session = AuthSession.tryDecode(await _store.read(_sessionKey));
+    if (session == null) return null;
+
+    // A demo-mode token saved before a backend was configured would go to the
+    // server as a bearer token and bounce; start from the login screen instead.
+    if (AppEnv.hasBackend && session.isMock) {
+      await _store.delete(_sessionKey);
+      return null;
+    }
+    return session;
   }
+
+  @override
+  String? get accessToken => state.asData?.value?.token;
 
   Future<void> loginForeman({
     required String email,
     required String password,
   }) async {
-    final current = state is AsyncData<AuthSession?>
-        ? (state as AsyncData<AuthSession?>).value
-        : null;
+    final current = state.asData?.value;
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final token = await _requestToken(email: email, password: password);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_tokenKey, token);
-      await prefs.setString(_emailKey, email);
-      return AuthSession(token: token, email: email);
+      final session = AppEnv.hasBackend
+          ? AuthSession.fromLoginResponse(
+              await ref
+                  .read(publicApiProvider)
+                  .post(
+                    '/foreman/login',
+                    body: {'email': email, 'password': password},
+                  ),
+              fallbackEmail: email,
+            )
+          : AuthSession(
+              token: _mockTokenForEmail(email, password),
+              email: email,
+            );
+      await _store.write(_sessionKey, session.encode());
+      return session;
     });
     if (state.hasError && current != null) {
       state = AsyncData(current);
     }
   }
 
+  /// Ends the session on the server too, so the refresh token cannot be reused.
+  /// Best effort: the local session ends whether or not the server answers.
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
-    await prefs.remove(_emailKey);
+    final session = state.asData?.value;
+    if (session != null && !session.isMock && AppEnv.hasBackend) {
+      try {
+        await ref
+            .read(publicApiProvider)
+            .post(
+              '/auth/logout',
+              headers: {'Authorization': 'Bearer ${session.token}'},
+            );
+      } on ApiException {
+        // Offline, or the token already expired: nothing left to revoke here.
+      }
+    }
+    await expire();
+  }
+
+  @override
+  Future<bool> refresh() => _refreshFlight.run(() async {
+    final session = state.asData?.value;
+    if (session == null || session.refreshToken.isEmpty) return false;
+    try {
+      final next = AuthSession.fromLoginResponse(
+        await ref
+            .read(publicApiProvider)
+            .post(
+              '/auth/refresh',
+              body: {'refreshToken': session.refreshToken},
+            ),
+        fallbackEmail: session.email,
+      );
+      // Signed out while the refresh was in flight: do not bring it back.
+      if (state.asData?.value != session) return false;
+      await _store.write(_sessionKey, next.encode());
+      state = AsyncData(next);
+      return true;
+    } on ApiException catch (error) {
+      if (error.isNetwork) rethrow;
+      return false;
+    }
+  });
+
+  @override
+  Future<void> expire() async {
+    await _store.delete(_sessionKey);
     state = const AsyncData(null);
   }
 
-  Future<String> _requestToken({
-    required String email,
-    required String password,
-  }) async {
-    if (AppEnv.authApiBaseUrl.isEmpty) {
-      return _mockTokenForEmail(email, password);
+  Future<void> _migrateLegacyToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final legacyToken = prefs.getString(_legacyTokenKey);
+    if (legacyToken == null) return;
+    if (legacyToken.isNotEmpty && await _store.read(_sessionKey) == null) {
+      final legacy = AuthSession(
+        token: legacyToken,
+        email: prefs.getString(_legacyEmailKey) ?? '',
+      );
+      await _store.write(_sessionKey, legacy.encode());
     }
-
-    final uri = Uri.parse(
-      '${AppEnv.authApiBaseUrl.replaceAll(RegExp(r'/$'), '')}/foreman/login',
-    );
-    final response = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email, 'password': password}),
-        )
-        .timeout(const Duration(seconds: 20));
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Login failed (${response.statusCode}).');
-    }
-
-    final data = jsonDecode(response.body);
-    if (data is! Map<String, dynamic>) {
-      throw Exception('Invalid login response.');
-    }
-    final token = (data['token'] ?? data['accessToken']) as String?;
-    if (token == null || token.isEmpty) {
-      throw Exception('Missing access token in response.');
-    }
-    return token;
+    await prefs.remove(_legacyTokenKey);
+    await prefs.remove(_legacyEmailKey);
   }
 
+  /// Demo-mode login: no server, so accept anything plausible. Rejections use
+  /// the server's own error code so the login screen has one message to show.
   String _mockTokenForEmail(String email, String password) {
-    if (email.isEmpty || password.isEmpty) {
-      throw Exception('Please enter email and password.');
-    }
-
-    // Keep the mock lightweight while still rejecting obvious invalid input.
     if (!email.contains('@') || password.length < 3) {
-      throw Exception('Invalid mock credentials. Use a valid email and password.');
+      throw const ApiException(status: 401, code: 'INVALID_CREDENTIALS');
     }
-
     final safeEmail = email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '-');
-    return '$_mockTokenPrefix-$safeEmail';
+    return '$_mockForemanTokenPrefix-$safeEmail';
   }
 }
 
 class AuthSession {
-  const AuthSession({required this.token, required this.email});
+  const AuthSession({
+    required this.token,
+    required this.email,
+    this.refreshToken = '',
+    this.userId = '',
+    this.companyId = '',
+    this.fullName = '',
+  });
 
+  /// Parses `POST /foreman/login` and `POST /auth/refresh`, which share a shape.
+  factory AuthSession.fromLoginResponse(
+    Object? data, {
+    required String fallbackEmail,
+  }) {
+    if (data is! Map<String, dynamic>) {
+      throw const ApiException(status: 200, code: 'INVALID_RESPONSE');
+    }
+    final token = (data['accessToken'] ?? data['token']) as String?;
+    if (token == null || token.isEmpty) {
+      throw const ApiException(status: 200, code: 'INVALID_RESPONSE');
+    }
+    final user = data['user'] is Map<String, dynamic>
+        ? data['user'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final email = user['email'] as String?;
+    return AuthSession(
+      token: token,
+      refreshToken: (data['refreshToken'] as String?) ?? '',
+      email: email == null || email.isEmpty ? fallbackEmail : email,
+      userId: (user['id'] as String?) ?? '',
+      companyId: (user['companyId'] as String?) ?? '',
+      fullName: (user['fullName'] as String?) ?? '',
+    );
+  }
+
+  /// The access token.
   final String token;
   final String email;
+
+  /// Empty in demo mode, and for a session migrated from before refresh tokens
+  /// were kept -- that one lasts until its access token expires.
+  final String refreshToken;
+  final String userId;
+  final String companyId;
+  final String fullName;
+
+  bool get isMock => token.startsWith(_mockForemanTokenPrefix);
+
+  String encode() => jsonEncode({
+    'token': token,
+    'email': email,
+    'refreshToken': refreshToken,
+    'userId': userId,
+    'companyId': companyId,
+    'fullName': fullName,
+  });
+
+  static AuthSession? tryDecode(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final data = jsonDecode(raw);
+      if (data is! Map<String, dynamic>) return null;
+      final token = data['token'] as String?;
+      if (token == null || token.isEmpty) return null;
+      return AuthSession(
+        token: token,
+        email: (data['email'] as String?) ?? '',
+        refreshToken: (data['refreshToken'] as String?) ?? '',
+        userId: (data['userId'] as String?) ?? '',
+        companyId: (data['companyId'] as String?) ?? '',
+        fullName: (data['fullName'] as String?) ?? '',
+      );
+    } on FormatException {
+      return null;
+    }
+  }
 }

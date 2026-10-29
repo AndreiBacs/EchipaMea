@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/ui/async_status_view.dart';
 import 'project_form_page.dart';
 import '../providers/clients_controller.dart';
 import '../providers/projects_controller.dart';
@@ -17,8 +18,15 @@ class ProjectsPage extends ConsumerStatefulWidget {
 class _ProjectsPageState extends ConsumerState<ProjectsPage> {
   @override
   Widget build(BuildContext context) {
-    final projects = ref.watch(projectsProvider);
-    final clients = ref.watch(clientsProvider);
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current;
+    if (projects == null) {
+      return AsyncStatusView(
+        projectsState,
+        onRetry: () => ref.invalidate(projectsProvider),
+      );
+    }
+    final clients = ref.watch(clientsProvider).current ?? const <Client>[];
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;
     // Build a map once so each row can do O(1) lookups instead of O(clients).
@@ -103,7 +111,9 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
                                   _StatusChip(status: project.status),
                                   Text(
                                     '${project.workers.length} ${l10n.workerCountSuffix}',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                   ),
                                 ],
                               ),
@@ -133,7 +143,9 @@ class _ProjectsPageState extends ConsumerState<ProjectsPage> {
                               icon: const Icon(Icons.layers_outlined),
                               tooltip: l10n.phasesLabel,
                               onPressed: () => context.push(
-                                ProjectFormPage.editPathWithPhasesTab(project.id),
+                                ProjectFormPage.editPathWithPhasesTab(
+                                  project.id,
+                                ),
                               ),
                             ),
                           ],
@@ -197,14 +209,11 @@ class _StatusChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: fg),
           const SizedBox(width: 6),
-          Text(
-            switch (status) {
-              ProjectStatus.planned => l10n.statusPlanned,
-              ProjectStatus.inProgress => l10n.statusInProgress,
-              ProjectStatus.done => l10n.statusDone,
-            },
-            style: TextStyle(color: fg, fontWeight: FontWeight.w600),
-          ),
+          Text(switch (status) {
+            ProjectStatus.planned => l10n.statusPlanned,
+            ProjectStatus.inProgress => l10n.statusInProgress,
+            ProjectStatus.done => l10n.statusDone,
+          }, style: TextStyle(color: fg, fontWeight: FontWeight.w600)),
         ],
       ),
     );

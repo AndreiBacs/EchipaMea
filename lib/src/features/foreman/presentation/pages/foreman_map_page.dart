@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/ui/async_status_view.dart';
 import '../providers/projects_controller.dart';
 import '../providers/team_controller.dart';
 
@@ -16,11 +17,10 @@ class ForemanMapPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final projects = ref
-        .watch(projectsProvider)
+    final projects = (ref.watch(projectsProvider).current ?? const <Project>[])
         .where((project) => project.status == ProjectStatus.inProgress)
         .toList();
-    final employees = ref.watch(teamProvider);
+    final employees = ref.watch(teamProvider).current ?? const <Employee>[];
     final allKnownPoints = <LatLng>[
       for (final project in projects)
         if (project.latitude != null && project.longitude != null)
@@ -29,7 +29,9 @@ class ForemanMapPage extends ConsumerWidget {
         if (employee.latitude != null && employee.longitude != null)
           LatLng(employee.latitude!, employee.longitude!),
     ];
-    final center = allKnownPoints.isEmpty ? _defaultCenter : _centerOf(allKnownPoints);
+    final center = allKnownPoints.isEmpty
+        ? _defaultCenter
+        : _centerOf(allKnownPoints);
 
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -54,13 +56,11 @@ class ForemanMapPage extends ConsumerWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: center,
-                  initialZoom: 13,
-                ),
+                options: MapOptions(initialCenter: center, initialZoom: 13),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.echipamea.app',
                   ),
                   MarkerLayer(
@@ -95,7 +95,10 @@ class ForemanMapPage extends ConsumerWidget {
     );
   }
 
-  List<Marker> _buildProjectMarkers(BuildContext context, List<Project> projects) {
+  List<Marker> _buildProjectMarkers(
+    BuildContext context,
+    List<Project> projects,
+  ) {
     return [
       for (final project in projects)
         Marker(
@@ -154,7 +157,8 @@ class ForemanMapPage extends ConsumerWidget {
   }
 
   LatLng _centerOf(List<LatLng> points) {
-    final lat = points.map((p) => p.latitude).reduce((a, b) => a + b) / points.length;
+    final lat =
+        points.map((p) => p.latitude).reduce((a, b) => a + b) / points.length;
     final lng =
         points.map((p) => p.longitude).reduce((a, b) => a + b) / points.length;
     return LatLng(lat, lng);
@@ -208,7 +212,10 @@ class _MarkerBubble extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
                     if (subtitle != null)
                       Text(
@@ -252,7 +259,10 @@ class _LegendChip extends StatelessWidget {
         children: [
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(color: color, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

@@ -8,16 +8,20 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../core/auth/session_controller.dart';
 import '../../../core/config/app_env.dart';
 import '../../../core/network/realtime_ticket_api.dart';
-import '../../foreman/presentation/providers/team_controller.dart';
+import '../../foreman/domain/entities/employee.dart';
+import '../presentation/providers/worker_me_provider.dart';
 
 final workerTelemetryCoordinatorProvider = Provider<WorkerTelemetryCoordinator>(
   (ref) {
-    final coordinator = WorkerTelemetryCoordinator();
-    ref.listen<WorkerSession?>(sessionProvider, (_, next) {
-      coordinator.updateSession(next);
+    final coordinator = WorkerTelemetryCoordinator(
+      fetchTicket: () =>
+          ref.read(workerRealtimeTicketApiProvider).fetchTicket(),
+    );
+    ref.listen<AsyncValue<WorkerSession?>>(sessionProvider, (_, next) {
+      coordinator.updateSession(next.value);
     }, fireImmediately: true);
-    ref.listen<List<Employee>>(teamProvider, (_, next) {
-      coordinator.updateEmployees(next);
+    ref.listen<AsyncValue<Employee?>>(workerMeProvider, (_, next) {
+      coordinator.updateEmployee(next.value);
     }, fireImmediately: true);
     ref.onDispose(coordinator.dispose);
     return coordinator;
@@ -25,16 +29,24 @@ final workerTelemetryCoordinatorProvider = Provider<WorkerTelemetryCoordinator>(
 );
 
 class WorkerTelemetryCoordinator {
+  WorkerTelemetryCoordinator({required Future<String?> Function() fetchTicket})
+    : _fetchTicket = fetchTicket;
+
   /// How often to read GPS and send a `worker_location` message on the telemetry WebSocket.
   static const Duration _pollInterval = Duration(minutes: 30);
 
   WorkerSession? _session;
-  Map<String, Employee> _employeesById = const {};
+
+  /// The worker's own record, for their working schedule.
+  Employee? _employee;
   Timer? _timer;
   WebSocketChannel? _channel;
   bool _locationDeniedForever = false;
   bool _connecting = false;
-  final RealtimeTicketApi _tickets = RealtimeTicketApi();
+
+  /// Mints a single-use socket ticket with the worker's token, refreshing it
+  /// first if it has expired. Null means "do not connect".
+  final Future<String?> Function() _fetchTicket;
 
   void updateSession(WorkerSession? next) {
     _session = next;
@@ -45,8 +57,8 @@ class WorkerTelemetryCoordinator {
     _start();
   }
 
-  void updateEmployees(List<Employee> employees) {
-    _employeesById = {for (final employee in employees) employee.id: employee};
+  void updateEmployee(Employee? employee) {
+    _employee = employee;
   }
 
   void dispose() {
@@ -70,8 +82,8 @@ class WorkerTelemetryCoordinator {
       return;
     }
 
-    final employee = _employeesById[session.employeeId];
-    if (employee == null) {
+    final employee = _employee;
+    if (employee == null || employee.id != session.employeeId) {
       _disconnectSocket();
       return;
     }
@@ -175,9 +187,7 @@ class WorkerTelemetryCoordinator {
 
     _connecting = true;
     try {
-      final ticket = await _tickets.fetchTicket(
-        accessToken: session.sessionToken,
-      );
+      final ticket = await _fetchTicket();
       if (ticket == null) return null;
 
       final uri = socketUriWithTicket(AppEnv.workerTelemetryWsUrl, ticket);

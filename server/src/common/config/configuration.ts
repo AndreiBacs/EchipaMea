@@ -98,6 +98,11 @@ export class AppConfig {
     return this.get('PHASE_TRANSITIONS_LENIENT');
   }
 
+  /** Enables the `/__e2e` routes the app's end-to-end suite drives. Never on in production. */
+  get e2eTestHooks(): boolean {
+    return this.get('E2E_TEST_HOOKS');
+  }
+
   // --- Storage -------------------------------------------------------------
   get storageDriver(): 'local' | 's3' {
     return this.get('STORAGE_DRIVER');

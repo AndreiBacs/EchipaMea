@@ -1,19 +1,20 @@
-import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:http/http.dart' as http;
-
-import '../config/app_env.dart';
+import '../network/api_client.dart';
+import '../network/api_exception.dart';
 
 /// Result of redeeming a scanned QR login ticket.
 class WorkerLoginResult {
   const WorkerLoginResult({
     required this.token,
+    required this.refreshToken,
     required this.employeeId,
     required this.employeeName,
     required this.companyId,
   });
 
   final String token;
+  final String refreshToken;
   final String employeeId;
   final String employeeName;
   final String companyId;
@@ -45,6 +46,10 @@ class WorkerLoginException implements Exception {
   final WorkerLoginFailure failure;
 }
 
+final workerLoginApiProvider = Provider<WorkerLoginApi>(
+  (ref) => WorkerLoginApi(ref.watch(publicApiProvider)),
+);
+
 /// Exchanges a scanned QR ticket for a real worker session.
 ///
 /// Worker login used to be entirely local: the phone parsed the QR code, checked
@@ -53,52 +58,27 @@ class WorkerLoginException implements Exception {
 /// server had to accept unauthenticated worker traffic. This is what replaces
 /// that -- the ticket is redeemed server-side and comes back as a real JWT.
 class WorkerLoginApi {
-  WorkerLoginApi({http.Client? client}) : _client = client ?? http.Client();
+  WorkerLoginApi(this._api);
 
-  final http.Client _client;
-
-  static const _timeout = Duration(seconds: 20);
+  final ApiClient _api;
 
   Future<WorkerLoginResult> redeem({required String ticketId}) async {
-    final base = AppEnv.authApiBaseUrl.trim();
-    if (base.isEmpty) {
-      throw const WorkerLoginException(WorkerLoginFailure.network);
-    }
-
-    final uri = Uri.tryParse(
-      '${base.replaceAll(RegExp(r'/+$'), '')}/worker/login-tickets/redeem',
-    );
-    if (uri == null) {
-      throw const WorkerLoginException(WorkerLoginFailure.network);
-    }
-
-    http.Response response;
+    Object? decoded;
     try {
-      response = await _client
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: jsonEncode({'ticketId': ticketId}),
-          )
-          .timeout(_timeout);
-    } catch (_) {
-      throw const WorkerLoginException(WorkerLoginFailure.network);
+      decoded = await _api.post(
+        '/worker/login-tickets/redeem',
+        body: {'ticketId': ticketId},
+      );
+    } on ApiException catch (error) {
+      throw WorkerLoginException(_failureFor(error));
     }
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw WorkerLoginException(_failureFor(response));
-    }
-
-    final decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) {
       throw const WorkerLoginException(WorkerLoginFailure.malformed);
     }
 
     // The server emits the token under both `token` and `accessToken`.
-    final token = (decoded['token'] ?? decoded['accessToken']) as String?;
+    final token = (decoded['accessToken'] ?? decoded['token']) as String?;
     final worker = decoded['worker'];
     if (token == null || token.isEmpty || worker is! Map<String, dynamic>) {
       throw const WorkerLoginException(WorkerLoginFailure.malformed);
@@ -106,6 +86,7 @@ class WorkerLoginApi {
 
     return WorkerLoginResult(
       token: token,
+      refreshToken: (decoded['refreshToken'] as String?) ?? '',
       employeeId: (worker['employeeId'] as String?) ?? '',
       employeeName: (worker['employeeName'] as String?) ?? '',
       companyId: (worker['companyId'] as String?) ?? '',
@@ -113,19 +94,9 @@ class WorkerLoginApi {
   }
 
   /// Maps the documented `error.code` envelope onto something translatable.
-  WorkerLoginFailure _failureFor(http.Response response) {
-    String? code;
-    try {
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map<String, dynamic>) {
-        final error = decoded['error'];
-        if (error is Map<String, dynamic>) code = error['code'] as String?;
-      }
-    } catch (_) {
-      code = null;
-    }
-
-    switch (code) {
+  WorkerLoginFailure _failureFor(ApiException error) {
+    if (error.isNetwork) return WorkerLoginFailure.network;
+    switch (error.code) {
       case 'TICKET_EXPIRED':
         return WorkerLoginFailure.expired;
       case 'TICKET_ALREADY_REDEEMED':
@@ -136,7 +107,7 @@ class WorkerLoginApi {
       case 'TICKET_MALFORMED':
         return WorkerLoginFailure.notFound;
       default:
-        return response.statusCode >= 500
+        return error.status >= 500
             ? WorkerLoginFailure.network
             : WorkerLoginFailure.notFound;
     }

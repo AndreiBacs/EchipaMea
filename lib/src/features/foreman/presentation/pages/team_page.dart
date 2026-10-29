@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../../../core/auth/auth_session_controller.dart';
 import '../../../../core/auth/worker_ticket_api.dart';
 import '../../../../core/config/app_env.dart';
 import '../../../../core/domain/entities/worker_role.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/ui/async_status_view.dart';
 import 'employee_form_page.dart';
 import '../providers/team_controller.dart';
 
@@ -19,7 +19,14 @@ class TeamPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final employees = ref.watch(teamProvider);
+    final teamState = ref.watch(teamProvider);
+    final employees = teamState.current;
+    if (employees == null) {
+      return AsyncStatusView(
+        teamState,
+        onRetry: () => ref.invalidate(teamProvider),
+      );
+    }
     final isTablet = MediaQuery.sizeOf(context).width >= 900;
     final l10n = context.l10n;
 
@@ -116,6 +123,15 @@ class TeamPage extends ConsumerWidget {
                                     ).colorScheme.primary,
                                   ),
                                   Text(employee.role.localizedLabel(l10n)),
+                                  if (!employee.isActive)
+                                    Text(
+                                      l10n.statusInactive,
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.error,
+                                      ),
+                                    ),
                                 ],
                               ),
                               const SizedBox(height: 6),
@@ -402,13 +418,15 @@ class _EmployeeQrDialog extends ConsumerStatefulWidget {
 }
 
 class _EmployeeQrDialogState extends ConsumerState<_EmployeeQrDialog> {
-  final WorkerTicketApi _api = WorkerTicketApi();
-
   IssuedWorkerTicket? _ticket;
   Object? _error;
   bool _loading = true;
   Timer? _countdown;
   Duration _remaining = Duration.zero;
+
+  /// The code as text, for a worker without a camera (desktop, laptop).
+  bool _showCode = false;
+  bool _copied = false;
 
   @override
   void initState() {
@@ -429,13 +447,15 @@ class _EmployeeQrDialogState extends ConsumerState<_EmployeeQrDialog> {
     });
 
     try {
-      final ticket = await _api.issue(
-        employeeId: widget.employee.id,
-        employeeName: widget.employee.name,
-        accessToken: ref.read(authSessionProvider).asData?.value?.token ?? '',
-      );
+      final ticket = await ref
+          .read(workerTicketApiProvider)
+          .issue(
+            employeeId: widget.employee.id,
+            employeeName: widget.employee.name,
+          );
       if (!mounted) return;
       setState(() {
+        _copied = false;
         _ticket = ticket;
         _remaining = ticket.remaining;
         _loading = false;
@@ -473,8 +493,10 @@ class _EmployeeQrDialogState extends ConsumerState<_EmployeeQrDialog> {
     final l10n = context.l10n;
     final expired = _ticket != null && _remaining == Duration.zero;
 
+    final ticket = _ticket;
     return AlertDialog(
       title: Text(l10n.employeeLoginQrTitle),
+      scrollable: true,
       content: SizedBox(
         width: 280,
         child: Column(
@@ -501,6 +523,41 @@ class _EmployeeQrDialogState extends ConsumerState<_EmployeeQrDialog> {
               ),
             const SizedBox(height: 4),
             Text(l10n.workerScansToConnect, textAlign: TextAlign.center),
+            if (ticket != null && !expired) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => setState(() => _showCode = !_showCode),
+                icon: const Icon(Icons.key_outlined, size: 18),
+                label: Text(
+                  _showCode
+                      ? l10n.employeeLoginCodeHide
+                      : l10n.employeeLoginCodeShow,
+                ),
+              ),
+              if (_showCode) ...[
+                SelectableText(
+                  ticket.qrPayload,
+                  key: const ValueKey('employee-login-code'),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(
+                      ClipboardData(text: ticket.qrPayload),
+                    );
+                    if (mounted) setState(() => _copied = true);
+                  },
+                  icon: const Icon(Icons.copy, size: 18),
+                  label: Text(
+                    _copied
+                        ? l10n.employeeLoginCodeCopied
+                        : l10n.employeeLoginCodeCopy,
+                  ),
+                ),
+              ],
+            ],
           ],
         ),
       ),

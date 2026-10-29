@@ -3,10 +3,15 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- allowBackup=false: flutter_secure_storage keys live in the Android
+         Keystore and are not restored with an auto-backup, so a restored copy
+         of its encrypted prefs fails with "Failed to unwrap key". Tokens should
+         not leave the device anyway; a restore just means signing in again. -->
     <application
         android:label="echipa_mea"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"

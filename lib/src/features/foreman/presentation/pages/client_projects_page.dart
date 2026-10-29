@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/ui/async_status_view.dart';
 import 'project_form_page.dart';
 import '../providers/clients_controller.dart';
 import '../providers/projects_controller.dart';
@@ -17,11 +18,11 @@ class ClientProjectsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final clients = ref.watch(clientsProvider);
+    final clients = ref.watch(clientsProvider).current ?? const <Client>[];
     final client = clients.where((c) => c.id == clientId).firstOrNull;
-    final projects = ref
-        .watch(projectsProvider)
-        .where((project) => project.clientId == clientId)
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current
+        ?.where((project) => project.clientId == clientId)
         .toList();
 
     return Scaffold(
@@ -32,7 +33,12 @@ class ClientProjectsPage extends ConsumerWidget {
               : '${l10n.clientProjectsTitle}: ${client.name}',
         ),
       ),
-      body: projects.isEmpty
+      body: projects == null
+          ? AsyncStatusView(
+              projectsState,
+              onRetry: () => ref.invalidate(projectsProvider),
+            )
+          : projects.isEmpty
           ? Center(child: Text(l10n.noProjectsForClient))
           : ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -63,9 +69,8 @@ class ClientProjectsPage extends ConsumerWidget {
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(
-          '${ProjectFormPage.createPath}?clientId=$clientId',
-        ),
+        onPressed: () =>
+            context.push('${ProjectFormPage.createPath}?clientId=$clientId'),
         icon: const Icon(Icons.add),
         label: Text(l10n.addProject),
       ),

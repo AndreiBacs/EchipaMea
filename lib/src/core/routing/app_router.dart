@@ -32,7 +32,7 @@ NoTransitionPage<void> _noTransitionPage({
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authSessionProvider);
   final setupState = ref.watch(setupFlowCompletedProvider);
-  ref.watch(sessionProvider);
+  final workerState = ref.watch(sessionProvider);
 
   return GoRouter(
     initialLocation: LoginPage.routePath,
@@ -64,9 +64,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ? authState.value
           : null;
       final isForemanLoggedIn = foremanSession != null;
-      final workerSession = ref.read(sessionProvider);
+      final workerSession = workerState.value;
 
-      if (authState.isLoading) return null;
+      // Both sessions restore from secure storage at startup; decide nothing
+      // until they have, or a signed-in user would bounce through login.
+      if (authState.isLoading || workerState.isLoading) return null;
 
       if (!isForemanLoggedIn && isForemanRoute) {
         return LoginPage.routePath;

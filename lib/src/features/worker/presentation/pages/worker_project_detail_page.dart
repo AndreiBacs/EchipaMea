@@ -6,9 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/auth/session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/network/api_error_messages.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../providers/worker_assigned_projects_provider.dart';
-import '../../application/worker_foreman_inbox_controller.dart';
+import '../../../../core/ui/async_status_view.dart';
+import '../../data/worker_repository.dart';
 import '../widgets/phase_work_instructions_panel.dart';
 import 'worker_phase_detail_page.dart';
 
@@ -22,25 +24,26 @@ class WorkerProjectDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final session = ref.watch(sessionProvider);
-    final project = ref.watch(projectsProvider.select((list) {
-      for (final p in list) {
-        if (p.id == projectId) return p;
-      }
-      return null;
-    }));
-    final assigned = ref.watch(workerAssignedProjectsProvider);
-    final isAssigned =
-        project != null && assigned.any((p) => p.id == project.id);
+    final session = ref.watch(sessionProvider).value;
+    // Only the worker's own projects are listed, so one missing from the
+    // list is not theirs.
+    final assignedState = ref.watch(workerAssignedProjectsProvider);
+    final assigned = assignedState.current;
+    final project = assigned?.where((p) => p.id == projectId).firstOrNull;
 
     if (session == null) {
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    if (project == null || !isAssigned) {
+    if (project == null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.workerProjectDetails)),
-        body: Center(child: Text(l10n.workerProjectNotFound)),
+        body: assigned == null
+            ? AsyncStatusView(
+                assignedState,
+                onRetry: () => ref.invalidate(workerAssignedProjectsProvider),
+              )
+            : Center(child: Text(l10n.workerProjectNotFound)),
       );
     }
 
@@ -49,10 +52,7 @@ class WorkerProjectDetailPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            project.name,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text(project.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(
             '${l10n.statusLabel}: ${_statusLabel(l10n, project.status)}',
@@ -70,36 +70,40 @@ class WorkerProjectDetailPage extends ConsumerWidget {
               '${project.latitude!.toStringAsFixed(5)}, '
               '${project.longitude!.toStringAsFixed(5)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: project.latitude != null && project.longitude != null
                 ? () => _openMaps(
-                      context,
-                      l10n,
-                      project.name,
-                      project.latitude!,
-                      project.longitude!,
-                    )
+                    context,
+                    l10n,
+                    project.name,
+                    project.latitude!,
+                    project.longitude!,
+                  )
                 : null,
             icon: const Icon(Icons.navigation),
             label: Text(l10n.workerOpenNavigation),
           ),
           const SizedBox(height: 12),
           FilledButton.tonalIcon(
-            onPressed: () {
-              ref.read(workerForemanInboxProvider.notifier).announceArrival(
-                    projectId: project.id,
-                    projectName: project.name,
-                    employeeId: session.employeeId,
-                    employeeName: session.employeeName,
-                  );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.workerArrivalSent)),
-              );
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                await ref
+                    .read(workerRepositoryProvider)
+                    .announceArrival(session, project.id);
+                messenger.showSnackBar(
+                  SnackBar(content: Text(l10n.workerArrivalSent)),
+                );
+              } catch (error) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text(apiErrorMessage(l10n, error))),
+                );
+              }
             },
             icon: const Icon(Icons.place),
             label: Text(l10n.workerAnnounceArrival),
@@ -110,8 +114,8 @@ class WorkerProjectDetailPage extends ConsumerWidget {
               child: Text(
                 l10n.workerLocationMissing,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ),
           const SizedBox(height: 32),
@@ -158,16 +162,16 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                                   children: [
                                     Text(
                                       phase.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '${l10n.statusLabel}: ${_phaseStatusLabel(l10n, phase.status)}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
                                     ),
                                   ],
                                 ),
@@ -175,23 +179,38 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                               if (phase.status != PhaseStatus.pendingReview &&
                                   phase.status != PhaseStatus.done)
                                 FilledButton.tonal(
-                                  onPressed: () {
-                                    ref
-                                        .read(projectsProvider.notifier)
-                                        .submitPhaseForReview(
-                                          projectId: project.id,
-                                          phaseId: phase.id,
-                                          employeeId: session.employeeId,
-                                        );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          l10n.phaseSubmittedForReview,
-                                        ),
-                                      ),
+                                  onPressed: () async {
+                                    final messenger = ScaffoldMessenger.of(
+                                      context,
                                     );
+                                    try {
+                                      await ref
+                                          .read(
+                                            workerAssignedProjectsProvider
+                                                .notifier,
+                                          )
+                                          .submitPhase(
+                                            projectId: project.id,
+                                            phaseId: phase.id,
+                                          );
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            l10n.phaseSubmittedForReview,
+                                          ),
+                                        ),
+                                      );
+                                    } catch (error) {
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            apiErrorMessage(l10n, error),
+                                          ),
+                                        ),
+                                      );
+                                    }
                                   },
-                                child: Text(l10n.workerSubmitForReview),
+                                  child: Text(l10n.workerSubmitForReview),
                                 ),
                             ],
                           ),
@@ -209,10 +228,7 @@ class WorkerProjectDetailPage extends ConsumerWidget {
                               label: Text(l10n.workerViewDetails),
                             ),
                           ),
-                          PhaseWorkInstructionsPanel(
-                            l10n: l10n,
-                            phase: phase,
-                          ),
+                          PhaseWorkInstructionsPanel(l10n: l10n, phase: phase),
                         ],
                       ),
                     ),
@@ -259,12 +275,7 @@ class WorkerProjectDetailPage extends ConsumerWidget {
       if (!context.mounted) return;
 
       if (maps.isEmpty) {
-        await _openMapsInBrowser(
-          messenger,
-          l10n,
-          lat,
-          lng,
-        );
+        await _openMapsInBrowser(messenger, l10n, lat, lng);
         return;
       }
 

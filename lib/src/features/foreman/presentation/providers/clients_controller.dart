@@ -2,71 +2,31 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/auth/auth_session_controller.dart';
 import '../../application/foreman_workflow_progress_controller.dart';
+import '../../data/clients_repository.dart';
 import '../../domain/entities/foreman_workflow_step.dart';
 import '../../domain/entities/client.dart';
 export '../../domain/entities/client.dart';
 
-final clientsProvider = NotifierProvider<ClientsNotifier, List<Client>>(
+final clientsProvider = AsyncNotifierProvider<ClientsNotifier, List<Client>>(
   ClientsNotifier.new,
 );
 
-class ClientsNotifier extends Notifier<List<Client>> {
+/// The company's clients. Saves wait for the server and then replace the
+/// local copy with what it returned; a failed save throws and leaves the list
+/// as it was.
+class ClientsNotifier extends AsyncNotifier<List<Client>> {
+  ClientsRepository get _repository => ref.read(clientsRepositoryProvider);
+
   @override
-  List<Client> build() {
-    return const [
-      Client(
-        id: 'c1',
-        name: 'Elena Popescu',
-        activeProjects: 2,
-        type: ClientType.individual,
-        status: ClientStatus.active,
-        preferredContactMethod: ClientContactMethod.phone,
-        notes: 'Prefers phone calls in the morning.',
-        email: 'elena.popescu@example.com',
-        phone: '+40 731 100 101',
-        addressLine1: 'Str. Victoriei 12',
-        city: 'Bucuresti',
-        state: 'Bucuresti',
-        zipCode: '010072',
-        contactPerson: 'Elena Popescu',
-      ),
-      Client(
-        id: 'c2',
-        name: 'SC BuildFast SRL',
-        activeProjects: 1,
-        type: ClientType.company,
-        status: ClientStatus.active,
-        preferredContactMethod: ClientContactMethod.email,
-        notes: 'Invoices must include purchase order reference.',
-        email: 'office@buildfast.example.com',
-        phone: '+40 744 222 333',
-        addressLine1: 'Bd. Independentei 7',
-        city: 'Cluj-Napoca',
-        state: 'Cluj',
-        zipCode: '400015',
-        contactPerson: 'Radu Ionescu',
-      ),
-      Client(
-        id: 'c3',
-        name: 'Cafe Luna',
-        activeProjects: 1,
-        type: ClientType.company,
-        status: ClientStatus.active,
-        preferredContactMethod: ClientContactMethod.whatsApp,
-        notes: '',
-        email: 'contact@cafeluna.example.com',
-        phone: '+40 756 333 444',
-        addressLine1: 'Piata Unirii 3',
-        city: 'Timisoara',
-        state: 'Timis',
-        zipCode: '300085',
-        contactPerson: 'Ana Moldovan',
-      ),
-    ];
+  Future<List<Client>> build() async {
+    final repository = ref.watch(clientsRepositoryProvider);
+    if (!await watchForemanScope(ref)) return const [];
+    return repository.list();
   }
 
-  void addClient({
+  Future<Client> addClient({
     required String name,
     required int activeProjects,
     required ClientType type,
@@ -80,13 +40,10 @@ class ClientsNotifier extends Notifier<List<Client>> {
     required String stateProvince,
     required String zipCode,
     required String contactPerson,
-  }) {
-    final nextId =
-        'c${state.length + 1}_${DateTime.now().millisecondsSinceEpoch}';
-    state = [
-      ...state,
+  }) async {
+    final created = await _repository.create(
       Client(
-        id: nextId,
+        id: '',
         name: name,
         activeProjects: activeProjects,
         type: type,
@@ -101,15 +58,17 @@ class ClientsNotifier extends Notifier<List<Client>> {
         zipCode: zipCode,
         contactPerson: contactPerson,
       ),
-    ];
+    );
+    _upsert(created);
     unawaited(
       ref
           .read(foremanWorkflowProgressProvider.notifier)
           .markComplete(ForemanWorkflowStep.addClient),
     );
+    return created;
   }
 
-  void updateClient({
+  Future<Client> updateClient({
     required String id,
     required String name,
     required int activeProjects,
@@ -124,32 +83,42 @@ class ClientsNotifier extends Notifier<List<Client>> {
     required String stateProvince,
     required String zipCode,
     required String contactPerson,
-  }) {
-    state = [
-      for (final client in state)
-        if (client.id == id)
-          client.copyWith(
-            name: name,
-            activeProjects: activeProjects,
-            type: type,
-            status: status,
-            preferredContactMethod: preferredContactMethod,
-            notes: notes,
-            email: email,
-            phone: phone,
-            addressLine1: addressLine1,
-            city: city,
-            state: stateProvince,
-            zipCode: zipCode,
-            contactPerson: contactPerson,
-          )
-        else
-          client,
-    ];
+  }) async {
+    final updated = await _repository.update(
+      Client(
+        id: id,
+        name: name,
+        activeProjects: activeProjects,
+        type: type,
+        status: status,
+        preferredContactMethod: preferredContactMethod,
+        notes: notes,
+        email: email,
+        phone: phone,
+        addressLine1: addressLine1,
+        city: city,
+        state: stateProvince,
+        zipCode: zipCode,
+        contactPerson: contactPerson,
+      ),
+    );
+    _upsert(updated);
+    return updated;
+  }
+
+  /// Puts [client] into the list in place of the one with its id. If the list
+  /// has not loaded yet, reloads it instead; the reload includes [client].
+  void _upsert(Client client) {
+    final current = state.value;
+    if (current == null) return ref.invalidateSelf();
+    final index = current.indexWhere((c) => c.id == client.id);
+    state = AsyncData(
+      index < 0 ? [...current, client] : ([...current]..[index] = client),
+    );
   }
 
   Client? findById(String id) {
-    for (final client in state) {
+    for (final client in state.value ?? const <Client>[]) {
       if (client.id == id) return client;
     }
     return null;

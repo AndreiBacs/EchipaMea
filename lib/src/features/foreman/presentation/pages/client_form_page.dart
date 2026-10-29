@@ -3,13 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/network/api_error_messages.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
 import '../../../../core/ui/app_international_phone_field.dart';
+import '../../../../core/ui/async_status_view.dart';
 import '../../domain/romanian_counties.dart';
 import 'foreman_shell_page.dart';
 import '../providers/clients_controller.dart';
 
-class ClientFormPage extends ConsumerStatefulWidget {
+class ClientFormPage extends ConsumerWidget {
   const ClientFormPage({super.key, this.clientId});
 
   static const createPath = '/foreman/clients/new';
@@ -18,10 +20,42 @@ class ClientFormPage extends ConsumerStatefulWidget {
   final String? clientId;
 
   @override
-  ConsumerState<ClientFormPage> createState() => _ClientFormPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = clientId;
+    if (id == null) return const _ClientForm(existing: null);
+
+    // Resolved before the form is built, because the form copies the client
+    // into its fields once, in initState.
+    final l10n = context.l10n;
+    final clientsState = ref.watch(clientsProvider);
+    final clients = clientsState.current;
+    final existing = clients?.where((c) => c.id == id).firstOrNull;
+    if (existing != null) {
+      return _ClientForm(key: ValueKey(id), existing: existing);
+    }
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.clientFormEditTitle)),
+      body: clients == null
+          ? AsyncStatusView(
+              clientsState,
+              onRetry: () => ref.invalidate(clientsProvider),
+            )
+          : Center(child: Text(l10n.apiErrorNotFound)),
+    );
+  }
 }
 
-class _ClientFormPageState extends ConsumerState<ClientFormPage> {
+class _ClientForm extends ConsumerStatefulWidget {
+  const _ClientForm({super.key, required this.existing});
+
+  /// Null when adding a client.
+  final Client? existing;
+
+  @override
+  ConsumerState<_ClientForm> createState() => _ClientFormState();
+}
+
+class _ClientFormState extends ConsumerState<_ClientForm> {
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
   late final TextEditingController _addressLine1Controller;
@@ -34,13 +68,12 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
   late ClientStatus _selectedClientStatus;
   late ClientContactMethod _selectedContactMethod;
   String _internationalPhone = '';
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    final existing = widget.clientId == null
-        ? null
-        : ref.read(clientsProvider.notifier).findById(widget.clientId!);
+    final existing = widget.existing;
     _nameController = TextEditingController(text: existing?.name ?? '');
     _selectedClientType = existing?.type ?? ClientType.individual;
     _selectedClientStatus = existing?.status ?? ClientStatus.active;
@@ -74,15 +107,15 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.clientId != null;
+    final isEdit = widget.existing != null;
     final l10n = context.l10n;
-    final phoneInitial = widget.clientId == null
-        ? null
-        : ref.read(clientsProvider.notifier).findById(widget.clientId!)?.phone;
+    final phoneInitial = widget.existing?.phone;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEdit ? l10n.clientFormEditTitle : l10n.clientFormAddTitle),
+        title: Text(
+          isEdit ? l10n.clientFormEditTitle : l10n.clientFormAddTitle,
+        ),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -104,7 +137,9 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                   children: [
                     TextField(
                       controller: _nameController,
-                      decoration: InputDecoration(labelText: l10n.clientNameLabel),
+                      decoration: InputDecoration(
+                        labelText: l10n.clientNameLabel,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<ClientType>(
@@ -121,7 +156,9 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                         if (value == null) return;
                         setState(() => _selectedClientType = value);
                       },
-                      decoration: InputDecoration(labelText: l10n.clientTypeLabel),
+                      decoration: InputDecoration(
+                        labelText: l10n.clientTypeLabel,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<ClientStatus>(
@@ -177,7 +214,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                     const SizedBox(height: 12),
                     AppInternationalPhoneField(
                       key: ValueKey(
-                        '${widget.clientId ?? 'new'}_${phoneInitial ?? ''}',
+                        '${widget.existing?.id ?? 'new'}_${phoneInitial ?? ''}',
                       ),
                       initialPhone: phoneInitial,
                       decoration: InputDecoration(
@@ -238,7 +275,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: FilledButton(
-                            onPressed: () => _save(context, isEdit: isEdit),
+                            onPressed: _saving ? null : _save,
                             child: Text(
                               isEdit ? l10n.saveChanges : l10n.createClient,
                             ),
@@ -256,7 +293,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
     );
   }
 
-  void _save(BuildContext context, {required bool isEdit}) {
+  Future<void> _save() async {
     final name = _nameController.text.trim();
     final contactPerson = _contactPersonController.text.trim();
     final email = _emailController.text.trim();
@@ -277,47 +314,55 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
       return;
     }
 
-    if (isEdit) {
-      final existing = ref.read(clientsProvider.notifier).findById(widget.clientId!);
-      ref
-          .read(clientsProvider.notifier)
-          .updateClient(
-            id: widget.clientId!,
-            name: name,
-            activeProjects: existing?.activeProjects ?? 0,
-            type: _selectedClientType,
-            status: _selectedClientStatus,
-            preferredContactMethod: _selectedContactMethod,
-            notes: notes,
-            contactPerson: contactPerson,
-            email: email,
-            phone: phone,
-            addressLine1: addressLine1,
-            city: city,
-            stateProvince: state,
-            zipCode: zipCode,
-          );
-    } else {
-      ref
-          .read(clientsProvider.notifier)
-          .addClient(
-            name: name,
-            activeProjects: 0,
-            type: _selectedClientType,
-            status: _selectedClientStatus,
-            preferredContactMethod: _selectedContactMethod,
-            notes: notes,
-            contactPerson: contactPerson,
-            email: email,
-            phone: phone,
-            addressLine1: addressLine1,
-            city: city,
-            stateProvince: state,
-            zipCode: zipCode,
-          );
+    final existing = widget.existing;
+    final notifier = ref.read(clientsProvider.notifier);
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() => _saving = true);
+    try {
+      if (existing != null) {
+        await notifier.updateClient(
+          id: existing.id,
+          name: name,
+          activeProjects: existing.activeProjects,
+          type: _selectedClientType,
+          status: _selectedClientStatus,
+          preferredContactMethod: _selectedContactMethod,
+          notes: notes,
+          contactPerson: contactPerson,
+          email: email,
+          phone: phone,
+          addressLine1: addressLine1,
+          city: city,
+          stateProvince: state,
+          zipCode: zipCode,
+        );
+      } else {
+        await notifier.addClient(
+          name: name,
+          activeProjects: 0,
+          type: _selectedClientType,
+          status: _selectedClientStatus,
+          preferredContactMethod: _selectedContactMethod,
+          notes: notes,
+          contactPerson: contactPerson,
+          email: email,
+          phone: phone,
+          addressLine1: addressLine1,
+          city: city,
+          stateProvince: state,
+          zipCode: zipCode,
+        );
+      }
+      navigator.pop();
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(l10n, error))),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-
-    Navigator.of(context).pop();
   }
 
   static String _clientTypeLabel(ClientType type, AppLocalizations l10n) {

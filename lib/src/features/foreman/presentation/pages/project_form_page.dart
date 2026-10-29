@@ -3,15 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/network/api_error_messages.dart';
 import '../../../../core/ui/adaptive_breakpoints.dart';
+import '../../../../core/ui/async_status_view.dart';
+import '../../../../core/util/day_key.dart';
 import 'foreman_shell_page.dart';
 import 'project_phase_form_page.dart';
 import '../providers/clients_controller.dart';
+import '../providers/day_sequences_controller.dart';
 import '../providers/projects_controller.dart';
 import '../providers/team_controller.dart';
 import '../widgets/phase_work_instructions_editor.dart';
 
-class ProjectFormPage extends ConsumerStatefulWidget {
+class ProjectFormPage extends ConsumerWidget {
   const ProjectFormPage({
     super.key,
     this.projectId,
@@ -33,18 +37,80 @@ class ProjectFormPage extends ConsumerStatefulWidget {
   final int initialTabIndex;
 
   @override
-  ConsumerState<ProjectFormPage> createState() => _ProjectFormPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = projectId;
+    if (id == null) {
+      return _ProjectForm(
+        existing: null,
+        initialClientId: initialClientId,
+        initialTabIndex: initialTabIndex,
+      );
+    }
+
+    // Resolved before the form is built, because the form copies the project
+    // into its fields once, in initState.
+    final l10n = context.l10n;
+    final projectsState = ref.watch(projectsProvider);
+    final projects = projectsState.current;
+    final existing = projects?.where((p) => p.id == id).firstOrNull;
+    if (existing != null) {
+      return _ProjectForm(
+        key: ValueKey(id),
+        existing: existing,
+        initialClientId: initialClientId,
+        initialTabIndex: initialTabIndex,
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.projectFormEditTitle)),
+      body: projects == null
+          ? AsyncStatusView(
+              projectsState,
+              onRetry: () => ref.invalidate(projectsProvider),
+            )
+          : Center(child: Text(l10n.workerProjectNotFound)),
+    );
+  }
 }
 
-class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
+class _ProjectForm extends ConsumerStatefulWidget {
+  const _ProjectForm({
+    super.key,
+    required this.existing,
+    this.initialClientId,
+    this.initialTabIndex = 0,
+  });
+
+  /// Null when creating a project.
+  final Project? existing;
+  final String? initialClientId;
+  final int initialTabIndex;
+
+  String? get projectId => existing?.id;
+
+  @override
+  ConsumerState<_ProjectForm> createState() => _ProjectFormState();
+}
+
+class _ProjectFormState extends ConsumerState<_ProjectForm>
     with SingleTickerProviderStateMixin {
   late final TextEditingController _nameController;
   late final TextEditingController _addressLine1Controller;
   late final TextEditingController _cityController;
   late final TextEditingController _stateController;
   late final TextEditingController _zipCodeController;
-  late ProjectStatus _selectedStatus;
+
+  /// Whether to close the project. Its status otherwise follows its phases,
+  /// so "done" is the only status the foreman chooses.
+  late bool _closeProject;
   bool _useClientAddress = true;
+  bool _saving = false;
+
+  /// The saved project's phases, which the route keeps current, or the draft
+  /// phases of a new one.
+  List<ProjectPhase> get _phases => widget.existing?.phases ?? _draftPhases;
+
+  ProjectStatus get _derivedStatus => projectStatusFromPhases(_phases);
   String? _selectedClientId;
 
   /// Draft phases while creating a project (saved with [addProject]).
@@ -56,9 +122,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
   @override
   void initState() {
     super.initState();
-    final existing = widget.projectId == null
-        ? null
-        : ref.read(projectsProvider.notifier).findById(widget.projectId!);
+    final existing = widget.existing;
     _nameController = TextEditingController(text: existing?.name ?? '');
     _addressLine1Controller = TextEditingController(
       text: existing?.addressLine1 ?? '',
@@ -66,7 +130,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     _cityController = TextEditingController(text: existing?.city ?? '');
     _stateController = TextEditingController(text: existing?.state ?? '');
     _zipCodeController = TextEditingController(text: existing?.zipCode ?? '');
-    _selectedStatus = existing?.status ?? ProjectStatus.planned;
+    _closeProject = existing?.status == ProjectStatus.done;
     _selectedClientId = existing?.clientId ?? widget.initialClientId;
     _useClientAddress = existing?.useClientAddress ?? true;
     final today = DateTime.now();
@@ -74,6 +138,14 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     if (_useClientAddress) {
       _syncAddressFromClient();
     }
+    // The client list may still be loading when the form opens.
+    ref.listenManual(clientsProvider, (previous, next) {
+      if (_useClientAddress &&
+          previous?.current == null &&
+          next.current != null) {
+        _syncAddressFromClient();
+      }
+    });
 
     final tabIndex = widget.initialTabIndex.clamp(0, 1);
     _tabController = TabController(
@@ -91,7 +163,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
 
   void _onAddPhaseFabPressed() {
     final l10n = context.l10n;
-    final team = ref.read(teamProvider);
+    final team = ref.read(teamProvider).current ?? const <Employee>[];
     final projectId = widget.projectId;
     if (projectId != null) {
       context.push(ProjectPhaseFormPage.pathNew(projectId));
@@ -117,7 +189,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     final isEdit = widget.projectId != null;
     final lockClientSelection = !isEdit && widget.initialClientId != null;
     final l10n = context.l10n;
-    final clients = ref.watch(clientsProvider);
+    final clients = ref.watch(clientsProvider).current ?? const <Client>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -244,9 +316,14 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                     decoration: InputDecoration(labelText: l10n.zipCodeLabel),
                   ),
                   const SizedBox(height: 12),
+                  // The status follows the phases; the only choice is closing
+                  // the project, or reopening a closed one.
                   DropdownButtonFormField<ProjectStatus>(
-                    initialValue: _selectedStatus,
-                    items: ProjectStatus.values
+                    key: ValueKey(_derivedStatus),
+                    initialValue: _closeProject
+                        ? ProjectStatus.done
+                        : _derivedStatus,
+                    items: {_derivedStatus, ProjectStatus.done}
                         .map(
                           (status) => DropdownMenuItem<ProjectStatus>(
                             value: status,
@@ -256,7 +333,9 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() => _selectedStatus = value);
+                      setState(
+                        () => _closeProject = value == ProjectStatus.done,
+                      );
                     },
                     decoration: InputDecoration(labelText: l10n.statusLabel),
                   ),
@@ -273,7 +352,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: () => _save(context, isEdit: isEdit),
+                          onPressed: _saving ? null : _save,
                           child: Text(
                             isEdit ? l10n.saveChanges : l10n.createProject,
                           ),
@@ -295,7 +374,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     AppLocalizations l10n,
     bool isEdit,
   ) {
-    final team = ref.watch(teamProvider);
+    final team = ref.watch(teamProvider).current ?? const <Employee>[];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -348,7 +427,8 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
         }
 
         final projectId = widget.projectId!;
-        final projects = ref.watch(projectsProvider);
+        final projects =
+            ref.watch(projectsProvider).current ?? const <Project>[];
         Project? project;
         for (final p in projects) {
           if (p.id == projectId) {
@@ -377,33 +457,33 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                   ),
                   onRemove: (phase) {
                     if (phase.status != PhaseStatus.notStarted) return;
-                    ref
-                        .read(projectsProvider.notifier)
-                        .removePhase(
-                          projectId: resolvedProject.id,
-                          phaseId: phase.id,
-                        );
+                    _runPhaseAction(
+                      () => ref
+                          .read(projectsProvider.notifier)
+                          .removePhase(
+                            projectId: resolvedProject.id,
+                            phaseId: phase.id,
+                          ),
+                    );
                   },
-                  onApprove: (phase) {
-                    ref
+                  onApprove: (phase) => _runPhaseAction(
+                    () => ref
                         .read(projectsProvider.notifier)
                         .reviewPhase(
                           projectId: resolvedProject.id,
                           phaseId: phase.id,
                           approved: true,
-                          foremanId: 'foreman_local',
-                        );
-                  },
-                  onReject: (phase) {
-                    ref
+                        ),
+                  ),
+                  onReject: (phase) => _runPhaseAction(
+                    () => ref
                         .read(projectsProvider.notifier)
                         .reviewPhase(
                           projectId: resolvedProject.id,
                           phaseId: phase.id,
                           approved: false,
-                          foremanId: 'foreman_local',
-                        );
-                  },
+                        ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _MembersByPhaseCard(
@@ -420,7 +500,6 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
                   },
                   project: resolvedProject,
                   team: team,
-                  notifier: ref.read(projectsProvider.notifier),
                 ),
               ],
             ),
@@ -637,7 +716,7 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
     WidgetsBinding.instance.addPostFrameCallback((_) => disposeControllers());
   }
 
-  void _save(BuildContext context, {required bool isEdit}) {
+  Future<void> _save() async {
     final name = _nameController.text.trim();
     final clientId = _selectedClientId?.trim() ?? '';
     if (name.isEmpty || clientId.isEmpty) return;
@@ -653,59 +732,75 @@ class _ProjectFormPageState extends ConsumerState<ProjectFormPage>
       return;
     }
 
-    final team = ref.read(teamProvider);
-    final phases = isEdit
-        ? ref
-                  .read(projectsProvider.notifier)
-                  .findById(widget.projectId!)
-                  ?.phases ??
-              const <ProjectPhase>[]
-        : List<ProjectPhase>.from(_draftPhases);
+    final team = ref.read(teamProvider).current ?? const <Employee>[];
+    final phases = List<ProjectPhase>.from(_phases);
     final assignment = _deriveProjectAssignmentsFromPhases(phases, team);
+    final status = _closeProject ? ProjectStatus.done : _derivedStatus;
 
-    if (isEdit) {
-      ref
-          .read(projectsProvider.notifier)
-          .updateProject(
-            id: widget.projectId!,
-            name: name,
-            clientId: clientId,
-            status: _selectedStatus,
-            workers: assignment.workers,
-            assignedEmployeeIds: assignment.assignedEmployeeIds,
-            useClientAddress: _useClientAddress,
-            addressLine1: addressLine1,
-            city: city,
-            stateProvince: stateProvince,
-            zipCode: zipCode,
-            phases: phases,
-          );
-    } else {
-      ref
-          .read(projectsProvider.notifier)
-          .addProject(
-            name: name,
-            clientId: clientId,
-            status: _selectedStatus,
-            workers: assignment.workers,
-            assignedEmployeeIds: assignment.assignedEmployeeIds,
-            useClientAddress: _useClientAddress,
-            addressLine1: addressLine1,
-            city: city,
-            stateProvince: stateProvince,
-            zipCode: zipCode,
-            phases: phases,
-          );
+    final existing = widget.existing;
+    final notifier = ref.read(projectsProvider.notifier);
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() => _saving = true);
+    try {
+      if (existing != null) {
+        await notifier.updateProject(
+          id: existing.id,
+          name: name,
+          clientId: clientId,
+          status: status,
+          workers: assignment.workers,
+          assignedEmployeeIds: assignment.assignedEmployeeIds,
+          useClientAddress: _useClientAddress,
+          addressLine1: addressLine1,
+          city: city,
+          stateProvince: stateProvince,
+          zipCode: zipCode,
+        );
+      } else {
+        await notifier.addProject(
+          name: name,
+          clientId: clientId,
+          status: status,
+          workers: assignment.workers,
+          assignedEmployeeIds: assignment.assignedEmployeeIds,
+          useClientAddress: _useClientAddress,
+          addressLine1: addressLine1,
+          city: city,
+          stateProvince: stateProvince,
+          zipCode: zipCode,
+          phases: phases,
+        );
+      }
+      navigator.pop();
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(l10n, error))),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
+  }
 
-    Navigator.of(context).pop();
+  /// Runs a change to a saved phase, showing the server's refusal if any.
+  Future<void> _runPhaseAction(Future<void> Function() action) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await action();
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(l10n, error))),
+      );
+    }
   }
 
   void _syncAddressFromClient() {
     final clientId = _selectedClientId;
     if (clientId == null) return;
     Client? client;
-    for (final c in ref.read(clientsProvider)) {
+    for (final c in ref.read(clientsProvider).current ?? const <Client>[]) {
       if (c.id == clientId) {
         client = c;
         break;
@@ -976,14 +1071,12 @@ class _DailySequencePlannerCard extends StatelessWidget {
     required this.onPickDay,
     required this.project,
     required this.team,
-    required this.notifier,
   });
 
   final DateTime selectedDay;
   final ValueChanged<DateTime> onPickDay;
   final Project project;
   final List<Employee> team;
-  final ProjectsNotifier notifier;
 
   @override
   Widget build(BuildContext context) {
@@ -1034,7 +1127,6 @@ class _DailySequencePlannerCard extends StatelessWidget {
                 worker: worker,
                 project: project,
                 day: selectedDay,
-                notifier: notifier,
               ),
           ],
         ),
@@ -1043,32 +1135,32 @@ class _DailySequencePlannerCard extends StatelessWidget {
   }
 }
 
-class _WorkerDaySequenceRow extends StatelessWidget {
+class _WorkerDaySequenceRow extends ConsumerWidget {
   const _WorkerDaySequenceRow({
     required this.worker,
     required this.project,
     required this.day,
-    required this.notifier,
   });
 
   final Employee worker;
   final Project project;
   final DateTime day;
-  final ProjectsNotifier notifier;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final sequence = notifier.sequenceForDay(
-      projectId: project.id,
-      workerId: worker.id,
-      day: day,
-    );
-    final suggested = notifier.suggestedSequenceForDay(
-      projectId: project.id,
-      workerId: worker.id,
-      day: day,
-    );
+    final sequences = daySequencesProvider(dayKey(day));
+    final sequence =
+        ref
+            .watch(sequences)
+            .current
+            ?.of(projectId: project.id, workerId: worker.id) ??
+        DailyWorkerSequence(
+          projectId: project.id,
+          dayKey: dayKey(day),
+          workerId: worker.id,
+          orderedPhaseIds: const [],
+        );
     final labelsById = {for (final p in project.phases) p.id: p.name};
     final orderedIds = [
       for (final id in sequence.orderedPhaseIds)
@@ -1078,17 +1170,33 @@ class _WorkerDaySequenceRow extends StatelessWidget {
       for (final id in sequence.orderedPhaseIds)
         if (labelsById.containsKey(id)) labelsById[id]!,
     ];
-    final suggestedCount = suggested.orderedPhaseIds
+    final suggestedCount = sequence.suggestedPhaseIds
         .where(labelsById.containsKey)
         .length;
-    void saveOrder(List<String> ids) {
-      notifier.saveDailySequence(
+    // Shows the server's refusal, if any; the row keeps the old order.
+    Future<void> run(Future<void> Function(DaySequencesNotifier) change) async {
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        await change(ref.read(sequences.notifier));
+      } catch (error) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(l10n, error))),
+        );
+      }
+    }
+
+    void saveOrder(List<String> ids) => run(
+      (sequences) => sequences.save(
         projectId: project.id,
         workerId: worker.id,
-        day: day,
         orderedPhaseIds: ids,
-      );
-    }
+      ),
+    );
+
+    void resetOrder() => run(
+      (sequences) =>
+          sequences.reset(projectId: project.id, workerId: worker.id),
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1214,7 +1322,7 @@ class _WorkerDaySequenceRow extends StatelessWidget {
                         onPressed: suggestedCount == 0
                             ? null
                             : () {
-                                saveOrder(suggested.orderedPhaseIds);
+                                saveOrder(sequence.suggestedPhaseIds);
                               },
                         icon: const Icon(Icons.auto_awesome),
                         label: Text(l10n.plannerUseAutoSuggestion),
@@ -1234,15 +1342,7 @@ class _WorkerDaySequenceRow extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
-                        onPressed: sequence.isManual
-                            ? () {
-                                notifier.resetDailySequence(
-                                  projectId: project.id,
-                                  workerId: worker.id,
-                                  day: day,
-                                );
-                              }
-                            : null,
+                        onPressed: sequence.isManual ? resetOrder : null,
                         icon: const Icon(Icons.refresh),
                         label: Text(l10n.plannerResetToAuto),
                       ),
@@ -1257,7 +1357,7 @@ class _WorkerDaySequenceRow extends StatelessWidget {
                       onPressed: suggestedCount == 0
                           ? null
                           : () {
-                              saveOrder(suggested.orderedPhaseIds);
+                              saveOrder(sequence.suggestedPhaseIds);
                             },
                       icon: const Icon(Icons.auto_awesome),
                       label: Text(l10n.plannerUseAutoSuggestion),
@@ -1275,15 +1375,7 @@ class _WorkerDaySequenceRow extends StatelessWidget {
                       label: Text(l10n.plannerMoveLastToFirst),
                     ),
                     OutlinedButton.icon(
-                      onPressed: sequence.isManual
-                          ? () {
-                              notifier.resetDailySequence(
-                                projectId: project.id,
-                                workerId: worker.id,
-                                day: day,
-                              );
-                            }
-                          : null,
+                      onPressed: sequence.isManual ? resetOrder : null,
                       icon: const Icon(Icons.refresh),
                       label: Text(l10n.plannerResetToAuto),
                     ),

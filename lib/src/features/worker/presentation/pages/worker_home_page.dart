@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/session_controller.dart';
 import '../../../../core/i18n/app_localizations.dart';
+import '../../../../core/util/day_key.dart';
+import '../../../../core/ui/async_status_view.dart';
 import '../../../foreman/presentation/providers/projects_controller.dart';
 import '../providers/worker_assigned_projects_provider.dart';
+import '../providers/worker_day_provider.dart';
 import '../providers/worker_weather_provider.dart';
 import 'worker_project_detail_page.dart';
 
@@ -15,10 +18,18 @@ class WorkerHomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final assigned = ref.watch(workerAssignedProjectsProvider);
-    final session = ref.watch(sessionProvider);
-    final projectsNotifier = ref.read(projectsProvider.notifier);
+    final assignedState = ref.watch(workerAssignedProjectsProvider);
+    final assigned = assignedState.current;
+    final session = ref.watch(sessionProvider).value;
     final today = DateTime.now();
+    final daySequences = ref.watch(workerDayProvider(dayKey(today))).value;
+
+    if (assigned == null) {
+      return AsyncStatusView(
+        assignedState,
+        onRetry: () => ref.invalidate(workerAssignedProjectsProvider),
+      );
+    }
 
     if (assigned.isEmpty) {
       return Center(
@@ -52,12 +63,11 @@ class WorkerHomePage extends ConsumerWidget {
     final todaySequences = <_WorkerTodaySequenceEntry>[];
     if (session != null) {
       for (final project in assigned) {
-        final sequence = projectsNotifier.sequenceForDay(
+        final sequence = daySequences?.of(
           projectId: project.id,
           workerId: session.employeeId,
-          day: today,
         );
-        if (sequence.orderedPhaseIds.isEmpty) continue;
+        if (sequence == null || sequence.orderedPhaseIds.isEmpty) continue;
         final namesById = {
           for (final phase in project.phases) phase.id: phase.name,
         };

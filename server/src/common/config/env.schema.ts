@@ -72,6 +72,12 @@ export const envSchema = z
     I_ACCEPT_INSECURE_TRANSITION: bool(false),
     PHASE_TRANSITIONS_LENIENT: bool(false),
 
+    // --- Test hooks --------------------------------------------------------
+    // Routes under /__e2e that let the app's end-to-end suite force
+    // situations it must survive, such as a dropped socket. Off unless the
+    // runner script turns it on.
+    E2E_TEST_HOOKS: bool(false),
+
     // --- Storage -----------------------------------------------------------
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
     STORAGE_LOCAL_DIR: z.string().default('./storage'),

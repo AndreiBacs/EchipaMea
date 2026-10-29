@@ -161,6 +161,18 @@ export class ConnectionRegistryService implements OnModuleInit, OnModuleDestroy 
     return this.broadcast(foremenRoom(companyId), frame);
   }
 
+  /**
+   * Closes every foreman socket of one company, as a network drop would.
+   * Only the end-to-end test hook calls this, to prove the app reconnects.
+   */
+  disconnectForemen(companyId: string): number {
+    const members = [...(this.rooms.get(foremenRoom(companyId)) ?? [])];
+    for (const socket of members) {
+      socket.close(WsCloseCode.GOING_AWAY, 'Dropped by a test hook');
+    }
+    return members.length;
+  }
+
   stats(): { sockets: number; rooms: number; byChannel: Record<string, number> } {
     const byChannel: Record<string, number> = {};
     for (const socket of this.sockets) {
